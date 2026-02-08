@@ -46,8 +46,15 @@ MobiFlow is a mobile financial visibility application for Informal SMEs in Rwand
 
 ### Environment Notes
 
-- Firebase is preconfigured in `config/firebase.ts` for this demo. You can run the app as-is to evaluate it.
-- A stable internet connection is required for Firebase Auth and Firestore to work during the demo.
+- **Firebase configuration:** The app reads Firebase settings from a `.env` file in `mobiflow-app/`. Create this file and add your Firebase project credentials:
+  - `EXPO_PUBLIC_FIREBASE_API_KEY`
+  - `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+  - `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+  - `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+  - `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+  - `EXPO_PUBLIC_FIREBASE_APP_ID`
+- These values are provided when you register a web app in the Firebase Console.
+- A stable internet connection is required for Firebase Auth and Firestore.
 
 ---
 
