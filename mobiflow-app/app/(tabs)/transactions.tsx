@@ -1,4 +1,4 @@
-// list of txns with filter and add button
+// transactions list with filter tabs and add button
 import { useState } from 'react';
 import {
   View,

@@ -1,4 +1,4 @@
-// save transactions to Firestore and listen for changes in real time
+// transactions go to firestore, we listen for updates
 import { collection, query, where, addDoc, serverTimestamp, onSnapshot, Unsubscribe } from 'firebase/firestore';
 
 import { db } from '../config/firebase';
@@ -30,7 +30,7 @@ export function subscribeToTransactions(
     onUpdate([]);
     return () => {};
   }
-  // Query only by userId - no composite index required. Sort client-side.
+  // get user's transactions only, sort them after
   const q = query(
     collection(db, COLLECTION),
     where('userId', '==', userId)
@@ -50,7 +50,7 @@ export function subscribeToTransactions(
           createdAt: data.createdAt ?? null,
         };
       });
-      // Sort by createdAt descending (newest first) - client-side to avoid composite index
+      // newest first
       list.sort((a, b) => {
         const toMs = (v: typeof a.createdAt) => {
           if (!v) return 0;
