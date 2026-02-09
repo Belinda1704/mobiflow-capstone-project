@@ -11,7 +11,7 @@ import type { CustomCategory } from '../types/category';
 export type CategoryItem = { name: string; id?: string; isDefault: boolean };
 
 /** Returns merged list: default SME categories + user's custom categories */
-export function useCategories(userId: string | null) {
+export function useCategories(userId: string | null, refreshTrigger?: string | number) {
   const [custom, setCustom] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,11 +21,12 @@ export function useCategories(userId: string | null) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     getCustomCategories(userId)
       .then(setCustom)
       .catch(() => setCustom([]))
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, refreshTrigger]);
 
   const allCategories: CategoryItem[] = [
     ...DEFAULT_SME_CATEGORIES.map((c) => ({ name: c.name, isDefault: true })),

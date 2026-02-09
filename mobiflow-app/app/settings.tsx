@@ -1,7 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut } from 'firebase/auth';
 import { MobiFlowColors, FontFamily } from '../constants/colors';
+import { auth } from '../config/firebase';
 
 const SETTINGS_ITEMS: { label: string; subtitle: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
   { label: 'Account', subtitle: 'Change email, password', icon: 'key-outline' },
@@ -14,6 +17,25 @@ const SETTINGS_ITEMS: { label: string; subtitle: string; icon: React.ComponentPr
 
 export default function SettingsScreen() {
   const router = useRouter();
+
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      'Reset Onboarding',
+      'This will log you out and show the onboarding screen again. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.removeItem('hasCompletedOnboarding');
+            await signOut(auth);
+            router.replace('/');
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -39,6 +61,15 @@ export default function SettingsScreen() {
             <Ionicons name="chevron-forward" size={18} color={MobiFlowColors.gray} />
           </TouchableOpacity>
         ))}
+        <TouchableOpacity style={[styles.row, styles.resetRow]} activeOpacity={0.7} onPress={handleResetOnboarding}>
+          <View style={styles.iconWrap}>
+            <Ionicons name="refresh-outline" size={22} color="#EF4444" />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.rowLabel, { color: '#EF4444' }]}>Reset onboarding</Text>
+            <Text style={styles.rowSubtitle}>Show onboarding screen again</Text>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -107,5 +138,10 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     color: MobiFlowColors.gray,
     marginTop: 2,
+  },
+  resetRow: {
+    marginTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
 });

@@ -61,7 +61,7 @@ export default function ManageCategoriesScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="arrow-back" size={24} color={MobiFlowColors.white} />
+          <Ionicons name="arrow-back" size={24} color={MobiFlowColors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Manage Categories</Text>
         <View style={styles.headerRight} />
@@ -139,14 +139,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: MobiFlowColors.accent,
+    backgroundColor: MobiFlowColors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: MobiFlowColors.border,
   },
   backBtn: { padding: 4 },
   headerTitle: {
     flex: 1,
     fontSize: 18,
     fontFamily: FontFamily.bold,
-    color: MobiFlowColors.white,
+    color: MobiFlowColors.textPrimary,
     textAlign: 'center',
   },
   headerRight: { width: 32 },

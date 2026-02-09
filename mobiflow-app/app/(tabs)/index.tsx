@@ -14,24 +14,22 @@ import { computeHomeSummary } from '../../services/summaryService';
 import { TabHeader } from '../../components/TabHeader';
 
 const chartConfig = {
-  backgroundColor: MobiFlowColors.surface,
-  backgroundGradientFrom: MobiFlowColors.surface,
-  backgroundGradientTo: MobiFlowColors.surface,
+  backgroundColor: '#FFFFFF',
+  backgroundGradientFrom: '#FFFFFF',
+  backgroundGradientTo: '#FFFFFF',
   decimalPlaces: 0,
   color: (opacity = 1) => `rgba(245, 197, 24, ${opacity})`,
   labelColor: () => MobiFlowColors.textSecondary,
-  barPercentage: 0.6,
-  propsForLabels: { fontSize: 11 },
+  barPercentage: 0.5,
+  barRadius: 6,
+  propsForLabels: { fontSize: 12 },
   formatYLabel: (v: string) => {
     const n = Number(v);
     if (isNaN(n)) return v;
-    const rwf = Math.round(n * 1000);
-    if (rwf >= 1000) {
-      const k = Math.floor(rwf / 1000);
-      const rest = rwf % 1000;
-      return rest === 0 ? `${k} 000` : `${k} ${String(rest).padStart(3, '0')}`;
-    }
-    return String(rwf);
+    const thousands = Math.round(n);
+    if (thousands >= 1000) return `${(thousands / 1000).toFixed(0)}K`;
+    if (thousands > 0) return `${thousands}K`;
+    return '0';
   },
 };
 
@@ -94,12 +92,13 @@ export default function HomeScreen() {
           <BarChart
             data={chartData}
             width={Dimensions.get('window').width - 88}
-            height={180}
+            height={200}
             yAxisLabel=""
             yAxisSuffix=""
             chartConfig={chartConfig}
-            withInnerLines={false}
+            withInnerLines={true}
             fromZero
+            showBarTops={false}
             style={styles.chart}
           />
         </View>
@@ -254,14 +253,14 @@ const styles = StyleSheet.create({
   chartCard: {
     marginHorizontal: 24,
     padding: 20,
-    backgroundColor: MobiFlowColors.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: MobiFlowColors.border,
     marginBottom: 16,
   },
   chartHeader: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   savingsCard: {
     marginHorizontal: 24,

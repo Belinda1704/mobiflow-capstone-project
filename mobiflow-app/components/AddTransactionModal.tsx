@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -33,7 +34,7 @@ export function AddTransactionModal({ visible, onClose, userId, onAdded }: AddTr
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const { addTransaction, loading } = useAddTransaction(userId);
-  const { categories, addCategory } = useCategories(userId);
+  const { categories, addCategory } = useCategories(userId, visible ? 'open' : 'closed');
 
   async function handleAdd() {
     const success = await addTransaction({
@@ -77,10 +78,10 @@ export function AddTransactionModal({ visible, onClose, userId, onAdded }: AddTr
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <Pressable style={[styles.sheet, { maxHeight: Dimensions.get('window').height * 0.9 }]} onPress={(e) => e.stopPropagation()}>
           <View style={styles.handle} />
           <Text style={styles.title}>Add Transaction</Text>
-          <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.form} showsVerticalScrollIndicator={true}>
             <Text style={styles.label}>Type</Text>
             <View style={styles.typeRow}>
               <TouchableOpacity
@@ -172,6 +173,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
+    minHeight: 480,
   },
   handle: {
     width: 40,
@@ -188,7 +190,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   form: {
-    maxHeight: 320,
+    maxHeight: 420,
     marginBottom: 20,
   },
   label: {

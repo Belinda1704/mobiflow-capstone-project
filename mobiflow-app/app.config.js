@@ -6,6 +6,14 @@ const appJson = require('./app.json');
 module.exports = {
   expo: {
     ...appJson.expo,
+    splash: {
+      image: './assets/images/splash-icon.png',
+      resizeMode: 'contain',
+      backgroundColor: '#000000',
+      dark: {
+        backgroundColor: '#000000',
+      },
+    },
     extra: {
       firebase: {
         apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,

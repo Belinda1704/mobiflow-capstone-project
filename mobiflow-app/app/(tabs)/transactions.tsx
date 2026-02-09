@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useRouter } from 'expo-router';
 import { TabHeader } from '../../components/TabHeader';
-import { AddTransactionModal } from '../../components/AddTransactionModal';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useTransactions } from '../../hooks/useTransactions';
 import { MobiFlowColors, FontFamily } from '../../constants/colors';
@@ -23,9 +23,9 @@ import { filterTransactions } from '../../utils/filterTransactions';
 import type { FilterTab } from '../../types/transaction';
 
 export default function TransactionsScreen() {
+  const router = useRouter();
   const [filter, setFilter] = useState<FilterTab>('all');
   const [search, setSearch] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
 
   const { userId } = useCurrentUser();
   const { transactions, loading } = useTransactions(userId!);
@@ -97,16 +97,9 @@ export default function TransactionsScreen() {
           )}
         </ScrollView>
       )}
-      <Pressable style={styles.fab} onPress={() => setModalVisible(true)}>
+      <Pressable style={styles.fab} onPress={() => router.push('/add-transaction')}>
         <Ionicons name="add" size={28} color={MobiFlowColors.black} />
       </Pressable>
-      {userId && (
-        <AddTransactionModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          userId={userId}
-        />
-      )}
     </View>
   );
 }
@@ -229,7 +222,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 140,
     right: 24,
     width: 56,
     height: 56,

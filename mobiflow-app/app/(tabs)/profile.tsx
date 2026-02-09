@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { TabHeader } from '../../components/TabHeader';
 import { useSignOut } from '../../hooks/useSignOut';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { MobiFlowColors, FontFamily } from '../../constants/colors';
 
 const MENU_ITEMS: { label: string; icon: React.ComponentProps<typeof Ionicons>['name']; route?: string }[] = [
@@ -13,9 +14,20 @@ const MENU_ITEMS: { label: string; icon: React.ComponentProps<typeof Ionicons>['
   { label: 'Notifications', icon: 'notifications-outline' },
 ];
 
+function getInitials(email: string): string {
+  const local = email.split('@')[0] || '';
+  if (local.length >= 2) return local.slice(0, 2).toUpperCase();
+  return local.toUpperCase() || '?';
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user } = useCurrentUser();
   const { signOut, loading } = useSignOut();
+
+  const email = user?.email ?? '';
+  const displayName = user?.displayName ?? (email ? email.split('@')[0] : 'User');
+  const initials = getInitials(email || '??');
 
   async function handleSignOut() {
     const success = await signOut();
@@ -29,15 +41,15 @@ export default function ProfileScreen() {
         <View style={styles.profileCard}>
         <View style={styles.avatarWrap}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>BL</Text>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <TouchableOpacity style={styles.avatarEditBtn} activeOpacity={0.8}>
             <Ionicons name="camera" size={14} color={MobiFlowColors.black} />
           </TouchableOpacity>
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>Belinda Larose</Text>
-          <Text style={styles.profileEmail}>belinda@example.com</Text>
+          <Text style={styles.profileName}>{displayName}</Text>
+          <Text style={styles.profileEmail}>{email || 'Not signed in'}</Text>
         </View>
         </View>
         <View style={styles.menuSection}>

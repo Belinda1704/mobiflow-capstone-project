@@ -52,6 +52,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="preferences" />
         <Stack.Screen name="categories" />
+        <Stack.Screen name="add-transaction" />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

@@ -67,8 +67,10 @@ export default function OnboardingScreen() {
             <Image
               source={require('../assets/images/onboarding.png')}
               style={styles.heroImage}
-              contentFit="cover"
+              contentFit="contain"
+              priority="high"
               cachePolicy="memory-disk"
+              transition={200}
             />
           </View>
           <View style={styles.contentSection}>
@@ -111,18 +113,16 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     width: '100%',
-    aspectRatio: 1,
-    minHeight: 280,
-    maxHeight: 360,
     backgroundColor: OnboardingColors.background,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    overflow: 'hidden',
     marginBottom: 28,
+    minHeight: 350,
+    maxHeight: 450,
   },
   heroImage: {
     width: '100%',
-    height: '100%',
+    flex: 1,
   },
   contentSection: {
     paddingHorizontal: 28,
