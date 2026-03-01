@@ -1,39 +1,47 @@
+// More: categories, health, goals, insights, how-to, financial literacy.
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { TabHeader } from '../../components/TabHeader';
-import { MobiFlowColors, FontFamily } from '../../constants/colors';
+import { useThemeColors } from '../../contexts/ThemeContext';
+import { useTranslations } from '../../hooks/useTranslations';
+import { FontFamily } from '../../constants/colors';
 
-const MORE_ITEMS: { label: string; subtitle: string; icon: React.ComponentProps<typeof Ionicons>['name']; route: string }[] = [
-  { label: 'Manage categories', subtitle: 'Add, edit, delete expense categories', icon: 'pricetags-outline', route: '/categories' },
-  { label: 'Business health', subtitle: 'Track your business wellness', icon: 'heart-outline', route: '/business-health' },
-  { label: 'Savings & budget goals', subtitle: 'Set and track savings targets', icon: 'wallet-outline', route: '/savings-budget-goals' },
-  { label: 'Business insights', subtitle: 'Analytics and trends', icon: 'analytics-outline', route: '/business-insights' },
-  { label: 'Credit readiness', subtitle: 'Prepare for credit applications', icon: 'card-outline', route: '/credit-readiness' },
+const MORE_ITEMS: { labelKey: string; subtitleKey: string; icon: React.ComponentProps<typeof Ionicons>['name']; route: string }[] = [
+  { labelKey: 'settings', subtitleKey: 'settingsSubtitle', icon: 'settings-outline', route: '/settings' },
+  { labelKey: 'manageCategories', subtitleKey: 'manageCategoriesSubtitle', icon: 'pricetags-outline', route: '/categories' },
+  { labelKey: 'businessHealth', subtitleKey: 'businessHealthSubtitle', icon: 'heart-outline', route: '/business-health' },
+  { labelKey: 'savingsBudgetGoals', subtitleKey: 'savingsBudgetGoalsSubtitle', icon: 'wallet-outline', route: '/savings-budget-goals' },
+  { labelKey: 'businessInsights', subtitleKey: 'businessInsightsSubtitle', icon: 'analytics-outline', route: '/business-insights' },
+  { labelKey: 'creditReadiness', subtitleKey: 'creditReadinessSubtitle', icon: 'card-outline', route: '/credit-readiness' },
+  { labelKey: 'howToUseMobiFlow', subtitleKey: 'howToUseSubtitle', icon: 'play-circle-outline', route: '/how-to-use' },
+  { labelKey: 'financialLiteracy', subtitleKey: 'financialLiteracySubtitle', icon: 'school-outline', route: '/financial-literacy' },
 ];
 
 export default function MoreScreen() {
   const router = useRouter();
+  const { colors } = useThemeColors();
+  const { t } = useTranslations();
 
   return (
-    <View style={styles.container}>
-      <TabHeader title="More" />
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <TabHeader title={t('more')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {MORE_ITEMS.map((item) => (
           <TouchableOpacity
-            key={item.label}
-            style={styles.row}
+            key={item.labelKey}
+            style={[styles.row, { borderBottomColor: colors.border }]}
             activeOpacity={0.7}
             onPress={() => router.push(item.route as any)}>
-            <View style={styles.iconWrap}>
-              <Ionicons name={item.icon} size={22} color={MobiFlowColors.primary} />
+            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+              <Ionicons name={item.icon} size={22} color={colors.textPrimary} />
             </View>
             <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>{item.label}</Text>
-              <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+              <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{t(item.labelKey)}</Text>
+              <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{t(item.subtitleKey)}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={MobiFlowColors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -44,7 +52,6 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: MobiFlowColors.background,
   },
   content: {
     flex: 1,
@@ -55,14 +62,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: MobiFlowColors.border,
     gap: 16,
   },
   iconWrap: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: MobiFlowColors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -72,12 +77,10 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 16,
     fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textPrimary,
   },
   rowSubtitle: {
     fontSize: 13,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
     marginTop: 2,
   },
 });

@@ -1,11 +1,22 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+// Tabs: Home, Transactions, Reports, More. SMS listener when permission given. CoreDataGate waits for data.
+import React, { useEffect } from 'react';
 import { Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { withLayoutContext } from 'expo-router';
 
-import { HapticTab } from '../../components/haptic-tab';
-import { MobiFlowColors, FontFamily, TabBarYellow } from '../../constants/colors';
+import { useThemeColors } from '../../contexts/ThemeContext';
+import { useTranslations } from '../../hooks/useTranslations';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { FontFamily } from '../../constants/colors';
+import { CoreDataGate } from '../../components/CoreDataGate';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSmsCaptureEnabled } from '../../services/preferencesService';
+import { checkSmsPermissions, isSmsCaptureSupported, startSmsListener, scanPastSmsMessages } from '../../services/smsCaptureService';
+
+const { Navigator: MaterialTopTabNavigator } = createMaterialTopTabNavigator();
+const SwipeableTabs = withLayoutContext(MaterialTopTabNavigator);
 
 function TabIcon({
   focused,
@@ -22,9 +33,9 @@ function TabIcon({
   return <Ionicons name={iconName} size={22} color={color} />;
 }
 
-function TabLabel({ focused, label }: { focused: boolean; label: string }) {
+function TabLabel({ focused, label, activeColor, inactiveColor }: { focused: boolean; label: string; activeColor: string; inactiveColor: string }) {
   return (
-    <Text style={{ fontSize: 11, fontFamily: FontFamily.medium, color: focused ? TabBarYellow : 'rgba(255,255,255,0.7)' }}>
+    <Text style={{ fontSize: 11, fontFamily: FontFamily.medium, color: focused ? activeColor : inactiveColor }}>
       {label}
     </Text>
   );
@@ -32,89 +43,106 @@ function TabLabel({ focused, label }: { focused: boolean; label: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useThemeColors();
+  const { t } = useTranslations();
+  const { userId } = useCurrentUser();
   const tabBarHeight = 68;
+  const tabInactiveColor = isDark ? colors.textSecondary : 'rgba(255,255,255,0.7)';
+
+  // If SMS allowed: start listener or one-time past scan so history shows
+  useEffect(() => {
+    if (!userId || !isSmsCaptureSupported()) return;
+    let mounted = true;
+    (async () => {
+      const [enabled, perms] = await Promise.all([getSmsCaptureEnabled(), checkSmsPermissions()]);
+      const hasBoth = perms.hasReceiveSms && perms.hasReadSms;
+      if (!mounted || !hasBoth) return;
+      if (enabled) {
+        startSmsListener(userId); // also runs past message scan inside
+      } else {
+        const pastScanKey = `@mobiflow/pastScanDone/${userId}`;
+        const alreadyDone = (await AsyncStorage.getItem(pastScanKey)) === 'true';
+        if (!alreadyDone) {
+          scanPastSmsMessages(userId).catch(() => {}).finally(() => {
+            AsyncStorage.setItem(pastScanKey, 'true');
+          });
+        }
+      }
+    })();
+    return () => { mounted = false; };
+  }, [userId]);
   const bottomPadding = Math.max(insets.bottom, 12);
   const totalBottom = tabBarHeight + bottomPadding;
 
   return (
-    <Tabs
-      sceneContainerStyle={{ paddingBottom: totalBottom + 24 }}
+    <CoreDataGate>
+    <SwipeableTabs
+      tabBarPosition="bottom"
       screenOptions={{
-        tabBarActiveTintColor: TabBarYellow,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.7)',
-        tabBarActiveBackgroundColor: 'transparent',
-        tabBarInactiveBackgroundColor: 'transparent',
-        headerShown: false,
-        tabBarButton: HapticTab,
+        swipeEnabled: true,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: tabInactiveColor,
+        tabBarShowLabel: true,
+        tabBarShowIcon: true,
+        tabBarIndicator: () => null,
         tabBarStyle: {
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: MobiFlowColors.tabBarBg,
+          backgroundColor: colors.tabBarBg,
           height: tabBarHeight + bottomPadding,
           paddingTop: 8,
           paddingBottom: bottomPadding,
-          borderRadius: 0,
-          borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarShowLabel: true,
-        tabBarLabel: ({ focused, children }) => <TabLabel focused={focused} label={children as string} />,
         tabBarItemStyle: {
           paddingTop: 4,
-          backgroundColor: 'transparent',
         },
+        tabBarLabel: ({ focused, children }: { focused: boolean; children: React.ReactNode }) => <TabLabel focused={focused} label={children as string} activeColor={colors.accent} inactiveColor={tabInactiveColor} />,
       }}>
-      <Tabs.Screen
+      <SwipeableTabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ focused, color }) => (
+          title: t('home'),
+          headerShown: false,
+          tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => (
             <TabIcon focused={focused} color={color} active="home" inactive="home-outline" />
           ),
         }}
       />
-      <Tabs.Screen
+      <SwipeableTabs.Screen
         name="transactions"
         options={{
-          title: 'Transactions',
-          tabBarIcon: ({ focused, color }) => (
+          title: t('transactions'),
+          headerShown: false,
+          tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => (
             <TabIcon focused={focused} color={color} active="list" inactive="list-outline" />
           ),
         }}
       />
-      <Tabs.Screen
+      <SwipeableTabs.Screen
         name="reports"
         options={{
-          title: 'Reports',
-          tabBarIcon: ({ focused, color }) => (
+          title: t('reports'),
+          headerShown: false,
+          tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => (
             <TabIcon focused={focused} color={color} active="bar-chart" inactive="bar-chart-outline" />
           ),
         }}
       />
-      <Tabs.Screen
+      <SwipeableTabs.Screen
         name="more"
         options={{
-          title: 'More',
-          tabBarIcon: ({ focused, color }) => (
+          title: t('more'),
+          headerShown: false,
+          tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => (
             <TabIcon focused={focused} color={color} active="ellipsis-horizontal" inactive="ellipsis-horizontal-outline" />
           ),
         }}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          href: null,
-        }}
-      />
-    </Tabs>
+    </SwipeableTabs>
+    </CoreDataGate>
   );
 }

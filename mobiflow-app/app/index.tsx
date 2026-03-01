@@ -1,14 +1,14 @@
-// first screen - onboarding or redirect to login/tabs
+// First screen: onboarding or redirect to login/tabs
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { onAuthStateChanged } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { auth } from '../config/firebase';
+import { useAuthRedirect } from '../hooks/useAuthRedirect';
+import { useTranslations } from '../hooks/useTranslations';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { OnboardingColors, FontFamily } from '../constants/colors';
 
@@ -17,25 +17,24 @@ const ONBOARDING_KEY = 'hasCompletedOnboarding';
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslations();
   const [checking, setChecking] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
   useEffect(() => {
-    let unsubAuth: (() => void) | undefined;
-
     const init = async () => {
-      const hasCompleted = await AsyncStorage.getItem(ONBOARDING_KEY);
-      if (hasCompleted === 'true') {
-        unsubAuth = onAuthStateChanged(auth, (user) => {
-          if (user) router.replace('/(tabs)');
-          else router.replace('/login');
-        });
-      }
+      const hasCompleted = (await AsyncStorage.getItem(ONBOARDING_KEY)) === 'true';
+      setHasCompletedOnboarding(hasCompleted);
       setChecking(false);
     };
-
     init();
-    return () => unsubAuth?.();
-  }, [router]);
+  }, []);
+
+  useAuthRedirect(
+    () => router.replace('/(tabs)'),
+    () => router.replace('/login'),
+    checking || !hasCompletedOnboarding
+  );
 
   const handleGetStarted = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
@@ -48,11 +47,7 @@ export default function OnboardingScreen() {
   };
 
   if (checking) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={OnboardingColors.accent} />
-      </View>
-    );
+    return null; // auth redirect will send to login or tabs
   }
 
   return (
@@ -60,35 +55,46 @@ export default function OnboardingScreen() {
       <StatusBar style="light" />
       <View style={[styles.safe, { paddingTop: insets.top }]} collapsable={false}>
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, 24) + 48 }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, 40) + 56 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
+          <View style={styles.brandRow}>
+            <Image
+              source={require('../assets/images/app-icon.png')}
+              style={styles.brandLogo}
+            />
+            <Text style={styles.brandName}>MobiFlow</Text>
+          </View>
+
+          <View style={styles.topCopy}>
+            <Text style={styles.headline}>{t('onboardingHeadline')}</Text>
+          </View>
+
           <View style={styles.heroSection}>
             <Image
               source={require('../assets/images/onboarding.png')}
               style={styles.heroImage}
-              contentFit="contain"
+              contentFit="cover"
               priority="high"
               cachePolicy="memory-disk"
               transition={200}
             />
           </View>
-          <View style={styles.contentSection}>
-            <Text style={styles.headline}>Smart mobile money tracking for your business.</Text>
+
+          <View style={styles.bottomContent}>
             <Text style={styles.body}>
-              MobiFlow converts MTN MoMo and Airtel Money SMS into clear financial
-              insights. Monitor sales, track expenses, and understand your cash flow
-              all in one place.
+              {t('onboardingBody')}
             </Text>
             <PrimaryButton
-              title="Get Started"
+              title={t('getStarted')}
               onPress={handleGetStarted}
               variant="yellow"
+              testID="onboarding-get-started"
             />
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={handleSignIn}>
-                <Text style={styles.link}>Sign in</Text>
+              <Text style={styles.footerText}>{t('alreadyHaveAccount')}</Text>
+              <TouchableOpacity onPress={handleSignIn} testID="onboarding-sign-in">
+                <Text style={styles.link}>{t('signIn')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -111,21 +117,43 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     flexGrow: 1,
   },
+  topCopy: {
+    paddingHorizontal: 28,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 28,
+    marginBottom: 16,
+  },
+  brandLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  brandName: {
+    fontSize: 16,
+    fontFamily: FontFamily.semiBold,
+    color: OnboardingColors.textPrimary,
+  },
   heroSection: {
     width: '100%',
-    backgroundColor: OnboardingColors.background,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 28,
-    minHeight: 350,
-    maxHeight: 450,
+    marginBottom: 24,
+    alignItems: 'center',
   },
   heroImage: {
-    width: '100%',
-    flex: 1,
+    width: 260,
+    height: 260,
+    borderRadius: 24,
   },
-  contentSection: {
+  bottomContent: {
     paddingHorizontal: 28,
+    gap: 28,
+    alignItems: 'stretch',
   },
   headline: {
     fontSize: 24,
@@ -140,7 +168,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     color: OnboardingColors.textSecondary,
     lineHeight: 24,
-    marginBottom: 28,
+    marginBottom: 8,
     textAlign: 'center',
   },
   footer: {
@@ -148,6 +176,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
+    marginBottom: 20,
   },
   footerText: {
     fontSize: 15,

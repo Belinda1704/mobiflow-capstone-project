@@ -1,160 +1,294 @@
-// dashboard - balance, 7-day chart, recent transactions
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput, ActivityIndicator } from 'react-native';
+// Dashboard: balance, period filter, chart, goals link, recent transactions. Asks for SMS/notif once after signup.
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BarChart } from 'react-native-chart-kit';
 
 import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { isSmsCaptureSupported, requestSmsPermissions } from '../../services/smsCaptureService';
+import { requestNotificationPermission } from '../../services/goalRemindersService';
 import { useTransactions } from '../../hooks/useTransactions';
-import { MobiFlowColors, FontFamily } from '../../constants/colors';
+import { useThemeColors } from '../../contexts/ThemeContext';
+import { useTranslations } from '../../hooks/useTranslations';
+import { FontFamily } from '../../constants/colors';
 import { formatRWF, formatRWFWithSign } from '../../utils/formatCurrency';
 import { formatTransactionDate } from '../../utils/formatDate';
 import { computeHomeSummary } from '../../services/summaryService';
+import { useAlertsCheck } from '../../hooks/useAlertsCheck';
+import { useAlerts } from '../../hooks/useAlerts';
+import { useAlertTriggers } from '../../hooks/useAlertTriggers';
 import { TabHeader } from '../../components/TabHeader';
+import { getDashboardChartConfig } from '../../constants/chartConfig';
+import { useSavingsGoals } from '../../hooks/useSavingsGoals';
+import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon';
+import { filterTransactions } from '../../utils/filterTransactions';
+import type { DateRangeFilter } from '../../types/transaction';
 
-const chartConfig = {
-  backgroundColor: '#FFFFFF',
-  backgroundGradientFrom: '#FFFFFF',
-  backgroundGradientTo: '#FFFFFF',
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(245, 197, 24, ${opacity})`,
-  labelColor: () => MobiFlowColors.textSecondary,
-  barPercentage: 0.5,
-  barRadius: 6,
-  propsForLabels: { fontSize: 12 },
-  formatYLabel: (v: string) => {
-    const n = Number(v);
-    if (isNaN(n)) return v;
-    const thousands = Math.round(n);
-    if (thousands >= 1000) return `${(thousands / 1000).toFixed(0)}K`;
-    if (thousands > 0) return `${thousands}K`;
-    return '0';
-  },
-};
+const DASHBOARD_PERIODS: DateRangeFilter[] = ['today', 'week', 'month', 'all'];
+
+// Flag so dashboard shows permission prompts once after signup
+const SHOW_PERMISSIONS_ON_DASHBOARD_KEY = '@mobiflow/showPermissionsOnDashboard';
+
+function getPeriodLabel(period: DateRangeFilter, t: (key: string) => string): string {
+  switch (period) {
+    case 'today': return t('summaryToday');
+    case 'week': return t('summaryThisWeek');
+    case 'month': return t('summaryThisMonth');
+    case 'all': return t('summaryAllTime');
+    default: return t('summaryAllTime');
+  }
+}
+
+function getTimeBasedGreetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'greetingMorning';
+  if (hour < 17) return 'greetingAfternoon';
+  return 'greetingEvening';
+}
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { colors } = useThemeColors();
+  const { t } = useTranslations();
+  const [dashboardPeriod, setDashboardPeriod] = useState<DateRangeFilter>('all');
   const { userId } = useCurrentUser();
-  const { transactions, loading } = useTransactions(userId);
-  const summary = useMemo(() => computeHomeSummary(transactions), [transactions]);
+  const { transactions } = useTransactions(userId || null);
+  const filteredTransactions = useMemo(
+    () =>
+      filterTransactions(transactions, {
+        type: 'all',
+        dateRange: dashboardPeriod,
+        category: '',
+        paymentMethod: 'all',
+        search: '',
+      }),
+    [transactions, dashboardPeriod]
+  );
+  const summary = useMemo(() => computeHomeSummary(filteredTransactions), [filteredTransactions]);
+  const { goals } = useSavingsGoals(userId, transactions);
+  const { incomeDrop, budgetBreaches, totalExpenseThisMonth } = useAlertsCheck(userId, transactions);
+  const { settings: alertSettings } = useAlerts(userId);
 
-  const chartData = {
+  useAlertTriggers(
+    userId ?? undefined,
+    summary.balance,
+    alertSettings ?? undefined,
+    budgetBreaches,
+    totalExpenseThisMonth,
+    incomeDrop?.percentDrop ?? null
+  );
+
+  // Ask for SMS + notification permission once after signup
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(SHOW_PERMISSIONS_ON_DASHBOARD_KEY).then((value) => {
+        if (value !== 'true') return;
+        (async () => {
+          try {
+            if (isSmsCaptureSupported()) await requestSmsPermissions();
+            await requestNotificationPermission();
+          } catch {
+            // Can fail in Expo Go
+          }
+          await AsyncStorage.setItem(SHOW_PERMISSIONS_ON_DASHBOARD_KEY, 'false');
+        })();
+      });
+    }, [])
+  );
+
+  const barChartConfig = useMemo(() => getDashboardChartConfig(colors), [colors]);
+  const barChartData = {
     labels: summary.chartLabels,
     datasets: [{ data: summary.chartData }],
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={MobiFlowColors.accent} />
-      </View>
-    );
-  }
+  // No spinner – data from cache
 
   return (
-    <View style={styles.container}>
-      <TabHeader title="Dashboard" />
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <TabHeader title={t('dashboard')} subtitle={t(getTimeBasedGreetingKey())} />
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.searchWrap}>
-          <Ionicons name="search" size={20} color={MobiFlowColors.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search transactions, amounts..."
-            placeholderTextColor={MobiFlowColors.textSecondary}
-          />
+        <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+          {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </Text>
+
+        {(incomeDrop || budgetBreaches.length > 0) ? (
+          <View style={[styles.alertsBanner, { backgroundColor: colors.warningBg, borderColor: colors.warning }]}>
+            <Ionicons name="alert-circle" size={20} color={colors.warning} />
+            <View style={styles.alertsBannerText}>
+              {incomeDrop && (
+                <Text style={[styles.alertsBannerItem, { color: colors.warningText }]}>{t('incomeDropAlert', { percent: incomeDrop.percentDrop })}</Text>
+              )}
+              {budgetBreaches.slice(0, 2).map((b) => (
+                <Text key={b.category} style={[styles.alertsBannerItem, { marginTop: 4, color: colors.warningText }]}>{t('budgetBreachAlert', { category: b.category, percent: b.percentOver })}</Text>
+              ))}
+            </View>
+          </View>
+        ) : null}
+        {/* Period selector: so balance and totals match the period (e.g. Today = only today's txns) */}
+        <View style={styles.periodPillsRow}>
+          {DASHBOARD_PERIODS.map((period) => (
+            <TouchableOpacity
+              key={period}
+              style={[styles.periodPill, { backgroundColor: dashboardPeriod === period ? colors.accent : colors.background, borderWidth: 1, borderColor: dashboardPeriod === period ? colors.accent : colors.border }]}
+              onPress={() => setDashboardPeriod(period)}>
+              <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.black : colors.textSecondary }]}>
+                {getPeriodLabel(period, t)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Current Balance</Text>
-        <Text style={styles.balanceAmount}>{formatRWF(summary.balance)}</Text>
-        <Text style={styles.balanceDetailGreen}>{formatRWFWithSign(summary.totalIncome)}</Text>
-        <Text style={styles.balanceDetailRed}>{formatRWFWithSign(-summary.totalExpense)}</Text>
+        <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={styles.balanceHeader}>
+          <View style={styles.balanceTitleWrap}>
+            <Text style={[styles.balanceLabel, { color: colors.textPrimary }]}>{t('currentBalance')}</Text>
+            <Text style={[styles.balanceDescription, { color: colors.textSecondary }]}>{t('currentBalanceDescription')}</Text>
+          </View>
+          <Text style={[styles.periodBadge, { color: colors.textSecondary }]}>{getPeriodLabel(dashboardPeriod, t)}</Text>
         </View>
-        <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Income</Text>
-          <Text style={styles.summaryGreen}>{formatRWFWithSign(summary.totalIncome, { compact: true })}</Text>
+        <Text style={[styles.balanceAmount, { color: colors.accent }]}>{formatRWF(summary.balance)}</Text>
+        <Text style={[styles.balanceDetailGreen, { color: colors.success }]}>{formatRWFWithSign(summary.totalIncome)}</Text>
+        <Text style={[styles.balanceDetailRed, { color: colors.error }]}>{formatRWFWithSign(-summary.totalExpense)}</Text>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Expense</Text>
-          <Text style={styles.summaryRed}>{formatRWFWithSign(-summary.totalExpense, { compact: true })}</Text>
+        {/* Summary Cards - neutral background, colored icons/amounts */}
+        <View style={styles.summaryCardsRow}>
+          <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View style={styles.summaryCardHeader}>
+              <View style={styles.summaryCardHeaderRow}>
+                <Ionicons name="arrow-down" size={24} color={colors.success} />
+                <Text style={[styles.summaryCardLabel, { color: colors.textPrimary }]}>{t('income')}</Text>
+              </View>
+              <Text style={[styles.summaryCardDescription, { color: colors.textSecondary }]}>{t('incomeDescription')}</Text>
+            </View>
+            <Text style={[styles.summaryCardAmount, { color: colors.success }]}>{formatRWF(summary.totalIncome)}</Text>
+            <Text style={[styles.summaryCardNet, { color: colors.textSecondary }]}>
+              {t('net')}: <Text style={{ color: summary.net >= 0 ? colors.success : colors.error }}>{formatRWF(summary.net)}</Text>
+            </Text>
+          </View>
+          <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View style={styles.summaryCardHeader}>
+              <View style={styles.summaryCardHeaderRow}>
+                <Ionicons name="arrow-up" size={24} color={colors.error} />
+                <Text style={[styles.summaryCardLabel, { color: colors.textPrimary }]}>{t('expense')}</Text>
+              </View>
+              <Text style={[styles.summaryCardDescription, { color: colors.textSecondary }]}>{t('expenseDescription')}</Text>
+            </View>
+            <Text style={[styles.summaryCardAmount, { color: colors.error }]}>{formatRWF(summary.totalExpense)}</Text>
+            <Text style={[styles.summaryCardMeta, { color: colors.textSecondary }]}>
+              {summary.totalExpense > 0 ? Math.round((summary.totalExpense / (summary.totalIncome || 1)) * 100) : 0}% {t('ofIncome') || 'of income'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Net</Text>
-          <Text style={styles.summaryGreen}>{formatRWFWithSign(summary.net, { compact: true })}</Text>
-        </View>
-        </View>
-        <View style={styles.chartCard}>
+        <View style={[styles.chartCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.chartHeader}>
-          <Text style={styles.cardTitle}>Cash Flow (7 days)</Text>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('cashFlow7Days')}</Text>
+          <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{t('cashFlow7DaysDescription')}</Text>
         </View>
         <View style={styles.chartWrap}>
           <BarChart
-            data={chartData}
+            data={barChartData}
             width={Dimensions.get('window').width - 88}
             height={200}
-            yAxisLabel=""
-            yAxisSuffix=""
-            chartConfig={chartConfig}
+            chartConfig={barChartConfig as Record<string, unknown>}
             withInnerLines={true}
             fromZero
-            showBarTops={false}
             style={styles.chart}
+            showBarTops={false}
+            withVerticalLabels={true}
+            withHorizontalLabels={true}
+            yAxisLabel=""
+            yAxisSuffix=""
           />
         </View>
         </View>
-        <View style={styles.savingsCard}>
-        <View style={styles.savingsHeader}>
-          <Text style={styles.savingsTitle}>Savings & Budget Goals</Text>
-          <Text style={styles.savingsAmount}>{formatRWF(summary.net)}</Text>
-        </View>
-        <View style={styles.progressRow}>
-          <View style={styles.progressItem}>
-            <Text style={styles.progressLabel}>Earned</Text>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: summary.totalIncome + summary.totalExpense > 0 ? `${(summary.totalIncome / (summary.totalIncome + summary.totalExpense)) * 100}%` : '0%', backgroundColor: '#22C55E' }]} />
-            </View>
-            <Text style={styles.progressValue}>{formatRWF(summary.totalIncome, { compact: true })}</Text>
+        <TouchableOpacity
+          style={[styles.savingsCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+          onPress={() => router.push('/savings-budget-goals')}
+          activeOpacity={0.7}>
+          <View style={styles.savingsHeader}>
+            <Text style={[styles.savingsTitle, { color: colors.textPrimary }]}>{t('savingsBudgetGoals')}</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </View>
-          <View style={styles.progressItem}>
-            <Text style={styles.progressLabel}>Spent</Text>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: summary.totalIncome + summary.totalExpense > 0 ? `${(summary.totalExpense / (summary.totalIncome + summary.totalExpense)) * 100}%` : '0%', backgroundColor: '#EF4444' }]} />
+          {goals.length === 0 ? (
+            <View style={styles.noGoalsContainer}>
+              <Text style={[styles.noGoalsText, { color: colors.textSecondary }]}>{t('noSavingsGoalsYet')}</Text>
+              <Text style={[styles.noGoalsHint, { color: colors.textSecondary }]}>{t('tapToSetGoals')}</Text>
             </View>
-            <Text style={styles.progressValue}>{formatRWF(summary.totalExpense, { compact: true })}</Text>
-          </View>
-        </View>
-        </View>
-        <View style={styles.recentCard}>
+          ) : (
+            <>
+              <View style={styles.goalsSummary}>
+                {goals.slice(0, 3).map((goal) => (
+                  <View key={goal.id} style={styles.goalItem}>
+                    <View style={styles.goalHeader}>
+                      <Text style={[styles.goalName, { color: colors.textPrimary }]} numberOfLines={1}>
+                        {goal.name}
+                      </Text>
+                      <Text style={[styles.goalPercent, { color: colors.textSecondary }]}>{Math.round(goal.percent)}%</Text>
+                    </View>
+                    <View style={[styles.goalProgressBar, { backgroundColor: colors.surfaceElevated }]}>
+                      <View
+                        style={[
+                          styles.goalProgressFill,
+                          {
+                            width: `${Math.min(goal.percent, 100)}%`,
+                            backgroundColor: goal.percent >= 100 ? colors.success : colors.accent,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.goalAmount, { color: colors.textSecondary }]}>
+                      {formatRWF(goal.current)} / {formatRWF(goal.target)}
+                    </Text>
+                  </View>
+                ))}
+                {goals.length > 3 && (
+                  <Text style={[styles.moreGoalsText, { color: colors.textSecondary }]}>
+                    {t('andMoreGoals', { count: goals.length - 3 })}
+                  </Text>
+                )}
+              </View>
+            </>
+          )}
+        </TouchableOpacity>
+        <View style={[styles.recentCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.recentHeader}>
-          <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Recent Transactions</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-            <Text style={styles.viewAll}>View All</Text>
+          <View style={styles.recentTitleWrap}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary, marginBottom: 0 }]}>{t('recentTransactions')}</Text>
+            <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 4 }]}>{t('recentTransactionsDescription')}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.navigate('/(tabs)/transactions')}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.viewAllTouchable}>
+            <Text style={[styles.viewAll, { color: colors.textSecondary }]}>{t('viewAll')}</Text>
           </TouchableOpacity>
         </View>
         {summary.recentTransactions.length === 0 ? (
-          <Text style={styles.emptyRecent}>No transactions yet</Text>
+          <Text style={[styles.emptyRecent, { color: colors.textSecondary }]}>{t('noTransactionsYet')}</Text>
         ) : (
-          summary.recentTransactions.map((t) => (
-            <View key={t.id} style={styles.transactionRow}>
-              <View style={styles.transactionLeft}>
-                <View style={[styles.iconWrap, t.type === 'income' ? styles.iconIncome : styles.iconExpense]}>
-                  <Ionicons
-                    name={t.type === 'income' ? 'arrow-up' : 'arrow-down'}
-                    size={16}
-                    color={t.type === 'income' ? '#22C55E' : '#EF4444'}
-                  />
+          summary.recentTransactions.slice(0, 6).map((tx) => {
+            const catIcon = getTransactionCategoryIcon(tx.category ?? 'Other', tx.type);
+            return (
+              <View key={tx.id} style={[styles.transactionRow, { borderBottomColor: colors.border }]}>
+                <View style={styles.transactionLeft}>
+                  <View style={[styles.categoryIconWrap, { backgroundColor: catIcon.backgroundColor }]}>
+                    <Ionicons name={catIcon.icon} size={18} color={catIcon.iconColor} />
+                  </View>
+                  <View>
+                    <Text style={[styles.transactionLabel, { color: colors.textPrimary }]} numberOfLines={1}>{tx.label}</Text>
+                    <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>{formatTransactionDate(tx.createdAt)}</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.transactionLabel}>{t.label}</Text>
-                  <Text style={styles.transactionDate}>{formatTransactionDate(t.createdAt)}</Text>
-                </View>
+                <Text style={[styles.transactionAmount, { color: tx.type === 'income' ? colors.success : colors.error }]}>
+                  {formatRWFWithSign(tx.amount)}
+                </Text>
               </View>
-              <Text style={[styles.transactionAmount, t.type === 'income' ? styles.amountIncome : styles.amountExpense]}>
-                {formatRWFWithSign(t.amount)}
-              </Text>
-            </View>
-          ))
+            );
+          })
         )}
         </View>
         <View style={{ height: 100 }} />
@@ -166,109 +300,153 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: MobiFlowColors.background,
   },
-  searchWrap: {
+  dateText: {
+    fontSize: 14,
+    fontFamily: FontFamily.regular,
+    marginTop: 8,
+    marginHorizontal: 24,
+    marginBottom: 12,
+  },
+  alertsBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: MobiFlowColors.surface,
     marginHorizontal: 24,
-    marginTop: 16,
     marginBottom: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    padding: 14,
     borderRadius: 12,
-    gap: 10,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
+    gap: 10,
   },
-  searchInput: {
+  alertsBannerText: { flex: 1 },
+  alertsBannerItem: {
+    fontSize: 13,
+    fontFamily: FontFamily.medium,
+  },
+  periodPillsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginBottom: 12,
+    gap: 8,
+  },
+  periodPill: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textPrimary,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  periodPillText: {
+    fontSize: 12,
+    fontFamily: FontFamily.medium,
   },
   balanceCard: {
     marginHorizontal: 24,
     padding: 24,
-    backgroundColor: MobiFlowColors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
     marginBottom: 16,
   },
-  balanceLabel: {
-    fontSize: 14,
+  balanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  balanceTitleWrap: {
+    flex: 1,
+  },
+  periodBadge: {
+    fontSize: 12,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
-    marginBottom: 8,
+    marginTop: 2,
+  },
+  balanceLabel: {
+    fontSize: 15,
+    fontFamily: FontFamily.semiBold,
+    marginBottom: 4,
+  },
+  balanceDescription: {
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
   },
   balanceAmount: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: FontFamily.bold,
-    color: MobiFlowColors.accent,
     marginBottom: 8,
   },
   balanceDetailGreen: {
     fontSize: 12,
     fontFamily: FontFamily.regular,
-    color: '#22C55E',
   },
   balanceDetailRed: {
     fontSize: 12,
     fontFamily: FontFamily.regular,
-    color: '#EF4444',
     marginTop: 2,
   },
-  summaryRow: {
+  summaryCardsRow: {
     flexDirection: 'row',
     marginHorizontal: 24,
     gap: 12,
     marginBottom: 16,
   },
-  summaryCard: {
+  summaryCardLarge: {
     flex: 1,
-    backgroundColor: MobiFlowColors.surface,
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
   },
-  summaryLabel: {
-    fontSize: 12,
-    fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
+  summaryCardHeader: {
+    marginBottom: 12,
+  },
+  summaryCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
   },
-  summaryGreen: {
-    fontSize: 13,
+  summaryCardLabel: {
+    fontSize: 14,
     fontFamily: FontFamily.semiBold,
-    color: '#22C55E',
   },
-  summaryRed: {
-    fontSize: 13,
-    fontFamily: FontFamily.semiBold,
-    color: '#EF4444',
+  summaryCardDescription: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+  },
+  summaryCardAmount: {
+    fontSize: 20,
+    fontFamily: FontFamily.bold,
+    marginBottom: 8,
+  },
+  summaryCardNet: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+  },
+  summaryCardMeta: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
   },
   chartCard: {
     marginHorizontal: 24,
     padding: 20,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
     marginBottom: 16,
   },
   chartHeader: {
     marginBottom: 16,
   },
+  cardDescription: {
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    marginTop: 4,
+  },
   savingsCard: {
     marginHorizontal: 24,
     padding: 20,
-    backgroundColor: MobiFlowColors.background,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
     marginBottom: 16,
   },
   savingsHeader: {
@@ -278,47 +456,70 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   savingsTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.textPrimary,
   },
-  savingsAmount: {
+  noGoalsContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noGoalsText: {
     fontSize: 14,
-    fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.textPrimary,
+    fontFamily: FontFamily.regular,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  progressRow: {
-    gap: 16,
-  },
-  progressItem: {
-    marginBottom: 8,
-  },
-  progressLabel: {
+  noGoalsHint: {
     fontSize: 12,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
+    textAlign: 'center',
+  },
+  goalsSummary: {
+    gap: 16,
+  },
+  goalItem: {
+    marginBottom: 4,
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 6,
   },
-  progressBarBg: {
+  goalName: {
+    fontSize: 14,
+    fontFamily: FontFamily.medium,
+    flex: 1,
+  },
+  goalPercent: {
+    fontSize: 13,
+    fontFamily: FontFamily.semiBold,
+    marginLeft: 8,
+  },
+  goalProgressBar: {
     height: 8,
-    backgroundColor: MobiFlowColors.surfaceElevated,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 4,
   },
-  progressBarFill: {
+  goalProgressFill: {
     height: '100%',
     borderRadius: 4,
   },
-  progressValue: {
+  goalAmount: {
     fontSize: 12,
-    fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.textSecondary,
+    fontFamily: FontFamily.regular,
+  },
+  moreGoalsText: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    textAlign: 'center',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.textPrimary,
     marginBottom: 16,
   },
   chartWrap: {
@@ -332,21 +533,25 @@ const styles = StyleSheet.create({
   recentCard: {
     marginHorizontal: 24,
     padding: 20,
-    backgroundColor: MobiFlowColors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
   },
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  recentTitleWrap: {
+    flex: 1,
+  },
+  viewAllTouchable: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
   viewAll: {
     fontSize: 14,
     fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.link,
   },
   transactionRow: {
     flexDirection: 'row',
@@ -354,7 +559,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: MobiFlowColors.border,
   },
   transactionLeft: {
     flexDirection: 'row',
@@ -368,38 +572,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  categoryIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   iconIncome: {
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    // inline
   },
   iconExpense: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    // inline
   },
   transactionLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textPrimary,
   },
   transactionDate: {
     fontSize: 12,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
     marginTop: 2,
   },
   transactionAmount: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.textPrimary,
   },
   amountIncome: {
-    color: '#22C55E',
+    // inline
   },
   amountExpense: {
-    color: '#EF4444',
+    // inline
   },
   emptyRecent: {
     fontSize: 14,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
     paddingVertical: 16,
     textAlign: 'center',
   },
