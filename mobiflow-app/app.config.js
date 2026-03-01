@@ -1,4 +1,4 @@
-// Load .env for Firebase config (values stay out of git)
+// Load .env so Firebase keys aren’t in the repo.
 require('dotenv').config();
 
 const appJson = require('./app.json');
@@ -6,6 +6,12 @@ const appJson = require('./app.json');
 module.exports = {
   expo: {
     ...appJson.expo,
+    android: {
+      ...appJson.expo.android,
+      package: 'com.mobiflow.app',
+      label: 'MobiFlow',
+      minSdkVersion: 34,
+    },
     splash: {
       image: './assets/images/splash-icon.png',
       resizeMode: 'contain',

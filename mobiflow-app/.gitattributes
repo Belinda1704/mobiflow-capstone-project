@@ -1,0 +1,2 @@
+# Ensure patch files use LF so patch-package can parse them on Windows
+*.patch text eol=lf
