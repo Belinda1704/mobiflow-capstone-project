@@ -1,5 +1,5 @@
-// Full-screen Add Transaction page - matches Figma design
-import { useState } from 'react';
+// Add transaction. User enters label, amount, type, category, payment. Saves to Firestore then back.
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Modal,
+  Pressable,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,11 +19,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAddTransaction } from '../hooks/useAddTransaction';
 import { useCategories } from '../hooks/useCategories';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useTransactions } from '../hooks/useTransactions';
+import { useCategorySuggestion } from '../hooks/useCategorySuggestion';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { MobiFlowColors, FontFamily } from '../constants/colors';
+import { useThemeColors } from '../contexts/ThemeContext';
+import { useTranslations } from '../hooks/useTranslations';
+import { translateCategory } from '../utils/translateCategory';
+import { FontFamily } from '../constants/colors';
+import type { PaymentMethod } from '../types/transaction';
+import { computeTopCustomers } from '../services/customerIdentificationService';
+import { isUnusualAmount } from '../utils/anomalyDetection';
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'mobile_money', label: 'Mobile money (MTN MoMo)' },
+];
+
+const COMPACT_DROPDOWN_MAX_HEIGHT = 280;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function AddTransactionScreen() {
   const router = useRouter();
+  const { t } = useTranslations();
+  const { colors, isDark } = useThemeColors();
+  const dropdownSelectedBg = isDark ? 'rgba(255,255,255,0.08)' : colors.surface;
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userId?: string }>();
   const { userId } = useCurrentUser();
@@ -29,18 +52,82 @@ export default function AddTransactionScreen() {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [category, setCategory] = useState<string>('Other');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
+  const [senderPhone, setSenderPhone] = useState('');
+  const [notes, setNotes] = useState('');
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [dropdownLayout, setDropdownLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  const categoryTriggerRef = useRef<View>(null);
+  const paymentTriggerRef = useRef<View>(null);
 
   const { addTransaction, loading } = useAddTransaction(activeUserId);
   const { categories, addCategory } = useCategories(activeUserId, 'open');
+  const { transactions } = useTransactions(activeUserId);
+  const { suggest } = useCategorySuggestion(activeUserId, transactions);
+  const userPickedCategory = useRef(false);
+  const recentSenders = type === 'income' && paymentMethod === 'mobile_money'
+    ? computeTopCustomers(transactions, 8)
+    : [];
+
+  function openCategoryDropdown() {
+    categoryTriggerRef.current?.measureInWindow((x, y, width, height) => {
+      setDropdownLayout({ x, y, width, height });
+      setShowCategoryModal(true);
+    });
+  }
+
+  function openPaymentDropdown() {
+    paymentTriggerRef.current?.measureInWindow((x, y, width, height) => {
+      setDropdownLayout({ x, y, width, height });
+      setShowPaymentModal(true);
+    });
+  }
+
+  function getCompactDropdownPosition(layout: { x: number; y: number; width: number; height: number }) {
+    const spaceBelow = SCREEN_HEIGHT - layout.y - layout.height - 24;
+    const showAbove = spaceBelow < 180;
+    const maxH = Math.min(COMPACT_DROPDOWN_MAX_HEIGHT, showAbove ? layout.y - 24 : spaceBelow);
+    const top = showAbove ? layout.y - maxH - 4 : layout.y + layout.height + 4;
+    return { top, left: layout.x, width: layout.width, maxHeight: maxH };
+  }
+
+  useEffect(() => {
+    if (!userPickedCategory.current && label.trim()) {
+      const suggestion = suggest(label, type);
+      if (suggestion && categories.some((c) => c.name === suggestion)) {
+        setCategory(suggestion);
+      }
+    }
+  }, [label, type, suggest, categories]);
+
+  function normalizePhoneForLabel(raw: string): string {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length >= 9) {
+      const rest = digits.startsWith('250') ? digits.slice(3) : digits;
+      return rest.length === 9 && rest.startsWith('7') ? `0${rest}` : rest.slice(-9).replace(/^7/, '07');
+    }
+    return raw.trim();
+  }
 
   async function handleSave() {
+    let finalLabel = label.trim();
+    if (type === 'income' && paymentMethod === 'mobile_money' && senderPhone.trim()) {
+      const phone = normalizePhoneForLabel(senderPhone.trim());
+      if (phone.length >= 9) {
+        finalLabel = finalLabel ? `${finalLabel} from ${phone}` : `Payment from ${phone}`;
+      }
+    }
     const success = await addTransaction({
-      label,
+      label: finalLabel,
       amount: parseInt(amount, 10),
       type,
       category,
+      paymentMethod,
+      notes: notes.trim() || undefined,
     });
     if (success) {
       router.back();
@@ -55,6 +142,7 @@ export default function AddTransactionScreen() {
       setCategory(added.name);
       setNewCategoryName('');
       setShowAddCategory(false);
+      userPickedCategory.current = true;
     }
   }
 
@@ -63,15 +151,15 @@ export default function AddTransactionScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="arrow-back" size={24} color={MobiFlowColors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add transaction</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('addTransaction')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -80,144 +168,292 @@ export default function AddTransactionScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-        <View style={styles.amountSection}>
-          <Text style={styles.amountLabel}>Amount</Text>
+        <View style={[styles.amountSection, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>{t('amount')}</Text>
           <TextInput
-            style={styles.amountInput}
-            placeholder="0"
-            placeholderTextColor={MobiFlowColors.textSecondary}
+            style={[styles.amountInput, { color: colors.textPrimary }]}
+            placeholder={t('amountPlaceholder')}
+            placeholderTextColor={colors.textSecondary}
             value={amount}
             onChangeText={setAmount}
             keyboardType="number-pad"
           />
-          <Text style={styles.currency}>RWF</Text>
+          <Text style={[styles.currency, { color: colors.textSecondary }]}>RWF</Text>
+          {amount.trim() && (() => {
+            const num = parseInt(amount.replace(/\D/g, ''), 10);
+            const signed = type === 'expense' ? -num : num;
+            if (!isNaN(num) && num > 0 && isUnusualAmount(transactions, signed, type)) {
+              return (
+                <Text style={[styles.unusualHint, { color: colors.warning }]}>{t('unusualAmountHint')}</Text>
+              );
+            }
+            return null;
+          })()}
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('description')}</Text>
+          <TextInput
+            style={[styles.notesInput, { color: colors.textPrimary, minHeight: undefined }]}
+            placeholder={t('descriptionPlaceholder')}
+            placeholderTextColor={colors.textSecondary}
+            value={label}
+            onChangeText={setLabel}
+          />
         </View>
 
         <View style={styles.typeRow}>
           <TouchableOpacity
-            style={[styles.typeBtn, type === 'income' && styles.typeIncomeActive]}
-            onPress={() => setType('income')}>
-            <Text style={[styles.typeText, type === 'income' && styles.typeIncomeText]}>Income</Text>
+            style={[styles.typeBtn, { backgroundColor: colors.background }, type === 'income' && { ...styles.typeIncomeActive, borderColor: colors.success, backgroundColor: colors.success + '26' }]}
+            onPress={() => { setType('income'); userPickedCategory.current = false; }}>
+            <Text style={[styles.typeText, { color: type === 'income' ? colors.success : colors.textSecondary }]}>{t('income')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.typeBtn, type === 'expense' && styles.typeExpenseActive]}
-            onPress={() => setType('expense')}>
-            <Text style={[styles.typeText, type === 'expense' && styles.typeExpenseText]}>Expense</Text>
+            style={[styles.typeBtn, { backgroundColor: colors.background }, type === 'expense' && { ...styles.typeExpenseActive, borderColor: colors.error, backgroundColor: colors.error + '26' }]}
+            onPress={() => { setType('expense'); userPickedCategory.current = false; }}>
+            <Text style={[styles.typeText, { color: type === 'expense' ? colors.error : colors.textSecondary }]}>{t('expense')}</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Category</Text>
-          <View style={styles.categoryChips}>
-            {categories.map((c) => (
-              <TouchableOpacity
-                key={c.id ?? c.name}
-                style={[styles.chip, category === c.name && styles.chipActive]}
-                onPress={() => setCategory(c.name)}>
-                <Text style={[styles.chipText, category === c.name && styles.chipTextActive]}>{c.name}</Text>
-              </TouchableOpacity>
-            ))}
-            {showAddCategory ? (
-              <View style={styles.addCategoryRow}>
-                <TextInput
-                  style={styles.addCategoryInput}
-                  placeholder="New category"
-                  placeholderTextColor={MobiFlowColors.textSecondary}
-                  value={newCategoryName}
-                  onChangeText={setNewCategoryName}
-                  autoFocus
-                />
-                <TouchableOpacity style={styles.addCategoryBtn} onPress={handleAddCategory}>
-                  <Text style={styles.addCategoryBtnText}>Add</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.addChip} onPress={() => setShowAddCategory(true)}>
-                <Ionicons name="add" size={18} color={MobiFlowColors.accent} />
-                <Text style={styles.addChipText}>Add category</Text>
-              </TouchableOpacity>
-            )}
+        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('category')}</Text>
+          <View ref={categoryTriggerRef} collapsable={false}>
+            <TouchableOpacity
+              style={[styles.dropdownButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={openCategoryDropdown}>
+              <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>{translateCategory(category, t)}</Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Payment method</Text>
-          <Text style={styles.cardValue}>Mobile money</Text>
+        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('paymentMethod')}</Text>
+          <View ref={paymentTriggerRef} collapsable={false}>
+            <TouchableOpacity
+              style={[styles.dropdownButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={openPaymentDropdown}>
+              <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>
+                {paymentMethod === 'cash' ? t('cash') : t('mobileMoneyMomo')}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Notes</Text>
+        {type === 'income' && paymentMethod === 'mobile_money' && (
+          <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('senderPhoneLabel')}</Text>
+            {recentSenders.length > 0 && (
+              <>
+                <Text style={[styles.chipHint, { color: colors.textSecondary }]}>{t('whoSentTap')}</Text>
+                <View style={styles.chipRow}>
+                  {recentSenders.map((c) => (
+                    <TouchableOpacity
+                      key={c.phone}
+                      style={[
+                        styles.senderChip,
+                        { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                        senderPhone === c.phone && { borderColor: colors.accent, backgroundColor: colors.accent + '26' },
+                      ]}
+                      onPress={() => setSenderPhone(senderPhone === c.phone ? '' : c.phone)}>
+                      <Text style={[styles.senderChipText, { color: colors.textPrimary }]} numberOfLines={1}>{c.displayPhone}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+            <Text style={[styles.optionalLabel, { color: colors.textSecondary }]}>{t('orEnterNumber')}</Text>
+            <TextInput
+              style={[styles.notesInput, { color: colors.textPrimary, minHeight: undefined }]}
+              placeholder={t('senderPhonePlaceholder')}
+              placeholderTextColor={colors.textSecondary}
+              value={senderPhone}
+              onChangeText={setSenderPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
+        )}
+
+        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('notes')}</Text>
           <TextInput
-            style={styles.notesInput}
-            placeholder="Optional notes"
-            placeholderTextColor={MobiFlowColors.textSecondary}
-            value={label}
-            onChangeText={setLabel}
+            style={[styles.notesInput, { color: colors.textPrimary }]}
+            placeholder={t('optionalNotes')}
+            placeholderTextColor={colors.textSecondary}
+            value={notes}
+            onChangeText={setNotes}
             multiline
           />
         </View>
 
         <View style={{ marginTop: 8 }}>
           <PrimaryButton
-            title={loading ? 'Saving...' : 'Save transaction'}
+            title={loading ? t('saving') : t('saveTransaction')}
             onPress={handleSave}
             variant="yellow"
           />
         </View>
       </ScrollView>
+
+      {/* Category Dropdown - compact panel below trigger */}
+      <Modal visible={showCategoryModal} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowCategoryModal(false)}>
+          {dropdownLayout && (
+            <View
+              style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]}
+              onStartShouldSetResponder={() => true}>
+              <View style={[styles.compactDropdownPanel, styles.dropdownPanel, styles.dropdownPanelShadow, { backgroundColor: colors.background }]}>
+                <Text style={[styles.compactDropdownTitle, { color: colors.textPrimary }]}>{t('selectCategory') || 'Select Category'}</Text>
+                <ScrollView style={styles.compactDropdownScroll} showsVerticalScrollIndicator={false}>
+                  {categories.map((c) => (
+                    <TouchableOpacity
+                      key={c.id ?? c.name}
+                      style={[
+                        styles.dropdownItem,
+                        category === c.name && { backgroundColor: dropdownSelectedBg },
+                      ]}
+                      onPress={() => {
+                        setCategory(c.name);
+                        userPickedCategory.current = true;
+                        setShowCategoryModal(false);
+                      }}>
+                      <Text style={[
+                        styles.dropdownItemText,
+                        { color: colors.textPrimary },
+                        category === c.name && styles.dropdownItemTextSelected,
+                      ]}>{translateCategory(c.name, t)}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setShowCategoryModal(false);
+                      setShowAddCategory(true);
+                    }}>
+                    <View style={styles.dropdownItemLeft}>
+                      <Ionicons name="add" size={18} color={colors.textSecondary} />
+                      <Text style={[styles.dropdownItemText, { color: colors.textSecondary }]}>{t('addCategory')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </View>
+          )}
+        </Pressable>
+      </Modal>
+
+      {/* Payment Method Dropdown - compact panel below trigger */}
+      <Modal visible={showPaymentModal} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowPaymentModal(false)}>
+          {dropdownLayout && (
+            <View
+              style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]}
+              onStartShouldSetResponder={() => true}>
+              <View style={[styles.compactDropdownPanel, styles.dropdownPanel, styles.dropdownPanelShadow, { backgroundColor: colors.background }]}>
+                <Text style={[styles.compactDropdownTitle, { color: colors.textPrimary }]}>{t('selectPaymentMethod') || 'Select Payment Method'}</Text>
+                <View style={styles.modalOptions}>
+                  {PAYMENT_METHODS.map((pm) => (
+                    <TouchableOpacity
+                      key={pm.value}
+                      style={[
+                        styles.dropdownItem,
+                        paymentMethod === pm.value && { backgroundColor: dropdownSelectedBg },
+                      ]}
+                      onPress={() => {
+                        setPaymentMethod(pm.value);
+                        setShowPaymentModal(false);
+                      }}>
+                      <Text style={[
+                        styles.dropdownItemText,
+                        { color: colors.textPrimary },
+                        paymentMethod === pm.value && styles.dropdownItemTextSelected,
+                      ]}>
+                        {pm.value === 'cash' ? t('cash') : t('mobileMoneyMomo')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
+        </Pressable>
+      </Modal>
+
+      {/* Add Category Input Modal */}
+      {showAddCategory && (
+        <Modal visible={showAddCategory} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
+            <View style={[styles.addCategoryModal, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('newCategory')}</Text>
+              <TextInput
+                style={[styles.addCategoryInputModal, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                placeholder={t('categoryName') || 'Category name'}
+                placeholderTextColor={colors.textSecondary}
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                autoFocus
+              />
+              <View style={styles.addCategoryActions}>
+                <TouchableOpacity
+                  style={[styles.addCategoryCancelBtn, { borderColor: colors.border }]}
+                  onPress={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
+                  <Text style={[styles.addCategoryCancelText, { color: colors.textSecondary }]}>{t('cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.addCategorySaveBtn, { backgroundColor: colors.accent }]}
+                  onPress={handleAddCategory}>
+                  <Text style={[styles.addCategorySaveText, { color: colors.black }]}>{t('add')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Pressable>
+        </Modal>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: MobiFlowColors.background,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: MobiFlowColors.border,
   },
   backBtn: { padding: 4 },
   headerTitle: {
     flex: 1,
     fontSize: 18,
     fontFamily: FontFamily.bold,
-    color: MobiFlowColors.textPrimary,
     textAlign: 'center',
   },
   headerRight: { width: 32 },
   scroll: { flex: 1 },
   scrollContent: { padding: 24 },
   amountSection: {
-    backgroundColor: MobiFlowColors.surface,
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
   },
   amountLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textSecondary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   amountInput: {
-    fontSize: 32,
+    fontSize: 20,
     fontFamily: FontFamily.bold,
-    color: MobiFlowColors.textPrimary,
-    paddingVertical: 8,
+    paddingVertical: 2,
   },
-  currency: {
-    fontSize: 16,
-    fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
+  currency: { fontSize: 16, fontFamily: FontFamily.regular },
+  unusualHint: {
+    fontSize: 12,
+    fontFamily: FontFamily.medium,
+    marginTop: 6,
   },
   typeRow: {
     flexDirection: 'row',
@@ -228,82 +464,42 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: MobiFlowColors.surface,
     alignItems: 'center',
   },
-  typeIncomeActive: {
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
-    borderWidth: 2,
-    borderColor: '#22C55E',
-  },
-  typeExpenseActive: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 2,
-    borderColor: '#EF4444',
-  },
-  typeText: {
-    fontSize: 16,
-    fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.textSecondary,
-  },
-  typeIncomeText: { color: '#22C55E' },
-  typeExpenseText: { color: '#EF4444' },
+  typeIncomeActive: { borderWidth: 2 },
+  typeExpenseActive: { borderWidth: 2 },
+  typeText: { fontSize: 16, fontFamily: FontFamily.semiBold },
   card: {
-    backgroundColor: MobiFlowColors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: MobiFlowColors.border,
   },
   cardLabel: {
     fontSize: 14,
     fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textSecondary,
     marginBottom: 12,
   },
-  cardValue: {
-    fontSize: 16,
-    fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textPrimary,
-  },
+  cardValue: { fontSize: 16, fontFamily: FontFamily.medium },
   categoryChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: MobiFlowColors.background,
-  },
-  chipActive: {
-    backgroundColor: MobiFlowColors.accent,
-  },
-  chipText: {
-    fontSize: 14,
-    fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textSecondary,
-  },
-  chipTextActive: {
-    color: MobiFlowColors.black,
-  },
-  addChip: {
+  paymentChips: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: MobiFlowColors.accent,
-    borderStyle: 'dashed',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  addChipText: {
-    fontSize: 14,
-    fontFamily: FontFamily.medium,
-    color: MobiFlowColors.accent,
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  chipActive: {},
+  chipText: { fontSize: 14, fontFamily: FontFamily.medium },
+  chipTextActive: {},
+  cardDescription: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    marginBottom: 12,
+    marginTop: -4,
   },
   addCategoryRow: {
     flexDirection: 'row',
@@ -315,36 +511,189 @@ const styles = StyleSheet.create({
   addCategoryInput: {
     flex: 1,
     minWidth: 120,
-    backgroundColor: MobiFlowColors.background,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textPrimary,
   },
   addCategoryBtn: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: MobiFlowColors.accent,
     borderRadius: 10,
   },
-  addCategoryBtnText: {
-    fontSize: 14,
-    fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.black,
+  addCategoryBtnText: { fontSize: 14, fontFamily: FontFamily.semiBold },
+  cancelText: { fontSize: 14, fontFamily: FontFamily.medium },
+  chipHint: {
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    marginBottom: 8,
   },
-  cancelText: {
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  senderChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  senderChipText: {
     fontSize: 14,
     fontFamily: FontFamily.medium,
-    color: MobiFlowColors.textSecondary,
+    maxWidth: 100,
+  },
+  optionalLabel: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    marginBottom: 6,
   },
   notesInput: {
     fontSize: 16,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textPrimary,
     paddingVertical: 4,
     minHeight: 60,
     textAlignVertical: 'top',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  dropdownText: {
+    fontSize: 16,
+    fontFamily: FontFamily.medium,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  compactDropdownWrap: {
+    position: 'absolute',
+  },
+  compactDropdownPanel: {
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingBottom: 12,
+    minWidth: 200,
+  },
+  compactDropdownTitle: {
+    fontSize: 15,
+    fontFamily: FontFamily.semiBold,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  compactDropdownScroll: {
+    maxHeight: 240,
+    paddingHorizontal: 8,
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    maxHeight: '80%',
+  },
+  dropdownPanel: { elevation: 8 },
+  dropdownPanelShadow: Platform.select({
+    web: { boxShadow: '0 -2px 8px rgba(0,0,0,0.08)' },
+    default: { shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+  }),
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: FontFamily.bold,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  modalScroll: {
+    maxHeight: 400,
+    paddingHorizontal: 16,
+  },
+  modalOptions: {
+    paddingHorizontal: 16,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    fontFamily: FontFamily.regular,
+  },
+  dropdownItemTextSelected: {
+    fontFamily: FontFamily.semiBold,
+  },
+  dropdownItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontFamily: FontFamily.medium,
+  },
+  addCategoryModal: {
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 24,
+  },
+  addCategoryInputModal: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: FontFamily.regular,
+    borderWidth: 1,
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  addCategoryActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addCategoryCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  addCategoryCancelText: {
+    fontSize: 16,
+    fontFamily: FontFamily.semiBold,
+  },
+  addCategorySaveBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  addCategorySaveText: {
+    fontSize: 16,
+    fontFamily: FontFamily.semiBold,
   },
 });
