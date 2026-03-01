@@ -1,4 +1,4 @@
-// colors and fonts used across the app
+// Colours and fonts used everywhere in the app.
 export const FontFamily = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
@@ -6,7 +6,7 @@ export const FontFamily = {
   bold: 'Inter_700Bold',
 } as const;
 
-/** Yellow accent (accepted design) */
+/** Yellow accent colour from the design. */
 export const TabBarYellow = '#F5C518';
 
 export const MobiFlowColors = {
@@ -24,9 +24,15 @@ export const MobiFlowColors = {
   border: '#E2E8F0',
   textPrimary: '#0F172A',
   textSecondary: '#64748B',
+  success: '#22C55E',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  warningBg: '#FEF3C7',
+  warningText: '#92400E',
+  info: '#3B82F6',
 } as const;
 
-/** Splash & Onboarding - black bg, bright yellow accent (Figma) */
+/** Colours for splash and onboarding (black background, yellow accent). */
 export const OnboardingColors = {
   background: '#000000',
   textPrimary: '#FFFFFF',
@@ -35,7 +41,7 @@ export const OnboardingColors = {
   link: '#F5C518',
 } as const;
 
-/** Auth (Login/Signup) - light grey bg per Figma, white card, yellow accents */
+/** Colours for login and signup screens. */
 export const AuthColors = {
   headerBg: '#F3F4F6',
   cardBg: '#FFFFFF',
@@ -43,4 +49,28 @@ export const AuthColors = {
   textPrimary: '#111827',
   textSecondary: '#6B7280',
   border: '#E5E7EB',
+} as const;
+
+/** Dark theme colour set. */
+export const DarkColors = {
+  primary: '#F5C518',
+  accent: '#F5C518',
+  tabBarBg: '#0F172A',
+  black: '#F8FAFC',
+  white: '#0F172A',
+  gray: '#94A3B8',
+  grayLight: '#64748B',
+  link: '#F5C518',
+  background: '#0F172A',
+  surface: '#1E293B',
+  surfaceElevated: '#334155',
+  border: '#334155',
+  textPrimary: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  success: '#22C55E',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  warningBg: '#78350F',
+  warningText: '#FCD34D',
+  info: '#60A5FA',
 } as const;

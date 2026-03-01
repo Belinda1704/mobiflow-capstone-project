@@ -16,18 +16,9 @@ export type DefaultCategoryConfig = {
   icon: CategoryIcon;
 };
 
-/** Light pastel colors for pie/donut chart segments (soft, distinct) */
-export const CHART_CATEGORY_COLORS = [
-  '#FDE68A', // Supplies - light amber
-  '#BBF7D0', // Transport - light green
-  '#A5F3FC', // Utilities - light cyan
-  '#C4B5FD', // Rent - light purple
-  '#FECACA', // Salaries - light rose
-  '#E2E8F0', // Other - light gray
-];
-
-/** SME-oriented default categories (FR-04) - cannot be deleted by user */
+/** Default categories that come with the app (user can’t delete these). */
 export const DEFAULT_SME_CATEGORIES: DefaultCategoryConfig[] = [
+  { name: 'Sales', color: '#22C55E', icon: 'briefcase-outline' },
   { name: 'Supplies', color: MobiFlowColors.primary, icon: 'cart-outline' },
   { name: 'Transport', color: MobiFlowColors.accent, icon: 'car-outline' },
   { name: 'Utilities', color: MobiFlowColors.link, icon: 'flash-outline' },
