@@ -1,10 +1,9 @@
-// screen header with title and settings button
+// Tab screen header – title, optional right content and subtitle.
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MobiFlowColors, FontFamily } from '../constants/colors';
+import { FontFamily } from '../constants/colors';
+import { useThemeColors } from '../contexts/ThemeContext';
 
 type TabHeaderProps = {
   title: string;
@@ -13,24 +12,18 @@ type TabHeaderProps = {
 };
 
 export function TabHeader({ title, subtitle, rightContent }: TabHeaderProps) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useThemeColors();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, minHeight: 100 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 16, minHeight: 100, backgroundColor: colors.background }]}>
       <View style={styles.topRow}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         <View style={styles.right}>
-          {rightContent}
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => router.push('/(tabs)/settings')}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="settings-outline" size={22} color={MobiFlowColors.textPrimary} />
-          </TouchableOpacity>
+          {rightContent ?? null}
         </View>
       </View>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -39,7 +32,6 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingBottom: 18,
-    backgroundColor: MobiFlowColors.background,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
@@ -52,7 +44,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: FontFamily.bold,
-    color: MobiFlowColors.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -61,18 +52,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: MobiFlowColors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   subtitle: {
     fontSize: 14,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.textSecondary,
     marginTop: 4,
   },
 });
