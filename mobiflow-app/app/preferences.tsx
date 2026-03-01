@@ -1,39 +1,83 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { MobiFlowColors, FontFamily } from '../constants/colors';
+// Preferences: theme and language.
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { SettingsRow } from '../components/SettingsRow';
+import { useThemeColors } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
+import { useTranslations } from '../hooks/useTranslations';
+import { changeAppLanguage } from '../i18n';
+import { FontFamily } from '../constants/colors';
+import type { ThemeOption, LanguageOption } from '../services/preferencesService';
 
-const PREF_ITEMS: { label: string; subtitle: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-  { label: 'Theme', subtitle: 'Light, Dark, System', icon: 'moon-outline' },
-  { label: 'Language', subtitle: 'App display language', icon: 'language-outline' },
-];
+function getThemeLabels(t: (k: string) => string): Record<ThemeOption, string> {
+  return { light: t('light'), dark: t('dark'), system: t('system') };
+}
+function getLangLabels(t: (k: string) => string): Record<LanguageOption, string> {
+  return { en: t('english'), rw: t('kinyarwanda') };
+}
 
 export default function PreferencesScreen() {
-  const router = useRouter();
+  const { theme, setTheme, colors } = useThemeColors();
+  const { t } = useTranslations();
+  const { i18n } = useTranslation();
+  const language = (i18n.language === 'rw' ? 'rw' : 'en') as LanguageOption;
+
+  const setLanguage = async (l: LanguageOption) => {
+    await changeAppLanguage(l);
+  };
+  const [showTheme, setShowTheme] = useState(false);
+  const [showLang, setShowLang] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="arrow-back" size={24} color={MobiFlowColors.black} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Preferences</Text>
-        <View style={styles.headerRight} />
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <ScreenHeader title={t('preferences')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {PREF_ITEMS.map((item) => (
-          <TouchableOpacity key={item.label} style={styles.row} activeOpacity={0.7}>
-            <View style={styles.iconWrap}>
-              <Ionicons name={item.icon} size={22} color={MobiFlowColors.primary} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>{item.label}</Text>
-              <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={MobiFlowColors.gray} />
-          </TouchableOpacity>
-        ))}
+        <SettingsRow
+          icon="moon-outline"
+          label={t('theme')}
+          subtitle={t('themeSubtitle')}
+          value={getThemeLabels(t)[theme]}
+          onPress={() => setShowTheme(true)}
+          colors={colors}
+        />
+        <SettingsRow
+          icon="language-outline"
+          label={t('language')}
+          subtitle={t('languageSubtitle')}
+          value={getLangLabels(t)[language]}
+          onPress={() => setShowLang(true)}
+          colors={colors}
+        />
       </ScrollView>
+
+      <Modal visible={showTheme} transparent animationType="slide">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTheme(false)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('theme')}</Text>
+            {(['light', 'dark', 'system'] as ThemeOption[]).map((opt) => (
+              <TouchableOpacity key={opt} style={[styles.option, { borderBottomColor: colors.border }]} onPress={() => { setTheme(opt); setShowTheme(false); }}>
+                <Text style={[styles.optionText, { color: colors.textPrimary }]}>{getThemeLabels(t)[opt]}</Text>
+                {theme === opt && <Text style={[styles.check, { color: colors.primary }]}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={showLang} transparent animationType="slide">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowLang(false)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('language')}</Text>
+            {(['en', 'rw'] as LanguageOption[]).map((l) => (
+              <TouchableOpacity key={l} style={[styles.option, { borderBottomColor: colors.border }]} onPress={() => { setLanguage(l); setShowLang(false); }}>
+                <Text style={[styles.optionText, { color: colors.textPrimary }]}>{getLangLabels(t)[l]}</Text>
+                {language === l && <Text style={[styles.check, { color: colors.primary }]}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -41,7 +85,6 @@ export default function PreferencesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: MobiFlowColors.white,
   },
   header: {
     flexDirection: 'row',
@@ -51,7 +94,6 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   backBtn: {
     padding: 8,
@@ -60,7 +102,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.black,
   },
   headerRight: {
     width: 40,
@@ -74,14 +115,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
     gap: 16,
   },
   iconWrap: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: MobiFlowColors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -91,12 +130,41 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 16,
     fontFamily: FontFamily.medium,
-    color: MobiFlowColors.black,
   },
   rowSubtitle: {
     fontSize: 13,
     fontFamily: FontFamily.regular,
-    color: MobiFlowColors.gray,
     marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: FontFamily.bold,
+    marginBottom: 20,
+  },
+  option: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  optionText: {
+    fontSize: 16,
+    fontFamily: FontFamily.medium,
+  },
+  check: {
+    fontSize: 16,
+    fontFamily: FontFamily.semiBold,
   },
 });

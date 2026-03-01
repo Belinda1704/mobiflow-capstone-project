@@ -1,147 +1,102 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+// Settings: account, preferences, SMS, notifications, data, security.
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signOut } from 'firebase/auth';
-import { MobiFlowColors, FontFamily } from '../constants/colors';
-import { auth } from '../config/firebase';
+import { Ionicons } from '@expo/vector-icons';
 
-const SETTINGS_ITEMS: { label: string; subtitle: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-  { label: 'Account', subtitle: 'Change email, password', icon: 'key-outline' },
-  { label: 'Privacy', subtitle: 'Data visibility, permissions', icon: 'lock-closed-outline' },
-  { label: 'Alerts', subtitle: 'Low balance, expense limits', icon: 'alert-circle-outline' },
-  { label: 'Data & storage', subtitle: 'Backup, export', icon: 'cloud-outline' },
-  { label: 'Help & support', subtitle: 'FAQs, contact us', icon: 'help-circle-outline' },
-  { label: 'About MobiFlow', subtitle: 'Version, terms', icon: 'information-circle-outline' },
+import { ScreenHeader } from '../components/ScreenHeader';
+import { useSignOut } from '../hooks/useSignOut';
+import { showConfirm } from '../services/errorPresenter';
+import { useThemeColors } from '../contexts/ThemeContext';
+import { useTranslations } from '../hooks/useTranslations';
+import { FontFamily } from '../constants/colors';
+
+const SETTINGS_ITEMS: { labelKey: string; subtitleKey: string; icon: React.ComponentProps<typeof Ionicons>['name']; route?: string; action?: 'resetOnboarding' }[] = [
+  { labelKey: 'profile', subtitleKey: 'profileSubtitle', icon: 'person-outline', route: '/profile' },
+  { labelKey: 'account', subtitleKey: 'accountSubtitle', icon: 'key-outline', route: '/account' },
+  { labelKey: 'notifications', subtitleKey: 'notificationsSubtitle', icon: 'notifications-outline', route: '/notifications' },
+  { labelKey: 'smsCapture', subtitleKey: 'smsCaptureSubtitle', icon: 'chatbubble-outline', route: '/sms-capture' },
+  { labelKey: 'privacy', subtitleKey: 'privacySubtitle', icon: 'lock-closed-outline', route: '/privacy' },
+  { labelKey: 'alerts', subtitleKey: 'alertsSubtitle', icon: 'alert-circle-outline', route: '/alerts' },
+  { labelKey: 'dataStorage', subtitleKey: 'dataStorageSubtitle', icon: 'cloud-outline', route: '/data-storage' },
+  { labelKey: 'helpSupport', subtitleKey: 'helpSupportSubtitle', icon: 'help-circle-outline', route: '/help-support' },
+  { labelKey: 'about', subtitleKey: 'aboutSubtitle', icon: 'information-circle-outline', route: '/about' },
+  { labelKey: 'resetOnboarding', subtitleKey: 'resetOnboardingSubtitle', icon: 'refresh-outline', action: 'resetOnboarding' },
 ];
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { signOut } = useSignOut();
+  const { colors } = useThemeColors();
+  const { t } = useTranslations();
 
-  const handleResetOnboarding = () => {
-    Alert.alert(
-      'Reset Onboarding',
-      'This will log you out and show the onboarding screen again. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            await AsyncStorage.removeItem('hasCompletedOnboarding');
-            await signOut(auth);
-            router.replace('/');
-          },
-        },
-      ]
+  function handleResetOnboarding() {
+    showConfirm(
+      t('resetConfirmTitle'),
+      t('resetConfirmMessage'),
+      async () => {
+        await AsyncStorage.removeItem('hasCompletedOnboarding');
+        await AsyncStorage.removeItem('hasSeenPermissions');
+        await AsyncStorage.removeItem('@mobiflow/showPermissionsOnDashboard');
+        const ok = await signOut();
+        if (ok) router.replace('/');
+      },
+      { confirmText: t('reset') }
     );
-  };
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="arrow-back" size={24} color={MobiFlowColors.black} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <TouchableOpacity style={styles.searchBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="search" size={24} color={MobiFlowColors.black} />
-        </TouchableOpacity>
-      </View>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <ScreenHeader title={t('settings')} />
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        showsVerticalScrollIndicator={false}>
         {SETTINGS_ITEMS.map((item) => (
-          <TouchableOpacity key={item.label} style={styles.row} activeOpacity={0.7}>
-            <View style={styles.iconWrap}>
-              <Ionicons name={item.icon} size={22} color={MobiFlowColors.primary} />
+          <TouchableOpacity
+            key={item.labelKey}
+            style={[styles.row, { borderBottomColor: colors.border }]}
+            activeOpacity={0.7}
+            onPress={() => {
+              if (item.action === 'resetOnboarding') handleResetOnboarding();
+              else if (item.route) router.push(item.route as any);
+            }}>
+            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+              <Ionicons name={item.icon} size={22} color={colors.textPrimary} />
             </View>
             <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>{item.label}</Text>
-              <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+              <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{t(item.labelKey)}</Text>
+              <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{t(item.subtitleKey)}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={MobiFlowColors.gray} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         ))}
-        <TouchableOpacity style={[styles.row, styles.resetRow]} activeOpacity={0.7} onPress={handleResetOnboarding}>
-          <View style={styles.iconWrap}>
-            <Ionicons name="refresh-outline" size={22} color="#EF4444" />
-          </View>
-          <View style={styles.rowText}>
-            <Text style={[styles.rowLabel, { color: '#EF4444' }]}>Reset onboarding</Text>
-            <Text style={styles.rowSubtitle}>Show onboarding screen again</Text>
-          </View>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: MobiFlowColors.white,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  backBtn: {
-    padding: 8,
-    width: 40,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: FontFamily.semiBold,
-    color: MobiFlowColors.black,
-    textAlign: 'center',
-  },
-  searchBtn: {
-    padding: 8,
-    width: 40,
-    marginLeft: 24,
-  },
-  content: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  content: { flex: 1 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
     gap: 16,
   },
   iconWrap: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'rgba(12, 74, 110, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowText: {
-    flex: 1,
-  },
-  rowLabel: {
-    fontSize: 16,
-    fontFamily: FontFamily.medium,
-    color: MobiFlowColors.black,
-  },
-  rowSubtitle: {
-    fontSize: 13,
-    fontFamily: FontFamily.regular,
-    color: MobiFlowColors.gray,
-    marginTop: 2,
-  },
-  resetRow: {
-    marginTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
+  rowText: { flex: 1 },
+  rowLabel: { fontSize: 16, fontFamily: FontFamily.medium },
+  rowSubtitle: { fontSize: 13, fontFamily: FontFamily.regular, marginTop: 2 },
 });

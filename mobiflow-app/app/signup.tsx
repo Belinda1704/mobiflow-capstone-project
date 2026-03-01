@@ -1,80 +1,72 @@
-// create account screen
+// Sign up: phone, password, terms. On success dashboard asks for SMS/notif once.
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useSignUp } from '../hooks/useSignUp';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { AuthInput } from '../components/AuthInput';
 import { PasswordRequirementsDisplay } from '../components/PasswordRequirements';
-import { GoogleAuthButton } from '../components/GoogleAuthButton';
-import { AuthColors, FontFamily } from '../constants/colors';
+import { usePhoneInput } from '../hooks/usePhoneInput';
+import { useThemeColors } from '../contexts/ThemeContext';
+import { useTranslations } from '../hooks/useTranslations';
+import { FontFamily } from '../constants/colors';
 import { getPasswordRequirements } from '../utils/passwordStrength';
+
+// Flag for dashboard to show permission prompts once
+const SHOW_PERMISSIONS_ON_DASHBOARD_KEY = '@mobiflow/showPermissionsOnDashboard';
 
 export default function SignupScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [email, setEmail] = useState('');
+  const { t } = useTranslations();
+  const { colors, isDark } = useThemeColors();
+  const { value: phone, onChangeText: setPhone } = usePhoneInput();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const { signUp, loading } = useSignUp();
 
   async function handleCreateAccount() {
-    const ok = await signUp(email, password, confirmPassword);
-    if (ok) setSuccess(true);
-  }
-
-  if (success) {
-    return (
-      <View style={styles.container} collapsable={false}>
-        <StatusBar style="dark" />
-        <View style={[styles.safe, { paddingTop: insets.top + 16 }]}>
-          <View style={styles.successCard}>
-            <View style={styles.successIconWrap}>
-              <Ionicons name="checkmark-circle" size={64} color="#22C55E" />
-            </View>
-            <Text style={styles.successTitle}>Account created successfully!</Text>
-            <Text style={styles.successSub}>You can now start tracking your income and expenses.</Text>
-            <PrimaryButton title="Go to app" onPress={() => router.replace('/(tabs)')} variant="yellow" />
-            <TouchableOpacity style={styles.backToSignIn} onPress={() => router.replace('/login')}>
-              <Text style={styles.backToSignInText}>Sign in with different account</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
+    const ok = await signUp(phone, password, confirmPassword);
+    if (ok) {
+      await AsyncStorage.setItem(SHOW_PERMISSIONS_ON_DASHBOARD_KEY, 'true');
+      router.replace('/(tabs)');
+    }
   }
 
   return (
-    <View style={styles.container} collapsable={false}>
-      <StatusBar style="dark" />
-      <View style={[styles.safe, { paddingTop: insets.top + 16 }]}>
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]} collapsable={false}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View style={[styles.safe, { paddingTop: insets.top + 16, backgroundColor: colors.surfaceElevated }]}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
-            <Text style={styles.greeting}>Hello 👋</Text>
-            <Text style={styles.title}>Create account</Text>
-            <Text style={styles.tagline}>
-              Track income and expenses with mobile money
+          <View style={[styles.card, { backgroundColor: colors.background }]}>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>{t('hello')}</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>{t('createAccount')}</Text>
+            <Text style={[styles.tagline, { color: colors.textSecondary }]}>
+              {t('trackIncomeExpensesTagline')}
             </Text>
 
             <AuthInput
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              icon="mail"
+              placeholder="781234567"
+              value={phone}
+              onChangeText={setPhone}
+              icon="phone"
+              keyboardType="phone-pad"
+              showCountryPrefix={true}
             />
             <AuthInput
-              placeholder="Create a password"
+              placeholder={t('createPassword')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -85,7 +77,7 @@ export default function SignupScreen() {
             />
             <PasswordRequirementsDisplay requirements={getPasswordRequirements(password)} />
             <AuthInput
-              placeholder="Verify password"
+              placeholder={t('verifyPassword')}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showConfirm}
@@ -95,21 +87,35 @@ export default function SignupScreen() {
               eyeOpen={showConfirm}
             />
 
-            <PrimaryButton title={loading ? 'Creating account...' : 'Create account'} onPress={handleCreateAccount} variant="yellow" />
+            <TouchableOpacity
+              style={styles.termsRow}
+              onPress={() => setAgreedToTerms(!agreedToTerms)}
+              activeOpacity={0.7}>
+              <Ionicons
+                name={agreedToTerms ? 'checkmark-circle' : 'ellipse-outline'}
+                size={22}
+                color={agreedToTerms ? colors.accent : colors.textSecondary}
+              />
+              <Text style={[styles.termsText, { color: colors.textPrimary }]}>
+                {t('agreeToTermsAndPrivacyPrefix')}{' '}
+                <Text style={[styles.termsLink, { color: colors.accent }]} onPress={() => router.push('/terms')}>{t('termsOfService')}</Text>
+                {' '}{t('and')}{' '}
+                <Text style={[styles.termsLink, { color: colors.accent }]} onPress={() => router.push('/privacy')}>{t('privacyPolicy')}</Text>
+              </Text>
+            </TouchableOpacity>
 
-            <View style={styles.orWrap}>
-              <View style={styles.line} />
-              <Text style={styles.or}>or</Text>
-              <View style={styles.line} />
-            </View>
-
-            <GoogleAuthButton title="Sign up with Google" />
+            <PrimaryButton
+              title={loading ? t('creatingAccount') : t('createAccount')}
+              onPress={handleCreateAccount}
+              variant="yellow"
+              disabled={!agreedToTerms}
+            />
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('alreadyHaveAccount')}</Text>
             <TouchableOpacity onPress={() => router.replace('/login')}>
-              <Text style={styles.link}>Sign in</Text>
+              <Text style={[styles.link, { color: colors.accent }]}>{t('signIn')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -119,20 +125,10 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: AuthColors.headerBg,
-  },
-  safe: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  scroll: {
-    paddingTop: 0,
-    paddingBottom: 40,
-  },
+  container: { flex: 1 },
+  safe: { flex: 1, paddingHorizontal: 24 },
+  scroll: { paddingTop: 0, paddingBottom: 40 },
   card: {
-    backgroundColor: AuthColors.cardBg,
     borderRadius: 20,
     padding: 24,
     borderWidth: 0,
@@ -140,55 +136,36 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 14,
     fontFamily: FontFamily.regular,
-    color: AuthColors.textSecondary,
     marginBottom: 4,
     textAlign: 'center',
   },
   title: {
     fontSize: 24,
     fontFamily: FontFamily.bold,
-    color: AuthColors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   tagline: {
     fontSize: 14,
     fontFamily: FontFamily.regular,
-    color: AuthColors.textSecondary,
     marginBottom: 24,
     textAlign: 'center',
-  },
-  orWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: AuthColors.border,
-  },
-  or: {
-    marginHorizontal: 12,
-    fontSize: 14,
-    fontFamily: FontFamily.regular,
-    color: AuthColors.textSecondary,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 24,
   },
-  footerText: {
-    fontSize: 15,
-    fontFamily: FontFamily.regular,
-    color: AuthColors.textSecondary,
+  footerText: { fontSize: 15, fontFamily: FontFamily.regular },
+  link: { fontSize: 15, fontFamily: FontFamily.semiBold },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 10,
   },
-  link: {
-    fontSize: 15,
-    fontFamily: FontFamily.semiBold,
-    color: AuthColors.accent,
-  },
+  termsText: { fontSize: 14, fontFamily: FontFamily.regular, flex: 1, lineHeight: 20 },
+  termsLink: { fontFamily: FontFamily.semiBold, textDecorationLine: 'underline' },
   successCard: {
     flex: 1,
     justifyContent: 'center',
@@ -201,14 +178,12 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 22,
     fontFamily: FontFamily.bold,
-    color: AuthColors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   successSub: {
     fontSize: 15,
     fontFamily: FontFamily.regular,
-    color: AuthColors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -216,9 +191,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignItems: 'center',
   },
-  backToSignInText: {
-    fontSize: 14,
-    fontFamily: FontFamily.medium,
-    color: AuthColors.accent,
-  },
+  backToSignInText: { fontSize: 14, fontFamily: FontFamily.medium },
 });
