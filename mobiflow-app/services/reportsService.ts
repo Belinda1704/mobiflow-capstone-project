@@ -1,10 +1,23 @@
-// takes all transactions and turns them into report data (totals, categories, charts)
+// Report data from transactions: totals, categories, stacked chart.
 import type { Transaction } from '../types/transaction';
 import { getTransactionDate } from '../utils/transactionDate';
 import { getCategoryConfig } from '../utils/categoryUtils';
 import type { CategoryIcon } from '../constants/categories';
 import { DEFAULT_SME_CATEGORIES } from '../constants/categories';
 import { formatDayKey } from '../utils/dateUtils';
+
+function normalizeCategoryKey(name: string): string {
+  const key = name.trim().toLowerCase();
+  // Alias so it merges with Inventory
+  if (key === 'ininventory') return 'inventory';
+  return key;
+}
+
+function toDisplayCategory(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Other';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
 
 export type CategoryReport = {
   name: string;
@@ -21,7 +34,6 @@ export type ReportsData = {
   totalExpense: number;
   net: number;
   categories: CategoryReport[];
-  pieData: { name: string; amount: number; color: string }[];
   stackedChartData: {
     labels: string[];
     legend: string[];
@@ -40,23 +52,35 @@ export function computeReports(transactions: Transaction[]): ReportsData {
   const net = totalIncome - totalExpense;
 
   const expenseByCategory: Record<string, { amount: number; count: number }> = {};
+  const displayByKey: Record<string, string> = {};
+  const defaultByKey: Record<string, string> = DEFAULT_SME_CATEGORIES.reduce((acc, c) => {
+    acc[normalizeCategoryKey(c.name)] = c.name;
+    return acc;
+  }, {} as Record<string, string>);
 
   for (const t of transactions) {
     if (t.amount >= 0) continue;
-    const cat = t.category?.trim() || 'Other';
-    if (!expenseByCategory[cat]) expenseByCategory[cat] = { amount: 0, count: 0 };
-    expenseByCategory[cat].amount += Math.abs(t.amount);
-    expenseByCategory[cat].count += 1;
+    const raw = t.category?.trim() || 'Other';
+    const key = normalizeCategoryKey(raw);
+    if (!expenseByCategory[key]) expenseByCategory[key] = { amount: 0, count: 0 };
+    if (!displayByKey[key]) {
+      displayByKey[key] = defaultByKey[key] ?? toDisplayCategory(raw);
+    }
+    expenseByCategory[key].amount += Math.abs(t.amount);
+    expenseByCategory[key].count += 1;
   }
 
-  const categoryNamesFromData = Object.keys(expenseByCategory).sort();
-  const allCategoryNames = [...new Set([...DEFAULT_SME_CATEGORIES.map((c) => c.name), ...categoryNamesFromData])];
-  for (const name of allCategoryNames) {
-    if (!expenseByCategory[name]) expenseByCategory[name] = { amount: 0, count: 0 };
+  const categoryKeysFromData = Object.keys(expenseByCategory).sort();
+  const defaultKeys = DEFAULT_SME_CATEGORIES.map((c) => normalizeCategoryKey(c.name));
+  const allCategoryKeys = [...new Set([...defaultKeys, ...categoryKeysFromData])];
+  for (const key of allCategoryKeys) {
+    if (!expenseByCategory[key]) expenseByCategory[key] = { amount: 0, count: 0 };
+    if (!displayByKey[key]) displayByKey[key] = defaultByKey[key] ?? 'Other';
   }
 
-  const categories: CategoryReport[] = allCategoryNames.map((name) => {
-    const entry = expenseByCategory[name] ?? { amount: 0, count: 0 };
+  let categories: CategoryReport[] = allCategoryKeys.map((key) => {
+    const entry = expenseByCategory[key] ?? { amount: 0, count: 0 };
+    const name = displayByKey[key] ?? 'Other';
     const { amount, count } = entry;
     const percent = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
     const config = getCategoryConfig(name);
@@ -71,7 +95,18 @@ export function computeReports(transactions: Transaction[]): ReportsData {
     };
   });
 
-  const pieData = categories.map((c) => ({ name: c.name, amount: c.amount, color: c.chartColor }));
+  // Fix rounding so percents sum to 100
+  if (totalExpense > 0 && categories.length > 0) {
+    const sum = categories.reduce((s, c) => s + c.percent, 0);
+    if (sum !== 100) {
+      const diff = 100 - sum;
+      const byAmount = [...categories].sort((a, b) => b.amount - a.amount);
+      const adjustKey = byAmount[0].name;
+      categories = categories.map((c) =>
+        c.name === adjustKey ? { ...c, percent: Math.max(0, c.percent + diff) } : c
+      );
+    }
+  }
 
   const now = new Date();
   const sevenDaysAgo = new Date(now);
@@ -117,7 +152,6 @@ export function computeReports(transactions: Transaction[]): ReportsData {
     totalExpense,
     net,
     categories,
-    pieData,
     stackedChartData,
   };
 }

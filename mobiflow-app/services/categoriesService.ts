@@ -1,4 +1,4 @@
-// user's custom categories - saved in Firestore
+// Custom categories in Firestore.
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 import { db } from '../config/firebase';
@@ -10,17 +10,27 @@ async function getSettingsRef(userId: string) {
   return doc(db, SETTINGS_COLLECTION, userId);
 }
 
-/** Get custom categories for a user */
+// Get custom categories.
 export async function getCustomCategories(userId: string): Promise<CustomCategory[]> {
   if (!userId) return [];
-  const ref = await getSettingsRef(userId);
-  const snap = await getDoc(ref);
-  const data = snap.data();
-  const list = data?.customCategories ?? [];
-  return Array.isArray(list) ? list : [];
+  try {
+    const ref = await getSettingsRef(userId);
+    // Cache first, then server
+    const snap = await getDoc(ref);
+    const data = snap.data();
+    const list = data?.customCategories ?? [];
+    return Array.isArray(list) ? list : [];
+  } catch (error: any) {
+    // Offline + no cache: []
+    if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
+      console.warn('Offline: No cached categories available');
+      return [];
+    }
+    throw error;
+  }
 }
 
-/** Add a custom category */
+// Add custom category.
 export async function addCustomCategory(
   userId: string,
   name: string
@@ -41,7 +51,7 @@ export async function addCustomCategory(
   return category;
 }
 
-/** Update a custom category */
+// Update custom category.
 export async function updateCustomCategory(
   userId: string,
   categoryId: string,
@@ -57,7 +67,7 @@ export async function updateCustomCategory(
   await setDoc(ref, { customCategories: updated }, { merge: true });
 }
 
-/** Delete a custom category */
+// Delete custom category.
 export async function deleteCustomCategory(
   userId: string,
   categoryId: string

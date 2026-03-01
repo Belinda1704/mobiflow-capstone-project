@@ -1,4 +1,4 @@
-// figures out balance, chart data and recent txns for the dashboard
+// Dashboard: balance, chart values, recent transactions.
 import type { Transaction } from '../types/transaction';
 import { getTransactionDate } from '../utils/transactionDate';
 import { formatDayKey } from '../utils/dateUtils';
@@ -10,6 +10,8 @@ export type HomeSummary = {
   net: number;
   chartLabels: string[];
   chartData: number[];
+  chartDataIncome: number[];
+  chartDataExpense: number[];
   recentTransactions: Transaction[];
 };
 
@@ -46,14 +48,19 @@ export function computeHomeSummary(transactions: Transaction[]): HomeSummary {
 
   const chartLabels: string[] = [];
   const chartData: number[] = [];
-  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const chartDataIncome: number[] = [];
+  const chartDataExpense: number[] = [];
+  const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   for (let i = 0; i < 7; i++) {
     const d = new Date(sevenDaysAgo);
     d.setDate(d.getDate() + i);
-    chartLabels.push(dayLetters[d.getDay() === 0 ? 6 : d.getDay() - 1]);
+    const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    chartLabels.push(dayNames[dayIndex]);
     const bucket = dayBuckets[formatDayKey(d)];
     const flow = (bucket.income - bucket.expense) / 1000;
     chartData.push(Math.round(flow));
+    chartDataIncome.push(Math.round(bucket.income / 1000));
+    chartDataExpense.push(Math.round(bucket.expense / 1000));
   }
 
   const recentTransactions = transactions.slice(0, 5);
@@ -65,6 +72,8 @@ export function computeHomeSummary(transactions: Transaction[]): HomeSummary {
     net,
     chartLabels,
     chartData,
+    chartDataIncome,
+    chartDataExpense,
     recentTransactions,
   };
 }
