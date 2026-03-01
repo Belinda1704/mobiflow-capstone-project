@@ -1,4 +1,4 @@
-/** Password requirement check result */
+/** Result of checking the password against our rules (length, upper, lower, number, special). */
 export type PasswordRequirements = {
   minLength: boolean;
   hasUppercase: boolean;
@@ -7,7 +7,7 @@ export type PasswordRequirements = {
   hasSpecial: boolean;
 };
 
-/** Check which password requirements are met */
+/** Check which rules the password passes (length, uppercase, etc.). */
 export function getPasswordRequirements(password: string): PasswordRequirements {
   return {
     minLength: password.length >= 8,
@@ -18,7 +18,7 @@ export function getPasswordRequirements(password: string): PasswordRequirements 
   };
 }
 
-/** Returns true if all requirements are met */
+/** True if the password meets all the rules the app needs for signup. */
 export function isPasswordStrong(password: string): boolean {
   const r = getPasswordRequirements(password);
   return r.minLength && r.hasUppercase && r.hasLowercase && r.hasNumber && r.hasSpecial;

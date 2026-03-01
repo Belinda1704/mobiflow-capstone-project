@@ -1,6 +1,6 @@
 import type { Transaction } from '../types/transaction';
 
-/** Get a Date from a transaction's createdAt, or null if missing */
+/** Get a Date from the transaction’s createdAt (handles Firestore timestamp or Date). Returns null if missing. */
 export function getTransactionDate(t: Transaction): Date | null {
   const raw = t.createdAt;
   if (!raw) return null;
