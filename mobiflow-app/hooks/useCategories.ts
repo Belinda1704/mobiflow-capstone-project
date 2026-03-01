@@ -10,7 +10,7 @@ import type { CustomCategory } from '../types/category';
 
 export type CategoryItem = { name: string; id?: string; isDefault: boolean };
 
-/** Returns merged list: default SME categories + user's custom categories */
+/** Returns all categories: the built-in ones plus any the user added. */
 export function useCategories(userId: string | null, refreshTrigger?: string | number) {
   const [custom, setCustom] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState(true);

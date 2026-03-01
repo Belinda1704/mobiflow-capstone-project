@@ -1,12 +1,12 @@
-// tells us who's logged in (or if nobody is)
+/** Current user from Firebase auth (or null). We use currentUser first so the UI doesn’t wait, then listen for sign-in/out. */
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 import { auth } from '../config/firebase';
 
 export function useCurrentUser(): { user: User | null; userId: string; loading: boolean } {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => auth.currentUser);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {

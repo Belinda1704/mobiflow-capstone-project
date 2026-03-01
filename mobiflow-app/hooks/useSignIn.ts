@@ -1,31 +1,36 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 
 import { signIn, getAuthErrorMessage } from '../services/authService';
+import { showError } from '../services/errorPresenter';
+import { validateRwandaPhone } from '../utils/phoneUtils';
 
 /**
- * Hook for sign-in. Handles validation, loading state, and error alerts.
- * Returns success so the screen can navigate.
+ * Hook for sign-in. Handles validation and loading. Error presentation via errorPresenter.
  */
 export function useSignIn(): {
-  signIn: (email: string, password: string) => Promise<boolean>;
+  signIn: (phone: string, password: string) => Promise<boolean>;
   loading: boolean;
 } {
   const [loading, setLoading] = useState(false);
 
-  const signInUser = useCallback(async (email: string, password: string): Promise<boolean> => {
-    if (!email.trim() || !password) {
-      Alert.alert('Error', 'Please enter email and password.');
+  const signInUser = useCallback(async (phone: string, password: string): Promise<boolean> => {
+    if (!phone.trim() || !password) {
+      showError('Error', 'Please enter phone number and password.');
+      return false;
+    }
+    const phoneError = validateRwandaPhone(phone);
+    if (phoneError) {
+      showError('Invalid phone', phoneError);
       return false;
     }
     setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(phone, password);
       return true;
     } catch (err: unknown) {
       const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
       const msg = getAuthErrorMessage(code, 'Sign in failed.');
-      Alert.alert('Sign in failed', msg);
+      showError('Sign in failed', msg);
       return false;
     } finally {
       setLoading(false);
