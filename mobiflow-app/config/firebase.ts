@@ -14,13 +14,13 @@ if (!firebaseConfig?.apiKey) {
 
 const app = initializeApp(firebaseConfig);
 
-// keep login after app close – use AsyncStorage. require() cos Metro can't resolve firebase/auth/react-native
+// keep login after app close – use AsyncStorage so user stays signed in across app restarts
 let auth: Auth;
 if (Platform.OS === 'web') {
   auth = getAuth(app);
 } else {
-  const rnAuth = require('@firebase/auth');
   try {
+    const rnAuth = require('@firebase/auth');
     auth = rnAuth.initializeAuth(app, {
       persistence: rnAuth.getReactNativePersistence(AsyncStorage),
     });

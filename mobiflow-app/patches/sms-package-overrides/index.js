@@ -17,7 +17,7 @@ export async function startReadSMS(callback) {
   };
   if (Platform.OS === "android") {
     const hasPermission = await checkIfHasSMSPermission();
-    if (hasPermission) {
+    if (hasPermission && hasPermission.hasReceiveSmsPermission && hasPermission.hasReadSmsPermission) {
       RNExpoReadSms.startReadSMS(
         (result) => {
           new NativeEventEmitter(RNExpoReadSms).addListener(
@@ -81,10 +81,13 @@ export async function requestReadSMSPermission() {
         PermissionsAndroid.PERMISSIONS.READ_SMS,
       ]);
 
-      if (status === PermissionsAndroid.RESULTS.GRANTED) return true;
-      if (status === PermissionsAndroid.RESULTS.DENIED) {
+      const read = status[PermissionsAndroid.PERMISSIONS.READ_SMS];
+      const receive = status[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS];
+      const granted = PermissionsAndroid.RESULTS.GRANTED;
+      if (read === granted && receive === granted) return true;
+      if (read === PermissionsAndroid.RESULTS.DENIED || receive === PermissionsAndroid.RESULTS.DENIED) {
         console.log("Read Sms permission denied by user.", status);
-      } else if (status === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      } else if (read === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN || receive === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
         console.log("Read Sms permission revoked by user.", status);
       }
 
