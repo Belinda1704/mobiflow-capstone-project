@@ -1,0 +1,14 @@
+# E2E: Onboarding → tap Sign in → assert login screen (use testIDs; clear data so onboarding shows)
+appId: com.mobiflow.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-sign-in"
+    timeout: 15000
+- assertVisible:
+    id: "onboarding-sign-in"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "login-sign-in-button"

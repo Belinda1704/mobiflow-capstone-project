@@ -1,0 +1,13 @@
+# E2E: Onboarding – launch APK, assert Get Started button (language-independent), tap it
+# Clear app data first so onboarding is shown. For APK: maestro test maestro/flows
+appId: com.mobiflow.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-get-started"
+    timeout: 15000
+- assertVisible:
+    id: "onboarding-get-started"
+- tapOn:
+    id: "onboarding-get-started"

@@ -1,0 +1,20 @@
+# E2E: Login screen – from cold launch: onboarding → Sign in → assert login IDs, tap Create account
+appId: com.mobiflow.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-sign-in"
+    timeout: 15000
+- tapOn:
+    id: "onboarding-sign-in"
+- extendedWaitUntil:
+    visible:
+      id: "login-phone-input"
+    timeout: 10000
+- assertVisible:
+    id: "login-password-input"
+- assertVisible:
+    id: "login-sign-in-button"
+- tapOn:
+    id: "login-create-account"
