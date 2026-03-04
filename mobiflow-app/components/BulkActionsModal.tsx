@@ -48,21 +48,21 @@ export function BulkActionsModal({
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onAction('changeCategory')}>
-            <Ionicons name="pricetag-outline" size={22} color={colors.primary} />
+            <Ionicons name="pricetag-outline" size={22} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.actionText, { color: colors.textPrimary }]}>{t('changeCategory')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onAction('export')}>
-            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+            <Ionicons name="document-text-outline" size={22} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.actionText, { color: colors.textPrimary }]}>{t('exportSelected')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onAction('delete')}>
-            <Ionicons name="trash-outline" size={22} color={colors.primary} />
+            <Ionicons name="trash-outline" size={22} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.actionText, { color: colors.textPrimary }]}>{t('deleteSelected')}</Text>
           </TouchableOpacity>
 

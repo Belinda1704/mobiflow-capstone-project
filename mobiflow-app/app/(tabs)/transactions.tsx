@@ -1,4 +1,4 @@
-// Transactions: list with filters, add, multi-select (change category / export CSV / delete).
+// Transactions: list with filters, add, multi-select (change category / export transaction/ delete).
 import { useState } from 'react';
 import {
   View,
@@ -39,6 +39,7 @@ import { groupTransactionsByDate } from '../../utils/transactionGrouping';
 import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon';
 import { translateCategory } from '../../utils/translateCategory';
 import type { FilterTab, DateRangeFilter, PaymentFilter } from '../../types/transaction';
+import { isHighFraudRisk } from '../../utils/fraudModel';
 
 const DATE_RANGES: { value: DateRangeFilter; labelKey: string }[] = [
   { value: 'all', labelKey: 'filterAll' },
@@ -330,7 +331,7 @@ export default function TransactionsScreen() {
                   ]}
                   onPress={() => setCategory('')}>
                   <Text style={[styles.modalOptionText, { color: colors.textPrimary }]}>{t('filterAll')}</Text>
-                  {!category && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                  {!category && <Ionicons name="checkmark" size={18} color={colors.white} />}
                 </TouchableOpacity>
                 {categories.map((c) => (
                   <TouchableOpacity
@@ -342,7 +343,7 @@ export default function TransactionsScreen() {
                     ]}
                     onPress={() => setCategory(c.name)}>
                     <Text style={[styles.modalOptionText, { color: colors.textPrimary }]}>{c.name}</Text>
-                    {category === c.name && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                    {category === c.name && <Ionicons name="checkmark" size={18} color={colors.white} />}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -361,7 +362,7 @@ export default function TransactionsScreen() {
                     ]}
                     onPress={() => setPaymentMethod(value)}>
                     <Text style={[styles.modalOptionText, { color: colors.textPrimary }]}>{t(labelKey)}</Text>
-                    {paymentMethod === value && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                    {paymentMethod === value && <Ionicons name="checkmark" size={18} color={colors.white} />}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -382,7 +383,7 @@ export default function TransactionsScreen() {
                         ? `${t(labelKey)}${dateRange === 'custom' ? ` (${formatShortDate(customStartDate)} – ${formatShortDate(customEndDate)})` : ''}`
                         : t(labelKey)}
                     </Text>
-                    {dateRange === value && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                    {dateRange === value && <Ionicons name="checkmark" size={18} color={colors.white} />}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -392,7 +393,7 @@ export default function TransactionsScreen() {
                   <TouchableOpacity
                     style={[styles.dateBtn, { backgroundColor: colors.background }]}
                     onPress={() => setDatePickerMode('from')}>
-                    <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                    <Ionicons name="calendar-outline" size={18} color={colors.listIcon ?? colors.primary} />
                     <Text style={[styles.dateBtnText, { color: colors.textPrimary }]}>
                       {t('pickDateFrom')}: {formatShortDate(customStartDate)}
                     </Text>
@@ -400,7 +401,7 @@ export default function TransactionsScreen() {
                   <TouchableOpacity
                     style={[styles.dateBtn, { backgroundColor: colors.background }]}
                     onPress={() => setDatePickerMode('to')}>
-                    <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                    <Ionicons name="calendar-outline" size={18} color={colors.listIcon ?? colors.primary} />
                     <Text style={[styles.dateBtnText, { color: colors.textPrimary }]}>
                       {t('pickDateTo')}: {formatShortDate(customEndDate)}
                     </Text>
@@ -411,16 +412,16 @@ export default function TransactionsScreen() {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalActionBtn, { borderColor: colors.border }]}
+                style={[styles.modalActionBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
                 onPress={clearFilters}>
-                <Text style={[styles.modalActionText, { color: colors.textSecondary }]}>
+                <Text style={[styles.modalActionText, { color: colors.textPrimary }]}>
                   {t('clearFilters')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalActionBtn, styles.modalActionPrimary, { backgroundColor: colors.primary }]}
+                style={[styles.modalActionBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
                 onPress={applyFilters}>
-                <Text style={[styles.modalActionText, styles.modalActionPrimaryText, { color: colors.white }]}>
+                <Text style={[styles.modalActionText, { color: colors.textPrimary }]}>
                   {t('applyFilters')}
                 </Text>
               </TouchableOpacity>
@@ -436,7 +437,7 @@ export default function TransactionsScreen() {
               <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]}>
                 <View style={styles.datePickerHeader}>
                   <TouchableOpacity onPress={() => setDatePickerMode(null)}>
-                    <Text style={[styles.datePickerDone, { color: colors.primary }]}>{t('done')}</Text>
+                    <Text style={[styles.datePickerDone, { color: colors.listIcon ?? colors.primary }]}>{t('done')}</Text>
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker
@@ -468,7 +469,7 @@ export default function TransactionsScreen() {
         showsVerticalScrollIndicator={false}>
         {loading && transactions.length === 0 ? (
           <View style={styles.empty}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ActivityIndicator size="large" color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.emptySub, { color: colors.textSecondary }]}>{t('loading') || 'Loading...'}</Text>
           </View>
         ) : filtered.length === 0 ? (
@@ -484,7 +485,7 @@ export default function TransactionsScreen() {
               <TouchableOpacity
                 style={[styles.filterPill, { backgroundColor: colors.surface, marginTop: 12 }]}
                 onPress={clearFilters}>
-                <Text style={[styles.filterPillText, { color: colors.primary }]}>{t('clearFilters')}</Text>
+                <Text style={[styles.filterPillText, { color: colors.listIcon ?? colors.primary }]}>{t('clearFilters')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -504,6 +505,7 @@ export default function TransactionsScreen() {
               <View style={styles.transactionCards}>
                 {group.transactions.map((tx) => {
                   const catIcon = getTransactionCategoryIcon(tx.category ?? 'Other', tx.type);
+                  const fraudRisk = isHighFraudRisk(tx);
                   return (
                     <TouchableOpacity
                       key={tx.id}
@@ -536,7 +538,7 @@ export default function TransactionsScreen() {
                       <View style={styles.transactionCardBody}>
                         <View style={styles.transactionLabelRow}>
                           <Text style={[styles.transactionLabel, { color: colors.textPrimary }]} numberOfLines={1}>{tx.label}</Text>
-                          {anomalousIds.has(tx.id) && (
+                          {(anomalousIds.has(tx.id) || fraudRisk) && (
                             <View style={[styles.unusualBadge, { backgroundColor: colors.warningBg }]}>
                               <Text style={[styles.unusualBadgeText, { color: colors.warningText }]}>{t('unusualTransaction')}</Text>
                             </View>
@@ -568,14 +570,14 @@ export default function TransactionsScreen() {
             style={[styles.bulkBarBtn, { borderColor: colors.border }]}
             onPress={() => handleBulkAction('changeCategory')}
             disabled={bulkLoading}>
-            <Ionicons name="pricetag-outline" size={22} color={colors.primary} />
+            <Ionicons name="pricetag-outline" size={22} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.bulkBarBtnText, { color: colors.textPrimary }]}>{t('changeCategory')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.bulkBarBtn, { borderColor: colors.border }]}
             onPress={() => handleBulkAction('export')}
             disabled={bulkLoading}>
-            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+            <Ionicons name="document-text-outline" size={22} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.bulkBarBtnText, { color: colors.textPrimary }]}>{t('exportSelected')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -584,7 +586,7 @@ export default function TransactionsScreen() {
             disabled={bulkLoading}>
             {bulkLoading ? (
               <View style={styles.bulkBarBtnProgress}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} />
                 {bulkDeleteProgress && (
                   <Text style={[styles.bulkBarBtnProgressText, { color: colors.textPrimary }]}>
                     {bulkDeleteProgress.deleted}/{bulkDeleteProgress.total}
@@ -593,7 +595,7 @@ export default function TransactionsScreen() {
               </View>
             ) : (
               <>
-                <Ionicons name="trash-outline" size={22} color={colors.primary} />
+                <Ionicons name="trash-outline" size={22} color={colors.listIcon ?? colors.primary} />
                 <Text style={[styles.bulkBarBtnText, { color: colors.textPrimary }]}>{t('deleteSelected')}</Text>
               </>
             )}
