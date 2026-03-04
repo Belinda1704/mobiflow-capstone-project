@@ -1,4 +1,4 @@
-// FR-02: Manages SMS capture lifecycle - starts/stops listener based on preference and userId
+// SMS capture on/off and listener start/stop from preference and userId
 import { useEffect, useState, useCallback } from 'react';
 import {
   getSmsCaptureEnabled,
@@ -23,7 +23,6 @@ export function useSmsCapture(userId: string | null) {
   const [hasPermissions, setHasPermissions] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Get transactions to sync with SMS capture for category suggestion
   const { transactions } = useTransactions(userId || '');
 
   useEffect(() => {
@@ -38,7 +37,6 @@ export function useSmsCapture(userId: string | null) {
     return () => { mounted = false; };
   }, []);
 
-  // Update cached transactions for category suggestion when transactions change
   useEffect(() => {
     if (userId && transactions.length > 0) {
       updateCachedTransactions(transactions);
@@ -56,7 +54,7 @@ export function useSmsCapture(userId: string | null) {
     setEnabledState(value);
     if (value && userId) {
       stopSmsListener();
-      startSmsListener(userId);
+      startSmsListener(userId, undefined, undefined, false);
     } else {
       stopSmsListener();
     }
@@ -75,8 +73,7 @@ export function useSmsCapture(userId: string | null) {
     return hasBoth;
   }, []);
 
-  // Start/stop listener and foreground service when userId or enabled changes.
-  // Foreground service keeps the process alive so the listener receives SMS in background.
+  // Start or stop listener when enabled or userId changes
   useEffect(() => {
     if (!isSmsCaptureSupported()) {
       console.log('[useSmsCapture] SMS capture not supported on this platform');
@@ -84,13 +81,11 @@ export function useSmsCapture(userId: string | null) {
     }
     console.log('[useSmsCapture] Effect triggered:', { userId, enabled, hasPermissions });
     if (userId && enabled && hasPermissions) {
-      console.log('[useSmsCapture] Starting SMS listener and foreground service (background capture)...');
-      startSmsListener(userId);
-      startSmsForegroundService('MobiFlow', 'Capturing mobile money SMS in the background').catch((e) =>
-        console.warn('[useSmsCapture] Foreground service start failed:', e)
-      );
+      console.log('[useSmsCapture] Starting SMS listener...');
+      startSmsListener(userId, undefined, undefined, false);
+      // Foreground service off (manifest type mismatch). Listener still works when app is open.
     } else if (!enabled) {
-      console.log('[useSmsCapture] Stopping SMS listener and foreground service (user disabled)');
+      console.log('[useSmsCapture] Stopping SMS listener (user disabled)');
       stopSmsListener();
       stopSmsForegroundService();
     }
