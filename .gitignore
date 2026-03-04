@@ -134,6 +134,9 @@ dist
 !.yarn/sdks
 !.yarn/versions
 
+# Fraud detection – synthetic dataset (large CSVs, not needed in repo)
+fraud-detection-model/infosec_paysim_dataset/
+
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
