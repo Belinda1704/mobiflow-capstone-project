@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 export async function markLessonCompleted(userId: string, lessonId: string): Promise<void> {
@@ -12,4 +12,12 @@ export async function isLessonCompleted(userId: string, lessonId: string): Promi
   const ref = doc(db, 'users', userId, 'lessonCompletions', lessonId);
   const snap = await getDoc(ref);
   return snap.exists();
+}
+
+// All completed lesson IDs for this user (video watched to end)
+export async function getCompletedLessonIds(userId: string): Promise<string[]> {
+  if (!userId) return [];
+  const ref = collection(db, 'users', userId, 'lessonCompletions');
+  const snap = await getDocs(ref);
+  return snap.docs.map((d) => d.id);
 }
