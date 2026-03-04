@@ -16,8 +16,8 @@ const MTN_SENT = /(?:sent|envoye|you have sent)\s+(?:RWF|rwf)\s*([\d\s,]+)\s+to\
 // MTN with name instead of phone
 const MTN_RECEIVED_NAME = /(?:received|recu|you have received)\s+([\d\s,]+)\s+(?:RWF|rwf)\s+from\s+([A-Za-z\s]+?)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
 const MTN_SENT_NAME = /(?:sent|envoye|you have sent)\s+([\d\s,]+)\s+(?:RWF|rwf)\s+to\s+([A-Za-z\s]+?)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
-// USSD transfer *165*...
-const MTN_TRANSFERRED = /\*165\*S\*([\d\s,]+)\s+(?:RWF|rwf)\s+transferred\s+to\s+([A-Za-z\s]+?)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
+// USSD transfer *165*S*AMOUNT RWF transferred to NAME... (S* part is optional)
+const MTN_TRANSFERRED = /\*165\*(?:S\*)?([\d\s,]+)\s+(?:RWF|rwf)\s+transferred\s+to\s+([A-Za-z\s]+?)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
 // Other transfer wording
 const MTN_TRANSFERRED_TO_NAME = /(?:transferred|transfer|you have transferred)\s+([\d\s,]+)\s+(?:RWF|rwf)\s+to\s+([A-Za-z\s]+?)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
 const MTN_TRANSFERRED_AMOUNT_FIRST = /([\d\s,]+)\s+(?:RWF|rwf)\s+transferred\s+to\s+([A-Za-z\s]+?)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
