@@ -1,5 +1,6 @@
-// Android foreground service for SMS capture (Notifee, background read). Android only.
+// Android foreground service for SMS capture. Notifee. Android only.
 import { Platform, PermissionsAndroid } from 'react-native';
+import { AndroidForegroundServiceType } from '@notifee/react-native';
 
 const SMS_CAPTURE_CHANNEL_ID = 'mobiflow-sms-capture';
 const NOTIFICATION_ID = 'mobiflow-sms-foreground';
@@ -17,7 +18,7 @@ function getNotifee(): any | null {
   }
 }
 
-// Create notification channel (Android 8+). Call once at start.
+// Notification channel for Android 8+, create once
 export async function createSmsCaptureChannel(): Promise<string | null> {
   if (Platform.OS !== 'android') return null;
   const n = getNotifee();
@@ -36,7 +37,7 @@ export async function createSmsCaptureChannel(): Promise<string | null> {
   }
 }
 
-// Notification permission (Android 13+) for foreground.
+// Ask notification permission on Android 13+
 async function ensureNotificationPermission(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
   const v = Number(Platform.Version);
@@ -56,7 +57,7 @@ async function ensureNotificationPermission(): Promise<boolean> {
   }
 }
 
-// Start foreground service; show notification so SMS listener keeps running.
+// Start foreground notification so listener can run in background
 export async function startSmsForegroundService(title?: string, body?: string): Promise<boolean> {
   if (Platform.OS !== 'android') return false;
   const n = getNotifee();
@@ -78,7 +79,7 @@ export async function startSmsForegroundService(title?: string, body?: string): 
       android: {
         channelId: SMS_CAPTURE_CHANNEL_ID,
         asForegroundService: true,
-        foregroundServiceTypes: ['dataSync'], // Android 14+ required; syncs transaction data from SMS
+        foregroundServiceTypes: [AndroidForegroundServiceType.FOREGROUND_SERVICE_TYPE_DATA_SYNC],
         smallIcon: 'ic_launcher',
         pressAction: { id: 'default' },
       },
@@ -92,7 +93,7 @@ export async function startSmsForegroundService(title?: string, body?: string): 
   }
 }
 
-// Stop service and hide notification.
+// Stop service and clear notification
 export async function stopSmsForegroundService(): Promise<void> {
   if (Platform.OS !== 'android') return;
   const n = getNotifee();

@@ -98,8 +98,18 @@ function computeSmsId(body: string, address: string, timestamp: number): string 
   return 'sms_' + Math.abs(h).toString(36) + '_' + raw.length;
 }
 
-// Native sends [address, body]
-function parseSmsPayload(payload: string): { address: string; body: string } | null {
+// Payload from native can be string "[address, body]" or object { address, body }
+function parseSmsPayload(payload: unknown): { address: string; body: string } | null {
+  if (!payload) return null;
+
+  if (typeof payload === 'object') {
+    const maybe: any = payload;
+    const address = (maybe.address ?? maybe.originatingAddress ?? '').toString().trim();
+    const body = (maybe.body ?? maybe.message ?? maybe.text ?? '').toString().trim();
+    if (!body) return null;
+    return { address, body };
+  }
+
   if (typeof payload !== 'string' || payload.length < 3) return null;
   const inner = payload.trim();
   if (!inner.startsWith('[') || !inner.endsWith(']')) return null;
@@ -190,8 +200,9 @@ async function processSmsMessage(
   const smsId = computeSmsId(smsBody, smsAddress, smsTimestamp);
   console.log('[SMS Capture] Processing SMS:', { address: smsAddress, smsId: smsId.substring(0, 20) });
 
-  const idsToCheck = existingSmsIds ?? new Set(cachedTransactions.filter((t) => t.smsId).map((t) => t.smsId!));
-  if (idsToCheck.has(smsId)) {
+  // Past scan: dedupe by smsId. Live: dedupe by recent body only so new messages are not skipped.
+  const idsToCheck = existingSmsIds ?? null;
+  if (idsToCheck && idsToCheck.has(smsId)) {
     console.log('[SMS Capture] Skipping - transaction with this smsId already exists:', smsId.substring(0, 20));
     return { added: false };
   }
@@ -442,41 +453,99 @@ export function startSmsListener(
   });
 
   try {
-    startReadSMS(async (status: string, smsPayload: string, err?: string) => {
-      console.log('[SMS Capture] Received SMS event:', { status, hasPayload: !!smsPayload, err });
-    if (status === 'error') {
-      console.error('[SMS Capture] Error:', err);
-      onError?.(err ?? 'SMS capture error');
-      return;
-    }
-    if (status !== 'success' || !smsPayload) {
-      console.log('[SMS Capture] Skipping - status not success or no payload');
-      return;
-    }
+    startReadSMS(async (status: string, smsPayload: unknown, err?: string) => {
+      console.log('[SMS Capture] Received SMS event:', {
+        status,
+        hasPayload: !!smsPayload,
+        payloadType: smsPayload === null ? 'null' : typeof smsPayload,
+        err,
+      });
+      if (status === 'error') {
+        console.error('[SMS Capture] Error:', err);
+        onError?.(err ?? 'SMS capture error');
+        return;
+      }
+      if (status !== 'success') {
+        console.log('[SMS Capture] Skipping - status not success');
+        return;
+      }
 
-    const parsed = parseSmsPayload(smsPayload);
-    if (!parsed || !parsed.body) {
-      console.log('[SMS Capture] Failed to parse SMS payload:', smsPayload);
-      return;
-    }
-    console.log('[SMS Capture] Parsed SMS:', { address: parsed.address, body: parsed.body });
-    
-    // Skip if already processed recently
-    if (isDuplicateSmsBody(parsed.body, parsed.address)) {
-      console.log('[SMS Capture] Skipping duplicate SMS body (already processed recently):', parsed.body.substring(0, 50));
-      return;
-    }
-    
-    if (!isMobileMoneySms(parsed.body)) {
-      console.log('[SMS Capture] Not a mobile money SMS, skipping. Body:', parsed.body.substring(0, 100));
-      return;
-    }
-    
-    // Mark as processing
-    recordSmsBodyProcessed(parsed.body, parsed.address);
+      try {
+        const direct = parseSmsPayload(smsPayload);
+        if (direct && direct.body) {
+          const address = direct.address || 'M-Money';
+          console.log('[SMS Capture] Using direct payload from native bridge', {
+            address,
+            preview: direct.body.substring(0, 80),
+          });
 
-    // Add or skip duplicate
-    await processSmsMessage(parsed.body, parsed.address, Date.now(), userId, onTransactionAdded);
+          if (!isMobileMoneySms(direct.body)) {
+            console.log(
+              '[SMS Capture] Direct payload is not mobile‑money SMS, skipping. Body:',
+              direct.body.substring(0, 100)
+            );
+            return;
+          }
+
+          if (isDuplicateSmsBody(direct.body, address)) {
+            console.log(
+              '[SMS Capture] Skipping duplicate SMS body (already processed recently):',
+              direct.body.substring(0, 80)
+            );
+            return;
+          }
+
+          // Record body only after add so new messages are not marked duplicate
+          await processSmsMessage(direct.body, address, Date.now(), userId, onTransactionAdded);
+          return;
+        }
+
+        // If payload failed to parse, read latest from inbox
+        const inbox = await readPastSMS(20).catch((e) => {
+          if (e?.message?.includes('readPastSMS') || e?.message?.includes('not a function')) {
+            console.warn('[SMS Capture] readPastSMS not available for live listener');
+            return [];
+          }
+          throw e;
+        });
+
+        if (!inbox || inbox.length === 0) {
+          console.log('[SMS Capture] No inbox SMS found when live event fired');
+          return;
+        }
+
+        const latest = inbox[0] as { body: string; address: string; timestamp: number };
+        if (!latest.body) {
+          console.log('[SMS Capture] Latest inbox SMS has no body, skipping');
+          return;
+        }
+
+        if (!isMobileMoneySms(latest.body)) {
+          console.log(
+            '[SMS Capture] Live listener saw non‑mobile‑money SMS in inbox fallback, skipping. Body:',
+            latest.body.substring(0, 100)
+          );
+          return;
+        }
+
+        if (isDuplicateSmsBody(latest.body, latest.address)) {
+          console.log(
+            '[SMS Capture] Skipping duplicate SMS body from inbox fallback (already processed recently):',
+            latest.body.substring(0, 80)
+          );
+          return;
+        }
+
+        await processSmsMessage(
+          latest.body,
+          latest.address,
+          latest.timestamp || Date.now(),
+          userId,
+          onTransactionAdded
+        );
+      } catch (listenerError) {
+        console.error('[SMS Capture] Live listener processing error:', listenerError);
+      }
     });
     isListenerActive = true;
     console.log('[SMS Capture] Listener started successfully');
