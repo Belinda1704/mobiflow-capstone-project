@@ -126,11 +126,11 @@ export default function SmsCaptureScreen() {
                 {t('smsPermissionDescription') || 'Enable SMS permissions to automatically capture mobile money transactions'}
               </Text>
             </View>
-            <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleRequestPermission}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleRequestPermission}>
               <Text style={[styles.buttonText, { color: colors.white }]}>{t('smsCaptureGrantPermission') || 'Grant Permission'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.openSettingsLink} onPress={() => Linking.openSettings()} activeOpacity={0.7}>
-              <Text style={[styles.openSettingsLinkText, { color: colors.primary }]}>{t('openDeviceSettings')}</Text>
+              <Text style={[styles.openSettingsLinkText, { color: colors.listIcon ?? colors.primary }]}>{t('openDeviceSettings')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -156,7 +156,7 @@ export default function SmsCaptureScreen() {
                   {scanProgress ? `Scanning ${scanProgress.processed}/${scanProgress.total}...` : 'Scanning...'}
                 </Text>
               ) : (
-                <Text style={[styles.buttonText, { color: colors.primary }]}>
+                <Text style={[styles.buttonText, { color: colors.listIcon ?? colors.primary }]}>
                   {t('scanPastMessages') || 'Scan past mobile money messages'}
                 </Text>
               )}

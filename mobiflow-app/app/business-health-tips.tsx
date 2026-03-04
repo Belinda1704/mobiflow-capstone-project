@@ -78,7 +78,7 @@ export default function BusinessHealthTipsScreen() {
         {TIP_KEYS.map((tip, i) => (
           <View key={i} style={[styles.tipCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
-              <Ionicons name={tip.icon} size={22} color={colors.primary} />
+              <Ionicons name={tip.icon} size={22} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.tipBody}>
               <Text style={[styles.tipTitle, { color: colors.textPrimary }]}>{t(tip.titleKey)}</Text>

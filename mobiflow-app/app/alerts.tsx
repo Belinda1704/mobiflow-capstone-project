@@ -72,7 +72,7 @@ export default function AlertsScreen() {
             <Text style={[styles.activeAlertsTitle, { color: colors.warningText }]}>{t('activeAlerts')}</Text>
             {incomeDrop && (
               <Text style={[styles.activeAlertsItem, { color: colors.warningText }]}>
-                {t('incomeDropAlert', { percent: incomeDrop.percentDrop })}
+                {t('incomeDropAlert', { percent: Math.min(incomeDrop.percentDrop, 99) })}
               </Text>
             )}
             {budgetBreaches.map((b) => (

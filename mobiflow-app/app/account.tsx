@@ -161,7 +161,7 @@ export default function AccountScreen() {
                 <Text style={[styles.modalBtnText, { color: colors.black }]}>{t('update')}</Text>
               </TouchableOpacity>
             </View>
-            {loading && <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />}
+            {loading && <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} style={styles.loader} />}
           </View>
         </View>
       </Modal>
@@ -202,7 +202,7 @@ export default function AccountScreen() {
                 <Text style={[styles.modalBtnText, { color: colors.black }]}>{t('update')}</Text>
               </TouchableOpacity>
             </View>
-            {loading && <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />}
+            {loading && <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} style={styles.loader} />}
           </View>
         </View>
       </Modal>

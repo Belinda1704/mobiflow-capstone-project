@@ -28,10 +28,10 @@ export default function HowToUseScreen() {
         {STEPS.map((step, i) => (
           <View key={i} style={[styles.stepCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={[styles.stepNum, { backgroundColor: colors.surfaceElevated }]}>
-              <Text style={[styles.stepNumText, { color: colors.primary }]}>{i + 1}</Text>
+              <Text style={[styles.stepNumText, { color: colors.listIcon ?? colors.primary }]}>{i + 1}</Text>
             </View>
             <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
-              <Ionicons name={step.icon} size={22} color={colors.primary} />
+              <Ionicons name={step.icon} size={22} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.stepBody}>
               <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>{t(step.titleKey)}</Text>

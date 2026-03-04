@@ -5,12 +5,13 @@ import YoutubeIframe, { PLAYER_STATES } from 'react-native-youtube-iframe';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useThemeColors } from '../contexts/ThemeContext';
-import { auth } from '../config/firebase';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { markLessonCompleted } from '../services/lessonCompletionService';
 
 export default function FinancialVideoScreen() {
   const { colors } = useThemeColors();
   const { width } = useWindowDimensions();
+  const { userId } = useCurrentUser();
   const params = useLocalSearchParams<{ videoId?: string; title?: string; lessonId?: string }>();
 
   const videoId = params.videoId ?? '';
@@ -20,17 +21,21 @@ export default function FinancialVideoScreen() {
   const playerHeight = Math.min(width * (9 / 16), 320);
 
   const onChangeState = useCallback(
-    (state: string) => {
-      if (state === PLAYER_STATES.ENDED) {
-        const userId = auth.currentUser?.uid;
-        if (userId && lessonId) {
-          markLessonCompleted(userId, lessonId).catch((err) =>
-            console.warn('Failed to mark lesson completed:', err)
-          );
-        }
+    (state: string | number) => {
+      const ended =
+        state === PLAYER_STATES.ENDED ||
+        state === 'ended' ||
+        state === 0;
+
+      if (!ended) return;
+
+      if (userId && lessonId) {
+        markLessonCompleted(userId, lessonId).catch((err) =>
+          console.warn('Failed to mark lesson completed:', err)
+        );
       }
     },
-    [lessonId]
+    [lessonId, userId]
   );
 
   if (!videoId) {

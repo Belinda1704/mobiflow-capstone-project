@@ -117,10 +117,10 @@ export default function ManageCategoriesScreen() {
               <>
                 <Text style={[styles.categoryName, { color: colors.textPrimary }]}>{c.name}</Text>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => startEdit(c.id, c.name)}>
-                  <Ionicons name="pencil-outline" size={20} color={colors.primary} />
+                  <Ionicons name="pencil-outline" size={20} color={colors.listIcon ?? colors.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => confirmDelete(c.id, c.name)}>
-                  <Ionicons name="trash-outline" size={20} color={colors.primary} />
+                  <Ionicons name="trash-outline" size={20} color={colors.listIcon ?? colors.primary} />
                 </TouchableOpacity>
               </>
             )}

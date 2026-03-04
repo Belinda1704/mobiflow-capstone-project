@@ -58,7 +58,7 @@ export default function PreferencesScreen() {
             {(['light', 'dark', 'system'] as ThemeOption[]).map((opt) => (
               <TouchableOpacity key={opt} style={[styles.option, { borderBottomColor: colors.border }]} onPress={() => { setTheme(opt); setShowTheme(false); }}>
                 <Text style={[styles.optionText, { color: colors.textPrimary }]}>{getThemeLabels(t)[opt]}</Text>
-                {theme === opt && <Text style={[styles.check, { color: colors.primary }]}>✓</Text>}
+                {theme === opt && <Text style={[styles.check, { color: colors.listIcon ?? colors.primary }]}>✓</Text>}
               </TouchableOpacity>
             ))}
           </View>
@@ -72,7 +72,7 @@ export default function PreferencesScreen() {
             {(['en', 'rw'] as LanguageOption[]).map((l) => (
               <TouchableOpacity key={l} style={[styles.option, { borderBottomColor: colors.border }]} onPress={() => { setLanguage(l); setShowLang(false); }}>
                 <Text style={[styles.optionText, { color: colors.textPrimary }]}>{getLangLabels(t)[l]}</Text>
-                {language === l && <Text style={[styles.check, { color: colors.primary }]}>✓</Text>}
+                {language === l && <Text style={[styles.check, { color: colors.listIcon ?? colors.primary }]}>✓</Text>}
               </TouchableOpacity>
             ))}
           </View>

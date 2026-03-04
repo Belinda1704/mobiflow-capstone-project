@@ -18,9 +18,9 @@ import { formatRelativeTime } from '../utils/formatDate';
 import { FontFamily } from '../constants/colors';
 import { PrimaryButton } from '../components/PrimaryButton';
 
-function NotificationIcon({ type, colors }: { type: NotificationHistoryType; colors: ReturnType<typeof useThemeColors>['colors'] }) {
-  const iconBg = colors.primary;
-  const iconColor = colors.white;
+function NotificationIcon({ type, colors, isDark }: { type: NotificationHistoryType; colors: ReturnType<typeof useThemeColors>['colors']; isDark: boolean }) {
+  const iconBg = isDark ? colors.surfaceElevated : colors.primary;
+  const iconColor = isDark ? colors.textPrimary : colors.white;
   if (type === 'lowBalance') {
     return (
       <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
@@ -66,7 +66,7 @@ function NotificationIcon({ type, colors }: { type: NotificationHistoryType; col
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t } = useTranslations();
-  const { colors } = useThemeColors();
+  const { colors, isDark } = useThemeColors();
   const { userId } = useCurrentUser();
   const { settings, update } = useNotificationSettings();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -144,7 +144,7 @@ export default function NotificationsScreen() {
                   variant="yellow"
                 />
                 <TouchableOpacity style={styles.openSettingsLink} onPress={() => Linking.openSettings()} activeOpacity={0.7}>
-                  <Text style={[styles.openSettingsLinkText, { color: colors.primary }]}>{t('openDeviceSettings')}</Text>
+                  <Text style={[styles.openSettingsLinkText, { color: colors.listIcon ?? colors.primary }]}>{t('openDeviceSettings')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -240,7 +240,7 @@ export default function NotificationsScreen() {
               thumbColor={colors.white}
             />
           </View>
-          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+          <View style={[styles.settingRow, styles.settingRowLast]}>
             <View style={styles.settingText}>
               <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>{t('goalRemindersSetting')}</Text>
               <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{t('goalRemindersSettingSubtitle')}</Text>
@@ -248,18 +248,6 @@ export default function NotificationsScreen() {
             <Switch
               value={notificationSettings.goalReminders}
               onValueChange={(v) => { void update({ goalReminders: v }); }}
-              trackColor={{ false: colors.border, true: colors.accent }}
-              thumbColor={colors.white}
-            />
-          </View>
-          <View style={[styles.settingRow, styles.settingRowLast]}>
-            <View style={styles.settingText}>
-              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>{t('marketingSetting')}</Text>
-              <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{t('tipsOffersProductUpdates')}</Text>
-            </View>
-            <Switch
-              value={notificationSettings.marketing}
-              onValueChange={(v) => { void update({ marketing: v }); }}
               trackColor={{ false: colors.border, true: colors.accent }}
               thumbColor={colors.white}
             />
@@ -278,7 +266,7 @@ export default function NotificationsScreen() {
         ) : (
           recentList.map((n) => (
             <View key={n.id} style={[styles.notificationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <NotificationIcon type={n.type} colors={colors} />
+              <NotificationIcon type={n.type} colors={colors} isDark={isDark} />
               <View style={styles.notificationBody}>
                 <Text style={[styles.notificationTitle, { color: colors.textPrimary }]}>{n.title}</Text>
                 <Text style={[styles.notificationDetails, { color: colors.textSecondary }]}>{n.details}</Text>

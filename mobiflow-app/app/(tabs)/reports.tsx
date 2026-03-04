@@ -105,7 +105,7 @@ export default function ReportsScreen() {
         subtitle={t('reportsSubtitle')}
         rightContent={
           <TouchableOpacity style={styles.calendarBtn} onPress={() => setDatePickerVisible(true)}>
-            <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+            <Ionicons name="calendar-outline" size={22} color={colors.listIcon ?? colors.primary} />
           </TouchableOpacity>
         }
       />

@@ -25,7 +25,7 @@ const MENU_ITEMS: { labelKey: string; icon: React.ComponentProps<typeof Ionicons
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { colors } = useThemeColors();
+  const { colors, isDark } = useThemeColors();
   const { t } = useTranslations();
   const { user } = useCurrentUser();
   const { signOut, loading } = useSignOut();
@@ -98,22 +98,22 @@ export default function ProfileScreen() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={[styles.profileCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.avatarWrap}>
-          <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
+          <View style={[styles.avatar, { backgroundColor: isDark ? colors.surfaceElevated : colors.accent }]}>
             {photoURL ? (
               <Image source={{ uri: photoURL }} style={styles.avatarImage} />
             ) : (
-              <Text style={[styles.avatarText, { color: colors.black }]}>{initials}</Text>
+              <Text style={[styles.avatarText, { color: isDark ? colors.textPrimary : colors.black }]}>{initials}</Text>
             )}
           </View>
           <TouchableOpacity
-            style={[styles.avatarEditBtn, { backgroundColor: colors.accent, borderColor: colors.accent }]}
+            style={[styles.avatarEditBtn, { backgroundColor: isDark ? colors.surfaceElevated : colors.accent, borderColor: isDark ? colors.border : colors.accent }]}
             onPress={handleChangePhoto}
             disabled={updatingPhoto}
             activeOpacity={0.8}>
             {updatingPhoto ? (
-              <ActivityIndicator size="small" color={colors.black} />
+              <ActivityIndicator size="small" color={isDark ? colors.textPrimary : colors.black} />
             ) : (
-              <Ionicons name="camera" size={14} color={colors.black} />
+              <Ionicons name="camera" size={14} color={isDark ? colors.textPrimary : colors.black} />
             )}
           </TouchableOpacity>
         </View>
@@ -131,7 +131,7 @@ export default function ProfileScreen() {
             onPress={() => item.route ? router.push(item.route as any) : undefined}>
             <View style={styles.menuLeft}>
               <View style={[styles.menuIconWrap, { backgroundColor: colors.surfaceElevated }]}>
-                <Ionicons name={item.icon} size={20} color={colors.primary} />
+                <Ionicons name={item.icon} size={20} color={colors.listIcon ?? colors.primary} />
               </View>
               <Text style={[styles.menuText, { color: colors.textPrimary }]}>{t(item.labelKey)}</Text>
             </View>

@@ -48,11 +48,13 @@ export default function TransactionDetailScreen() {
     return null;
   }
 
-  // Not found = show empty state
   if (!tx) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: colors.surfaceElevated }]}>
-        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>{t('transactionNotFound') || 'Transaction not found'}</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.surfaceElevated, padding: 24 }]}>
+        <Text style={[styles.notFoundText, { color: colors.textSecondary }]}>{t('transactionNotFound')}</Text>
+        <TouchableOpacity style={[styles.goBackBtn, { backgroundColor: colors.accent }]} onPress={() => router.back()} activeOpacity={0.8}>
+          <Text style={[styles.goBackBtnText, { color: colors.black }]}>{t('goBack')}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -81,7 +83,11 @@ export default function TransactionDetailScreen() {
             setDeleting(true);
             try {
               await deleteTransaction(tx.id);
-              router.back();
+              Alert.alert(
+                t('transactionDeleted'),
+                t('transactionDeletedMessage'),
+                [{ text: t('ok'), onPress: () => router.back() }]
+              );
             } catch (error) {
               const errorMsg = error instanceof Error ? error.message : t('couldNotDeleteTransaction');
               showError(t('error'), errorMsg);
@@ -172,6 +178,9 @@ export default function TransactionDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center' },
+  notFoundText: { fontSize: 16, fontFamily: FontFamily.regular, textAlign: 'center', marginBottom: 20 },
+  goBackBtn: { paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12 },
+  goBackBtnText: { fontSize: 16, fontFamily: FontFamily.semiBold },
   scroll: { flex: 1 },
   scrollContent: { padding: 24 },
   card: {

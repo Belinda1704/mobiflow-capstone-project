@@ -31,7 +31,7 @@ export default function ForgotPasswordScreen() {
           showsVerticalScrollIndicator={false}>
           <View style={[styles.card, { backgroundColor: colors.background }]}>
             <View style={styles.iconWrap}>
-              <Ionicons name="key-outline" size={48} color={colors.primary} />
+              <Ionicons name="key-outline" size={48} color={colors.listIcon ?? colors.primary} />
             </View>
             <Text style={[styles.greeting, { color: colors.textSecondary }]}>{t('forgotPassword')}</Text>
             <Text style={[styles.title, { color: colors.textPrimary }]}>{t('resetYourPassword')}</Text>
@@ -40,7 +40,7 @@ export default function ForgotPasswordScreen() {
             </Text>
 
             <View style={[styles.infoBox, { backgroundColor: colors.background, borderLeftColor: colors.primary }]}>
-              <Ionicons name="information-circle-outline" size={22} color={colors.primary} style={styles.infoIcon} />
+              <Ionicons name="information-circle-outline" size={22} color={colors.listIcon ?? colors.primary} style={styles.infoIcon} />
               <Text style={[styles.infoText, { color: colors.textPrimary }]}>
                 {t('contactSupportInfo')}
               </Text>
@@ -60,7 +60,7 @@ export default function ForgotPasswordScreen() {
 
           <View style={styles.footer}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backWrap}>
-              <Ionicons name="arrow-back" size={18} color={colors.primary} style={styles.backIcon} />
+              <Ionicons name="arrow-back" size={18} color={colors.listIcon ?? colors.primary} style={styles.backIcon} />
               <Text style={[styles.link, { color: colors.textPrimary }]}>{t('backToSignIn')}</Text>
             </TouchableOpacity>
           </View>

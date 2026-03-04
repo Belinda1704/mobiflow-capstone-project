@@ -12,6 +12,8 @@ export const TabBarYellow = '#F5C518';
 export const MobiFlowColors = {
   primary: '#1A1A1A',
   accent: '#F5C518',
+  /** Icon color for lists/settings (dark in light mode, light in dark mode for consistency). */
+  listIcon: '#1A1A1A',
   tabBarBg: '#1A1A1A',
   black: '#0F172A',
   white: '#FFFFFF',
@@ -51,10 +53,12 @@ export const AuthColors = {
   border: '#E5E7EB',
 } as const;
 
-/** Dark theme colour set. */
+/** Dark theme colour set. List/settings icons use listIcon (light) so dark mode is consistent, not yellow. */
 export const DarkColors = {
   primary: '#F5C518',
   accent: '#F5C518',
+  /** Same as textPrimary so list/settings icons are light, not yellow. */
+  listIcon: '#F8FAFC',
   tabBarBg: '#0F172A',
   black: '#F8FAFC',
   white: '#0F172A',

@@ -19,7 +19,7 @@ export function SettingsRow({ icon, label, subtitle, value, onPress, colors: c }
   const content = (
     <View style={styles.row}>
       <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
-        <Ionicons name={icon} size={22} color={colors.primary} />
+        <Ionicons name={icon} size={22} color={colors.listIcon ?? colors.primary} />
       </View>
       <View style={styles.textWrap}>
         <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>

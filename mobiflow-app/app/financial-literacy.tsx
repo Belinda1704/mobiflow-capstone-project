@@ -1,13 +1,17 @@
-// Financial literacy: Kinyarwanda videos, thumbnails list.
+// Financial literacy: Kinyarwanda videos, thumbnails list. Shows completed count and badges.
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useThemeColors } from '../contexts/ThemeContext';
 import { useTranslations } from '../hooks/useTranslations';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { FontFamily } from '../constants/colors';
+import { getCompletedLessonIds } from '../services/lessonCompletionService';
 
 type VideoItem = {
   id: string;
@@ -60,12 +64,39 @@ export default function FinancialLiteracyScreen() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
+  const { userId } = useCurrentUser();
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
+
+  // Reload completion status every time the screen comes into focus so
+  // "X of Y completed" and badges update after watching a video.
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) {
+        setCompletedIds([]);
+        return;
+      }
+      let cancelled = false;
+      getCompletedLessonIds(userId)
+        .then((ids) => {
+          if (!cancelled) setCompletedIds(ids);
+        })
+        .catch(() => {
+          if (!cancelled) setCompletedIds([]);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [userId])
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
       <ScreenHeader title={t('financialLiteracy')} subtitle={t('financialLiteracySubtitle')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('financialLiteracyIntro')}</Text>
+        <Text style={[styles.countText, { color: colors.textSecondary }]}>
+          {t('lessonsCompletedCount', { count: completedIds.length, total: VIDEOS.length })}
+        </Text>
         {VIDEOS.map((item) => {
           const thumb = getYoutubeThumbnail(item.url);
           return (
@@ -96,9 +127,17 @@ export default function FinancialLiteracyScreen() {
                 <Text style={[styles.videoTitle, { color: colors.textPrimary }]} numberOfLines={2}>
                   {item.title}
                 </Text>
-                <Text style={[styles.videoHint, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {t('financialLiteracyVideoHint')}
-                </Text>
+                <View style={styles.videoMeta}>
+                  <Text style={[styles.videoHint, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {t('financialLiteracyVideoHint')}
+                  </Text>
+                  {completedIds.includes(item.id) && (
+                    <View style={styles.completedBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.listIcon ?? colors.primary} />
+                      <Text style={[styles.completedLabel, { color: colors.listIcon ?? colors.primary }]}>{t('lessonCompleted')}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -117,6 +156,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontFamily.regular,
     lineHeight: 22,
+    marginBottom: 8,
+  },
+  countText: {
+    fontSize: 14,
+    fontFamily: FontFamily.semiBold,
     marginBottom: 20,
   },
   videoCard: {
@@ -152,6 +196,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     minWidth: 0,
+  },
+  videoMeta: {
+    marginTop: 4,
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  completedLabel: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
   },
   videoTitle: {
     fontSize: 15,

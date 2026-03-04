@@ -286,7 +286,7 @@ export default function DataStorageScreen() {
                   cx={ringCenter}
                   cy={ringCenter}
                   r={r}
-                  stroke={colors.primary}
+                  stroke={colors.listIcon ?? colors.primary}
                   strokeWidth={ringStroke}
                   fill="none"
                   strokeDasharray={`${seg1} ${circumference}`}
@@ -319,12 +319,12 @@ export default function DataStorageScreen() {
 
         <View style={styles.categoryRow}>
           <View style={[styles.categoryCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Ionicons name="document-text-outline" size={24} color={colors.primary} />
+            <Ionicons name="document-text-outline" size={24} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.categoryValue, { color: colors.textPrimary }]}>{transactions.length}</Text>
             <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>{t('transactions')}</Text>
           </View>
           <View style={[styles.categoryCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Ionicons name="cloud-outline" size={24} color={colors.primary} />
+            <Ionicons name="cloud-outline" size={24} color={colors.listIcon ?? colors.primary} />
             <Text style={[styles.categoryValue, { color: colors.textPrimary }]}>{backupCount === null ? '—' : backupCount}</Text>
             <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>{t('cloudBackups')}</Text>
           </View>
@@ -343,30 +343,30 @@ export default function DataStorageScreen() {
         <View style={[styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <TouchableOpacity style={[styles.listRow, { borderBottomColor: colors.border }]} onPress={handleExport} disabled={exporting}>
             <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
-              <Ionicons name="download-outline" size={20} color={colors.primary} />
+              <Ionicons name="download-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
               <Text style={[styles.listRowTitle, { color: colors.textPrimary }]}>{t('exportData')}</Text>
               <Text style={[styles.listRowSubtitle, { color: colors.textSecondary }]}>Export JSON backup file</Text>
             </View>
-            {exporting ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
+            {exporting ? <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
           </TouchableOpacity>
           <TouchableOpacity style={[styles.listRow, { borderBottomColor: colors.border }]} onPress={handleImport} disabled={importing}>
             <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
-              <Ionicons name="document-attach-outline" size={20} color={colors.primary} />
+              <Ionicons name="document-attach-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
               <Text style={[styles.listRowTitle, { color: colors.textPrimary }]}>{t('importData')}</Text>
               <Text style={[styles.listRowSubtitle, { color: colors.textSecondary }]}>Restore from JSON file</Text>
             </View>
-            {importing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
+            {importing ? <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.listRow, { borderBottomColor: colors.border }]}
             onPress={cloudBackups === null ? loadCloudBackups : undefined}
             disabled={cloudBackups !== null && cloudBackups.length === 0}>
             <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
-              <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+              <Ionicons name="cloud-download-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
               <Text style={[styles.listRowTitle, { color: colors.textPrimary }]}>{t('restoreFromCloud')}</Text>
@@ -384,7 +384,7 @@ export default function DataStorageScreen() {
                   style={[styles.backupItem, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
                   onPress={() => handleRestoreFromCloud(item)}
                   disabled={restoringFromCloud}>
-                  {restoringFromCloud ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={[styles.backupItemText, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>}
+                  {restoringFromCloud ? <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} /> : <Text style={[styles.backupItemText, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>}
                 </TouchableOpacity>
               ))}
             </View>
@@ -403,7 +403,7 @@ export default function DataStorageScreen() {
 
         <View style={[styles.tipCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <View style={[styles.tipIconWrap, { backgroundColor: colors.surfaceElevated }]}>
-            <Ionicons name="shield-checkmark" size={22} color={colors.primary} />
+            <Ionicons name="shield-checkmark" size={22} color={colors.listIcon ?? colors.primary} />
           </View>
           <View style={styles.tipTextWrap}>
             <Text style={[styles.tipTitle, { color: colors.textPrimary }]}>{t('dataSafetyTipTitle')}</Text>
