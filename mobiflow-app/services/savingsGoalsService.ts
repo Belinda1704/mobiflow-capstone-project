@@ -9,6 +9,7 @@ export type SavingsGoal = {
   target: number;
   current: number;
   createdAt: number;
+  durationMonths?: number | null;
 };
 
 export type CategoryBudget = {
@@ -44,12 +45,15 @@ export async function saveSavingsGoal(
   const existing = 'id' in goal ? goal : null;
   const id = existing?.id ?? `goal_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const createdAt = existing?.createdAt ?? Date.now();
+  const maybeDuration = (goal as Partial<SavingsGoal>).durationMonths;
+  const durationMonths = maybeDuration !== undefined ? maybeDuration : existing?.durationMonths ?? null;
   const full: SavingsGoal = {
     id,
     name: goal.name.trim(),
     target: Math.max(0, goal.target),
     current: Math.max(0, goal.current ?? 0),
     createdAt,
+    durationMonths,
   };
   const goals = await getSavingsGoals(userId);
   const others = goals.filter((g) => g.id !== id);

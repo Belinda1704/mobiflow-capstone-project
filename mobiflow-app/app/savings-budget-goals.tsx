@@ -16,7 +16,6 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useSavingsGoals } from '../hooks/useSavingsGoals';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { ProgressBar } from '../components/ProgressBar';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { useThemeColors } from '../contexts/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import { useTranslations } from '../hooks/useTranslations';
@@ -38,6 +37,7 @@ export default function SavingsBudgetGoalsScreen() {
     suggestedBudgets,
     suggestedSavingsGoal,
     addOrUpdateGoal,
+    removeGoal,
     addOrUpdateBudget,
     loading: goalsLoading,
   } = useSavingsGoals(userId, transactions);
@@ -47,7 +47,10 @@ export default function SavingsBudgetGoalsScreen() {
   const [showCelebrationForGoal, setShowCelebrationForGoal] = useState<typeof goals[0] | null>(null);
   const [goalName, setGoalName] = useState('');
   const [goalTarget, setGoalTarget] = useState('');
+  const [goalDuration, setGoalDuration] = useState('');
   const [applyingSuggestions, setApplyingSuggestions] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<typeof goals[0] | null>(null);
+  const [contributionAmount, setContributionAmount] = useState('');
 
   // Pop celebration when a goal hits 100%
   useEffect(() => {
@@ -76,6 +79,8 @@ export default function SavingsBudgetGoalsScreen() {
   async function handleAddGoal() {
     const name = goalName.trim();
     const target = parseInt(goalTarget.replace(/\D/g, ''), 10);
+    const durationNum = parseInt(goalDuration.replace(/\D/g, ''), 10);
+    const durationMonths = !isNaN(durationNum) && durationNum > 0 ? durationNum : undefined;
     if (!name) {
       showError(t('error'), t('enterGoalName'));
       return;
@@ -88,11 +93,37 @@ export default function SavingsBudgetGoalsScreen() {
       name,
       target,
       current: 0,
+      durationMonths,
     });
     if (saved) {
       setGoalName('');
       setGoalTarget('');
+       setGoalDuration('');
       setShowAddGoal(false);
+    }
+  }
+
+  async function handleAddContribution() {
+    if (!editingGoal) return;
+    const raw = contributionAmount.replace(/\D/g, '');
+    const delta = parseInt(raw, 10);
+    if (isNaN(delta) || delta <= 0) {
+      showError(t('error'), t('enterValidTargetAmount'));
+      return;
+    }
+    const currentBase = (editingGoal.current as number) || 0;
+    const newCurrent = currentBase + delta;
+    const saved = await addOrUpdateGoal({
+      id: editingGoal.id,
+      name: editingGoal.name,
+      target: editingGoal.target,
+      current: newCurrent,
+      createdAt: editingGoal.createdAt,
+      durationMonths: editingGoal.durationMonths,
+    });
+    if (saved) {
+      setContributionAmount('');
+      setEditingGoal(null);
     }
   }
 
@@ -114,7 +145,7 @@ export default function SavingsBudgetGoalsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{t('savingsGoals')}</Text>
           {goalsLoading ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} />
           ) : goals.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noSavingsGoalsYet')}</Text>
@@ -127,7 +158,7 @@ export default function SavingsBudgetGoalsScreen() {
                   <Text
                     style={[
                       styles.goalPercent,
-                      { color: g.percent >= 100 ? colors.success : g.percent >= 50 ? colors.accent : colors.accent },
+                      { color: g.percent >= 100 ? colors.success : colors.textPrimary },
                     ]}>
                     {g.percent}%
                   </Text>
@@ -135,11 +166,24 @@ export default function SavingsBudgetGoalsScreen() {
                 <Text style={[styles.goalAmount, { color: colors.textSecondary }]}>
                   {formatRWF(g.current)} of {formatRWF(g.target)}
                 </Text>
+                {typeof g.durationMonths === 'number' && g.durationMonths > 0 && (
+                  <Text style={[styles.goalDuration, { color: colors.textSecondary }]}>
+                    {g.durationMonths} month{g.durationMonths === 1 ? '' : 's'}
+                  </Text>
+                )}
                 <ProgressBar
                   progress={g.percent}
                   color={g.percent >= 100 ? 'green' : g.percent >= 50 ? 'yellow' : 'yellow'}
                   height={10}
                 />
+                <View style={styles.goalActionsRow}>
+                  <TouchableOpacity onPress={() => setEditingGoal(g)}>
+                    <Text style={[styles.editGoalText, { color: colors.textPrimary }]}>{t('addToGoal')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => removeGoal(g.id)}>
+                    <Text style={[styles.deleteGoalText, { color: colors.textPrimary }]}>{t('delete')}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           )}
@@ -203,9 +247,6 @@ export default function SavingsBudgetGoalsScreen() {
           )}
         </View>
 
-        <View style={styles.btnWrap}>
-          <PrimaryButton title={t('addNewGoal')} onPress={() => setShowAddGoal(true)} />
-        </View>
       </ScrollView>
 
       <Modal visible={!!showCelebrationForGoal} transparent animationType="fade">
@@ -258,11 +299,63 @@ export default function SavingsBudgetGoalsScreen() {
                 onChangeText={setGoalTarget}
                 keyboardType="numeric"
               />
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary }]}
+                placeholder={t('goalDurationPlaceholder') || 'Duration in months (optional)'}
+                placeholderTextColor={colors.textSecondary}
+                value={goalDuration}
+                onChangeText={setGoalDuration}
+                keyboardType="numeric"
+              />
               <View style={styles.modalActions}>
                 <TouchableOpacity style={[styles.cancelBtn, { backgroundColor: colors.background }]} onPress={() => setShowAddGoal(false)}>
                   <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddGoal}>
+                  <Text style={[styles.saveBtnText, { color: colors.black }]}>{t('save')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={!!editingGoal} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setEditingGoal(null);
+            setContributionAmount('');
+          }}>
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                {editingGoal ? t('addAmountToGoal', { name: editingGoal.name }) : t('addSavingsGoal')}
+              </Text>
+              {editingGoal && (
+                <Text style={[styles.goalAmount, { color: colors.textSecondary }]}>
+                  {formatRWF(editingGoal.current as number)} of {formatRWF(editingGoal.target)}
+                </Text>
+              )}
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary }]}
+                placeholder={t('targetAmountPlaceholder')}
+                placeholderTextColor={colors.textSecondary}
+                value={contributionAmount}
+                onChangeText={setContributionAmount}
+                keyboardType="numeric"
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, { backgroundColor: colors.background }]}
+                  onPress={() => {
+                    setEditingGoal(null);
+                    setContributionAmount('');
+                  }}>
+                  <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>{t('cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddContribution}>
                   <Text style={[styles.saveBtnText, { color: colors.black }]}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
@@ -313,6 +406,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  goalHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   goalName: {
     fontSize: 15,
     fontFamily: FontFamily.semiBold,
@@ -326,6 +424,25 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     marginTop: 4,
     marginBottom: 8,
+  },
+  goalDuration: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    marginBottom: 6,
+  },
+  goalActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 10,
+  },
+  editGoalText: {
+    fontSize: 12,
+    fontFamily: FontFamily.medium,
+  },
+  deleteGoalText: {
+    fontSize: 12,
+    fontFamily: FontFamily.medium,
   },
   card: {
     padding: 16,
@@ -370,9 +487,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontFamily.regular,
     textAlign: 'center',
-  },
-  btnWrap: {
-    marginTop: 8,
   },
   modalOverlay: {
     flex: 1,

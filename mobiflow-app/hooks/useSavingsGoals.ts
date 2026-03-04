@@ -22,14 +22,14 @@ export function useSavingsGoals(userId: string | null, transactions: Transaction
   // Start with loading: false to show UI immediately
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchGoalsAndBudgets = useCallback(() => {
     if (!userId) {
       setGoals([]);
       setBudgets([]);
       setLoading(false);
       return;
     }
-    // Load goals/budgets asynchronously - don't block UI
+    setLoading(true);
     Promise.all([getSavingsGoals(userId), getCategoryBudgets(userId)])
       .then(([g, b]) => {
         setGoals(g);
@@ -37,13 +37,16 @@ export function useSavingsGoals(userId: string | null, transactions: Transaction
         setLoading(false);
       })
       .catch(() => {
-        // Don't show error immediately - might be offline, cached data will load
         setLoading(false);
       });
   }, [userId]);
 
+  useEffect(() => {
+    fetchGoalsAndBudgets();
+  }, [fetchGoalsAndBudgets]);
+
   const addOrUpdateGoal = useCallback(
-    async (goal: Omit<SavingsGoal, 'id' | 'createdAt'>) => {
+    async (goal: Omit<SavingsGoal, 'id' | 'createdAt'> | SavingsGoal) => {
       if (!userId) return null;
       try {
         const saved = await saveSavingsGoal(userId, goal);
@@ -129,6 +132,7 @@ export function useSavingsGoals(userId: string | null, transactions: Transaction
     suggestedBudgets,
     suggestedSavingsGoal,
     loading,
+    refetch: fetchGoalsAndBudgets,
     addOrUpdateGoal,
     removeGoal,
     addOrUpdateBudget,

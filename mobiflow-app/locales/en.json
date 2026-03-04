@@ -4,6 +4,8 @@
   "done": "Done",
   "back": "Back",
   "add": "Add",
+  "addToGoal": "Add to goal",
+  "addAmountToGoal": "Add amount to {{name}}",
   "edit": "Edit",
   "delete": "Delete",
   "viewAll": "View All",
@@ -299,6 +301,12 @@
   "categoryName": "Category name",
   "selectCategory": "Select Category",
   "selectPaymentMethod": "Select Payment Method",
+  "transactionNotFound": "This transaction was deleted or is no longer available.",
+  "transactionDeleted": "Deleted",
+  "transactionDeletedMessage": "Transaction deleted.",
+  "saved": "Saved",
+  "savedMessage": "Your changes have been saved.",
+  "goBack": "Go back",
   "selectBusinessType": "Select Business Type",
   "deleteAccount": "Delete account",
   "deleteAccountConfirm": "This will permanently delete your account and all your data. This cannot be undone.",
@@ -417,6 +425,7 @@
   "suggestedBudgets": "Suggested budgets",
   "suggestedBudgetsSubtitle": "Based on your spending. Budget = avg spend × 1.1",
   "applySuggestedBudgets": "Apply suggested budgets",
+  "goalDurationPlaceholder": "Duration in months (optional)",
   "goalReachedCongratulations": "Congratulations!",
   "goalReachedMessage": "You reached your goal: {{name}}",
   "addSavingsGoal": "Add Savings Goal",
@@ -567,5 +576,7 @@
   "financialLiteracy": "Financial literacy",
   "financialLiteracySubtitle": "Short videos about saving, credit, and money",
   "financialLiteracyIntro": "Watch short Kinyarwanda videos about saving, credit, and managing business money.",
-  "financialLiteracyVideoHint": "Tap to watch this lesson inside the app."
+  "financialLiteracyVideoHint": "Tap to watch this lesson inside the app.",
+  "lessonsCompletedCount": "{{count}} of {{total}} completed",
+  "lessonCompleted": "Completed"
 }

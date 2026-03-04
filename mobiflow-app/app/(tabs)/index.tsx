@@ -55,7 +55,7 @@ export default function HomeScreen() {
   const { t } = useTranslations();
   const [dashboardPeriod, setDashboardPeriod] = useState<DateRangeFilter>('all');
   const { userId } = useCurrentUser();
-  const { transactions } = useTransactions(userId || null);
+  const { transactions, loading } = useTransactions(userId || null);
   const filteredTransactions = useMemo(
     () =>
       filterTransactions(transactions, {
@@ -68,7 +68,7 @@ export default function HomeScreen() {
     [transactions, dashboardPeriod]
   );
   const summary = useMemo(() => computeHomeSummary(filteredTransactions), [filteredTransactions]);
-  const { goals } = useSavingsGoals(userId, transactions);
+  const { goals, refetch: refetchGoals } = useSavingsGoals(userId, transactions);
   const { incomeDrop, budgetBreaches, totalExpenseThisMonth } = useAlertsCheck(userId, transactions);
   const { settings: alertSettings } = useAlerts(userId);
 
@@ -99,11 +99,23 @@ export default function HomeScreen() {
     }, [])
   );
 
+  // Refetch goals when dashboard is shown so new goals appear after adding on savings screen
+  useFocusEffect(
+    useCallback(() => {
+      refetchGoals();
+    }, [refetchGoals])
+  );
+
   const barChartConfig = useMemo(() => getDashboardChartConfig(colors), [colors]);
   const barChartData = {
     labels: summary.chartLabels,
     datasets: [{ data: summary.chartData }],
   };
+
+  // When the app has just loaded and transactions are still coming from Firestore,
+  // avoid flashing 0s – show placeholders instead, similar to how chat apps show
+  // the screen first while data updates in the background.
+  const isInitialLoading = loading && transactions.length === 0;
 
   // No spinner – data from cache
 
@@ -120,7 +132,7 @@ export default function HomeScreen() {
             <Ionicons name="alert-circle" size={20} color={colors.warning} />
             <View style={styles.alertsBannerText}>
               {incomeDrop && (
-                <Text style={[styles.alertsBannerItem, { color: colors.warningText }]}>{t('incomeDropAlert', { percent: incomeDrop.percentDrop })}</Text>
+                <Text style={[styles.alertsBannerItem, { color: colors.warningText }]}>{t('incomeDropAlert', { percent: Math.min(incomeDrop.percentDrop, 99) })}</Text>
               )}
               {budgetBreaches.slice(0, 2).map((b) => (
                 <Text key={b.category} style={[styles.alertsBannerItem, { marginTop: 4, color: colors.warningText }]}>{t('budgetBreachAlert', { category: b.category, percent: b.percentOver })}</Text>
@@ -149,9 +161,15 @@ export default function HomeScreen() {
           </View>
           <Text style={[styles.periodBadge, { color: colors.textSecondary }]}>{getPeriodLabel(dashboardPeriod, t)}</Text>
         </View>
-        <Text style={[styles.balanceAmount, { color: colors.accent }]}>{formatRWF(summary.balance)}</Text>
-        <Text style={[styles.balanceDetailGreen, { color: colors.success }]}>{formatRWFWithSign(summary.totalIncome)}</Text>
-        <Text style={[styles.balanceDetailRed, { color: colors.error }]}>{formatRWFWithSign(-summary.totalExpense)}</Text>
+        <Text style={[styles.balanceAmount, { color: colors.accent }]}>
+          {isInitialLoading ? '—' : formatRWF(summary.balance)}
+        </Text>
+        <Text style={[styles.balanceDetailGreen, { color: colors.success }]}>
+          {isInitialLoading ? '—' : formatRWFWithSign(summary.totalIncome)}
+        </Text>
+        <Text style={[styles.balanceDetailRed, { color: colors.error }]}>
+          {isInitialLoading ? '—' : formatRWFWithSign(-summary.totalExpense)}
+        </Text>
         </View>
         {/* Summary Cards - neutral background, colored icons/amounts */}
         <View style={styles.summaryCardsRow}>
@@ -163,7 +181,9 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.summaryCardDescription, { color: colors.textSecondary }]}>{t('incomeDescription')}</Text>
             </View>
-            <Text style={[styles.summaryCardAmount, { color: colors.success }]}>{formatRWF(summary.totalIncome)}</Text>
+            <Text style={[styles.summaryCardAmount, { color: colors.success }]}>
+              {isInitialLoading ? '—' : formatRWF(summary.totalIncome)}
+            </Text>
             <Text style={[styles.summaryCardNet, { color: colors.textSecondary }]}>
               {t('net')}: <Text style={{ color: summary.net >= 0 ? colors.success : colors.error }}>{formatRWF(summary.net)}</Text>
             </Text>
@@ -176,9 +196,17 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.summaryCardDescription, { color: colors.textSecondary }]}>{t('expenseDescription')}</Text>
             </View>
-            <Text style={[styles.summaryCardAmount, { color: colors.error }]}>{formatRWF(summary.totalExpense)}</Text>
+            <Text style={[styles.summaryCardAmount, { color: colors.error }]}>
+              {isInitialLoading ? '—' : formatRWF(summary.totalExpense)}
+            </Text>
             <Text style={[styles.summaryCardMeta, { color: colors.textSecondary }]}>
-              {summary.totalExpense > 0 ? Math.round((summary.totalExpense / (summary.totalIncome || 1)) * 100) : 0}% {t('ofIncome') || 'of income'}
+              {isInitialLoading
+                ? '—'
+                : `${
+                    summary.totalExpense > 0
+                      ? Math.round((summary.totalExpense / (summary.totalIncome || 1)) * 100)
+                      : 0
+                  }% ${t('ofIncome') || 'of income'}`}
             </Text>
           </View>
         </View>
@@ -279,13 +307,23 @@ export default function HomeScreen() {
                     <Ionicons name={catIcon.icon} size={18} color={catIcon.iconColor} />
                   </View>
                   <View>
-                    <Text style={[styles.transactionLabel, { color: colors.textPrimary }]} numberOfLines={1}>{tx.label}</Text>
+                    <Text
+                      style={[styles.transactionLabel, { color: colors.textPrimary }]}
+                      numberOfLines={1}>
+                      {tx.label}
+                    </Text>
                     <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>{formatTransactionDate(tx.createdAt)}</Text>
                   </View>
                 </View>
-                <Text style={[styles.transactionAmount, { color: tx.type === 'income' ? colors.success : colors.error }]}>
-                  {formatRWFWithSign(tx.amount)}
-                </Text>
+                <View style={styles.transactionAmountWrap}>
+                  <Text
+                    style={[
+                      styles.transactionAmount,
+                      { color: tx.type === 'income' ? colors.success : colors.error },
+                    ]}>
+                    {formatRWFWithSign(tx.amount)}
+                  </Text>
+                </View>
               </View>
             );
           })
@@ -564,6 +602,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   iconWrap: {
     width: 36,
@@ -597,6 +636,10 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 14,
     fontFamily: FontFamily.semiBold,
+  },
+  transactionAmountWrap: {
+    minWidth: 90,
+    alignItems: 'flex-end',
   },
   amountIncome: {
     // inline
