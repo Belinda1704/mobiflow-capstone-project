@@ -6,7 +6,6 @@ All runnable scripts live here. Run from **mobiflow-app** root (e.g. `.\scripts\
 - `SETUP_SHORT_PATH.ps1` – Copy project to short path (C:\mobiflow\mobiflow-app) for building
 - `BUILD_RELEASE_APK.ps1` – Build release APK (run from short path or main project)
 - `BUILD_WITH_JAVA17.ps1` – Debug build with Java 17 (Metro + device)
-- `build-apk.ps1` / `build-apk-with-java.ps1` – Alternative build helpers
 - `sync-to-short-path.ps1` – Sync build fixes to short path
 - `ADD_PAST_SMS_READING.ps1` – Add readPastSMS to SMS library
 - `patch-sms-library.ps1` – Patch SMS library for Android (getApplicationInfo fix)
