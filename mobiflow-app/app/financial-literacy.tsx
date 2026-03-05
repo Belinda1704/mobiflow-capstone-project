@@ -1,9 +1,9 @@
-// Financial literacy: Kinyarwanda videos, thumbnails list. Shows completed count and badges.
+// Financial literacy: Kinyarwanda videos. Tap to expand and watch on the same screen (react-native-youtube-iframe).
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
+import YoutubeIframe, { PLAYER_STATES } from 'react-native-youtube-iframe';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -12,6 +12,7 @@ import { useTranslations } from '../hooks/useTranslations';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { FontFamily } from '../constants/colors';
 import { getCompletedLessonIds } from '../services/lessonCompletionService';
+import { markLessonCompleted } from '../services/lessonCompletionService';
 
 type VideoItem = {
   id: string;
@@ -47,6 +48,7 @@ const VIDEOS: VideoItem[] = [
   },
 ];
 
+// Get YouTube video id from a youtu.be or youtube.com URL so we can embed the player
 function getVideoId(url: string): string {
   if (url.includes('youtu.be/')) {
     return url.split('youtu.be/')[1]?.split('?')[0] ?? '';
@@ -55,17 +57,26 @@ function getVideoId(url: string): string {
   return m ? m[1] : '';
 }
 
+// YouTube thumbnail image URL for the card (shows before the user expands to play)
 function getYoutubeThumbnail(url: string): string {
   const id = getVideoId(url);
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : '';
 }
 
 export default function FinancialLiteracyScreen() {
-  const router = useRouter();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
   const { userId } = useCurrentUser();
   const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
+  const playerHeight = Math.min((width - 48) * (9 / 16), 260);
+
+  // Android: WebView inside ScrollView works better with nestedScrollEnabled and no parent scroll conflict
+  const webViewProps =
+    Platform.OS === 'android'
+      ? { scrollEnabled: false, nestedScrollEnabled: true }
+      : { scrollEnabled: false };
 
   // Reload completion status every time the screen comes into focus so
   // "X of Y completed" and badges update after watching a video.
@@ -99,48 +110,88 @@ export default function FinancialLiteracyScreen() {
         </Text>
         {VIDEOS.map((item) => {
           const thumb = getYoutubeThumbnail(item.url);
+          const videoId = getVideoId(item.url);
+          const isOpen = openLessonId === item.id;
           return (
-            <TouchableOpacity
+            <View
               key={item.id}
               style={[styles.videoCard, { backgroundColor: colors.background, borderColor: colors.border }]}
-              onPress={() => {
-                const videoId = getVideoId(item.url);
-                if (videoId) {
-                  router.push({
-                    pathname: '/financial-video',
-                    params: { videoId, lessonId: item.id, title: item.title },
-                  } as any);
-                }
-              }}
-              activeOpacity={0.8}>
-              <View style={styles.thumbnailWrap}>
-                {thumb ? (
-                  <Image source={{ uri: thumb }} style={styles.thumbnail} contentFit="cover" />
-                ) : (
-                  <View style={[styles.thumbnailPlaceholder, { backgroundColor: colors.surfaceElevated }]} />
-                )}
-                <View style={styles.playOverlay}>
-                  <Ionicons name="play" size={36} color="rgba(255,255,255,0.95)" />
+            >
+              {isOpen && videoId ? (
+                <View style={styles.inlinePlayerWrap} collapsable={false}>
+                  <YoutubeIframe
+                    key={item.id}
+                    height={playerHeight}
+                    videoId={videoId}
+                    onChangeState={(state) => {
+                      const ended =
+                        state === PLAYER_STATES.ENDED || state === 'ended' || state === 0;
+                      if (!ended) return;
+                      if (userId) {
+                        markLessonCompleted(userId, item.id).catch((err) =>
+                          console.warn('Failed to mark lesson completed:', err)
+                        );
+                      }
+                    }}
+                    webViewProps={webViewProps}
+                  />
                 </View>
-              </View>
-              <View style={styles.videoBody}>
-                <Text style={[styles.videoTitle, { color: colors.textPrimary }]} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <View style={styles.videoMeta}>
-                  <Text style={[styles.videoHint, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {t('financialLiteracyVideoHint')}
-                  </Text>
-                  {completedIds.includes(item.id) && (
-                    <View style={styles.completedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color={colors.listIcon ?? colors.primary} />
-                      <Text style={[styles.completedLabel, { color: colors.listIcon ?? colors.primary }]}>{t('lessonCompleted')}</Text>
-                    </View>
+              ) : null}
+              <TouchableOpacity
+                style={styles.videoRow}
+                onPress={() =>
+                  setOpenLessonId((current) => (current === item.id ? null : item.id))
+                }
+                activeOpacity={0.8}
+              >
+                <View style={styles.thumbnailWrap}>
+                  {thumb ? (
+                    <>
+                      <Image source={{ uri: thumb }} style={styles.thumbnail} contentFit="cover" />
+                      <View style={styles.playOverlay}>
+                        <Ionicons name="play" size={36} color="rgba(255,255,255,0.95)" />
+                      </View>
+                    </>
+                  ) : (
+                    <View
+                      style={[styles.thumbnailPlaceholder, { backgroundColor: colors.surfaceElevated }]}
+                    />
                   )}
                 </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+                <View style={styles.videoBody}>
+                  <Text style={[styles.videoTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <View style={styles.videoMeta}>
+                    <Text style={[styles.videoHint, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {t('financialLiteracyVideoHint')}
+                    </Text>
+                    {completedIds.includes(item.id) && (
+                      <View style={styles.completedBadge}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color={colors.listIcon ?? colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.completedLabel,
+                            { color: colors.listIcon ?? colors.primary },
+                          ]}
+                        >
+                          {t('lessonCompleted')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+                <Ionicons
+                  name={isOpen ? 'chevron-down' : 'chevron-forward'}
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
           );
         })}
       </ScrollView>
@@ -164,13 +215,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   videoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 0,
+    flexDirection: 'column',
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 16,
     overflow: 'hidden',
+  },
+  videoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   thumbnailWrap: {
     width: 160,
@@ -219,5 +272,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FontFamily.regular,
     marginTop: 4,
+  },
+  inlinePlayerWrap: {
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
 });
