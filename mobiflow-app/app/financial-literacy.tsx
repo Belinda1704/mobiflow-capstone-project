@@ -1,4 +1,4 @@
-// Financial literacy: Kinyarwanda videos. Tap to expand and watch on the same screen (react-native-youtube-iframe).
+// Financial literacy - list of videos, tap to expand and watch
 import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
@@ -57,7 +57,6 @@ function getVideoId(url: string): string {
   return m ? m[1] : '';
 }
 
-// YouTube thumbnail image URL for the card (shows before the user expands to play)
 function getYoutubeThumbnail(url: string): string {
   const id = getVideoId(url);
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : '';
@@ -72,14 +71,11 @@ export default function FinancialLiteracyScreen() {
   const { width } = useWindowDimensions();
   const playerHeight = Math.min((width - 48) * (9 / 16), 260);
 
-  // Android: WebView inside ScrollView works better with nestedScrollEnabled and no parent scroll conflict
   const webViewProps =
     Platform.OS === 'android'
       ? { scrollEnabled: false, nestedScrollEnabled: true }
       : { scrollEnabled: false };
 
-  // Reload completion status every time the screen comes into focus so
-  // "X of Y completed" and badges update after watching a video.
   useFocusEffect(
     useCallback(() => {
       if (!userId) {

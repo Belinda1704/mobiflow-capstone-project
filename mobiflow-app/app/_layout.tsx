@@ -119,7 +119,6 @@ export default function RootLayout() {
         <Stack.Screen name="credit-readiness" />
         <Stack.Screen name="how-to-use" />
         <Stack.Screen name="financial-literacy" />
-        {/* Screen where user watches a single financial literacy video (opened from the list) */}
         <Stack.Screen name="financial-video" />
         </Stack>
         <ThemeAwareStatusBar />

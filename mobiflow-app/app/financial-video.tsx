@@ -8,7 +8,6 @@ import { useThemeColors } from '../contexts/ThemeContext';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { markLessonCompleted } from '../services/lessonCompletionService';
 
-// Full-screen YouTube player for one financial literacy lesson; marks lesson completed when video ends
 export default function FinancialVideoScreen() {
   const { colors } = useThemeColors();
   const { width } = useWindowDimensions();

@@ -1,4 +1,4 @@
-// SMS capture screen: user can turn on SMS access, enable live capture, and scan past MoMo/Airtel messages
+// SMS capture - turn on access, live capture, scan past messages
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
@@ -76,7 +76,6 @@ export default function SmsCaptureScreen() {
     [refreshPermissions, requestPermissions],
   );
 
-  // Scan existing SMS on the device once; shows progress and result alert
   const handleScanPastMessages = useCallback(async () => {
     if (!userId || !hasPermissions) return;
     setScanningPast(true);
@@ -107,7 +106,6 @@ export default function SmsCaptureScreen() {
     }
   }, [hasPermissions, t, userId]);
 
-  // Clear the "already scanned" flag then run scan again (for re-importing after new messages)
   const handleResetAndRescan = useCallback(async () => {
     if (!userId || !hasPermissions) return;
     await clearPastSmsScannedFlag(userId);
