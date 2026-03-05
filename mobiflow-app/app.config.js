@@ -1,4 +1,4 @@
-// Load .env so Firebase keys are not committed to the repo
+// Load .env so firebase keys stay out of the repo
 require('dotenv').config();
 
 const appJson = require('./app.json');
@@ -6,7 +6,6 @@ const appJson = require('./app.json');
 module.exports = {
   expo: {
     ...appJson.expo,
-    // Notifee plugin sets Android foreground service type to dataSync for SMS capture
     plugins: [
       ...(appJson.expo.plugins || []),
       './plugins/withNotifeeDataSyncService.js',

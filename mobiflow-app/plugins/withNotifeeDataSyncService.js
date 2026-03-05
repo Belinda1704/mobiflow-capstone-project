@@ -1,15 +1,9 @@
-/**
- * Expo config plugin: set Notifee ForegroundService to use dataSync so that
- * startSmsForegroundService() does not crash (manifest type must match JS).
- * Required for Android 14+ when using foregroundServiceTypes: [DATA_SYNC].
- */
+// Set Notifee service type to dataSync in Android manifest so SMS capture works on Android 14+
 const { withAndroidManifest } = require('@expo/config-plugins');
 
-// Notifee's service name in the Android manifest; we set its type to dataSync
 const NOTIFEE_SERVICE_NAME = 'app.notifee.core.ForegroundService';
 const FOREGROUND_SERVICE_TYPE = 'dataSync';
 
-// Walks the manifest and sets (or adds) the Notifee service with foregroundServiceType dataSync
 function setNotifeeForegroundServiceType(androidManifest) {
   const application = androidManifest.manifest?.application?.[0];
   if (!application) return androidManifest;
@@ -37,7 +31,6 @@ function setNotifeeForegroundServiceType(androidManifest) {
   return androidManifest;
 }
 
-// Expo plugin entry: runs our manifest changes when building the Android app
 function withNotifeeDataSyncService(config) {
   return withAndroidManifest(config, (config) => {
     config.modResults = setNotifeeForegroundServiceType(config.modResults);
