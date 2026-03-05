@@ -1,4 +1,4 @@
-// SMS → transactions (MTN/Airtel). Android only, not Expo Go.
+// Read MoMo/Airtel SMS, parse to transactions, save to Firestore. Android only.
 import { Platform, PermissionsAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -88,7 +88,7 @@ function recordSmsBodyProcessed(body: string, address: string): void {
   }
 }
 
-// Stable id so same SMS not added twice
+// Stable id so same SMS not added twice (includes timestamp so live vs past can differ)
 function computeSmsId(body: string, address: string, timestamp: number): string {
   const raw = `${(body || '').trim()}|${(address || '').trim()}|${timestamp}`;
   let h = 0;
@@ -96,6 +96,16 @@ function computeSmsId(body: string, address: string, timestamp: number): string 
     h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
   }
   return 'sms_' + Math.abs(h).toString(36) + '_' + raw.length;
+}
+
+// Same for same body+address (no timestamp). Used so past scan skips SMS already added by live listener.
+function computeSmsBodySig(body: string, address: string): string {
+  const raw = `${(body || '').trim().toLowerCase()}|${(address || '').trim().toLowerCase()}`;
+  let h = 0;
+  for (let i = 0; i < raw.length; i++) {
+    h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
+  }
+  return 'b_' + Math.abs(h).toString(36);
 }
 
 // Payload from native can be string "[address, body]" or object { address, body }
@@ -250,6 +260,7 @@ async function processSmsMessage(
     console.warn('Failed to learn SMS pattern:', error);
   }
 
+  const bodySig = computeSmsBodySig(smsBody, smsAddress);
   console.log('[SMS Capture] Adding transaction:', { label: tx.label, amount: tx.amount, type: tx.type, category: suggestedCategory });
   try {
     await addTransaction(userId, {
@@ -261,6 +272,7 @@ async function processSmsMessage(
       notes: `SMS: ${tx.provider}`,
       createdAt: new Date(smsTimestamp),
       smsId,
+      smsBodySig: bodySig,
     });
     console.log('[SMS Capture] Transaction added successfully:', tx.label);
     // Past scan: track just-added ids in same batch
@@ -281,6 +293,7 @@ async function processSmsMessage(
         notes: `SMS: ${tx.provider}`,
         createdAt: null,
         smsId,
+        smsBodySig: bodySig,
       },
       ...cachedTransactions,
     ];
@@ -330,12 +343,13 @@ export async function scanPastSmsMessages(
         : await getTransactionsSnapshot(userId);
     cachedTransactions = existingTransactions;
 
-    // Existing smsIds to dedupe
     const existingSmsIds = new Set<string>();
+    const existingSmsBodySigs = new Set<string>();
     for (const tx of existingTransactions) {
       if (tx.smsId) existingSmsIds.add(tx.smsId);
+      if (tx.smsBodySig) existingSmsBodySigs.add(tx.smsBodySig);
     }
-    console.log(`[SMS Capture] Found ${existingSmsIds.size} existing SMS-derived transactions to deduplicate against`);
+    console.log(`[SMS Capture] Dedupe against ${existingSmsIds.size} smsIds and ${existingSmsBodySigs.size} body sigs`);
 
     // Read inbox + sent
     let pastSms: Array<{ body: string; address: string; timestamp: number }> = [];
@@ -380,8 +394,9 @@ export async function scanPastSmsMessages(
     for (const sms of pastSms) {
       if (!isMobileMoneySms(sms.body)) continue;
       const smsIdForPast = computeSmsId(sms.body, sms.address, sms.timestamp);
-      // Skip if already have or queued this scan
-      if (existingSmsIds.has(smsIdForPast) || batchSmsIds.has(smsIdForPast)) continue;
+      const bodySig = computeSmsBodySig(sms.body, sms.address);
+      // Skip if already have (by smsId or by body sig – live listener uses different timestamp so body sig catches those)
+      if (existingSmsIds.has(smsIdForPast) || existingSmsBodySigs.has(bodySig) || batchSmsIds.has(smsIdForPast)) continue;
       batchSmsIds.add(smsIdForPast);
       pastSmsToProcess.push(sms);
     }

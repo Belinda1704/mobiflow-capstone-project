@@ -1,4 +1,3 @@
-/** A single transaction as stored in Firestore or used in the app. */
 export type PaymentMethod = 'cash' | 'mobile_money';
 
 export type Transaction = {
@@ -12,6 +11,7 @@ export type Transaction = {
   notes?: string;
   createdAt?: FirestoreTimestamp | null;
   smsId?: string | null;
+  smsBodySig?: string | null;
 };
 
 export type FirestoreTimestamp = {
@@ -19,7 +19,6 @@ export type FirestoreTimestamp = {
   seconds?: number;
 };
 
-/** What the app passes in when creating or updating a transaction. */
 export type CreateTransactionInput = {
   label: string;
   amount: number;
@@ -29,6 +28,7 @@ export type CreateTransactionInput = {
   notes?: string;
   createdAt?: Date;
   smsId?: string | null;
+  smsBodySig?: string | null;
 };
 
 export type FilterTab = 'all' | 'income' | 'expense';
