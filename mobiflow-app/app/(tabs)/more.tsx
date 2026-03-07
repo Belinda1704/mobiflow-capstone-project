@@ -38,7 +38,7 @@ export default function MoreScreen() {
               <Ionicons name={item.icon} size={22} color={colors.textPrimary} />
             </View>
             <View style={styles.rowText}>
-              <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{t(item.labelKey)}</Text>
+              <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{t(item.labelKey).toUpperCase()}</Text>
               <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{t(item.subtitleKey)}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />

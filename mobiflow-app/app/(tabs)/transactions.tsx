@@ -39,7 +39,6 @@ import { groupTransactionsByDate } from '../../utils/transactionGrouping';
 import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon';
 import { translateCategory } from '../../utils/translateCategory';
 import type { FilterTab, DateRangeFilter, PaymentFilter } from '../../types/transaction';
-import { isHighFraudRisk } from '../../utils/fraudModel';
 
 const DATE_RANGES: { value: DateRangeFilter; labelKey: string }[] = [
   { value: 'all', labelKey: 'filterAll' },
@@ -505,7 +504,6 @@ export default function TransactionsScreen() {
               <View style={styles.transactionCards}>
                 {group.transactions.map((tx) => {
                   const catIcon = getTransactionCategoryIcon(tx.category ?? 'Other', tx.type);
-                  const fraudRisk = isHighFraudRisk(tx);
                   return (
                     <TouchableOpacity
                       key={tx.id}
@@ -538,7 +536,7 @@ export default function TransactionsScreen() {
                       <View style={styles.transactionCardBody}>
                         <View style={styles.transactionLabelRow}>
                           <Text style={[styles.transactionLabel, { color: colors.textPrimary }]} numberOfLines={1}>{tx.label}</Text>
-                          {(anomalousIds.has(tx.id) || fraudRisk) && (
+                          {anomalousIds.has(tx.id) && (
                             <View style={[styles.unusualBadge, { backgroundColor: colors.warningBg }]}>
                               <Text style={[styles.unusualBadgeText, { color: colors.warningText }]}>{t('unusualTransaction')}</Text>
                             </View>

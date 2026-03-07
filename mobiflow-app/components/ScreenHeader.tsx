@@ -11,15 +11,17 @@ type ScreenHeaderProps = {
   title: string;
   subtitle?: string;
   rightContent?: React.ReactNode;
+  backgroundColor?: string;
 };
 
-export function ScreenHeader({ title, subtitle, rightContent }: ScreenHeaderProps) {
+export function ScreenHeader({ title, subtitle, rightContent, backgroundColor }: ScreenHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeColors();
+  const bg = backgroundColor ?? colors.background;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 16, backgroundColor: bg, borderBottomColor: colors.border }]}>
       <TouchableOpacity
         testID="screen-header-back"
         style={styles.backBtn}
@@ -28,7 +30,7 @@ export function ScreenHeader({ title, subtitle, rightContent }: ScreenHeaderProp
         <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
       <View style={styles.titleWrap}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title.toUpperCase()}</Text>
         {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
       </View>
       <View style={styles.right}>{rightContent ?? <View style={styles.spacer} />}</View>
@@ -50,10 +52,14 @@ const styles = StyleSheet.create({
   },
   titleWrap: {
     flex: 1,
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 18,
     fontFamily: FontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'left',
   },
   subtitle: {
     fontSize: 13,

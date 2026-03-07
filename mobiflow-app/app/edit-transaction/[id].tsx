@@ -24,8 +24,10 @@ import { useTransactions } from '../../hooks/useTransactions';
 import { updateTransaction } from '../../services/transactionsService';
 import { saveCategoryCorrection } from '../../services/categorizationService';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { useThemeColors } from '../../contexts/ThemeContext';
 import { useTranslations } from '../../hooks/useTranslations';
+import { getDisplayPhoneFromLabel } from '../../services/customerIdentificationService';
 import { translateCategory } from '../../utils/translateCategory';
 import { FontFamily } from '../../constants/colors';
 import type { PaymentMethod } from '../../types/transaction';
@@ -164,16 +166,11 @@ export default function EditTransactionScreen() {
 
   const dropdownSelectedBg = isDark ? 'rgba(255,255,255,0.08)' : colors.surface;
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surfaceElevated }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('editTransaction')}</Text>
-        <View style={styles.headerRight} />
-      </View>
+  const senderPhone = getDisplayPhoneFromLabel(label);
 
+  return (
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <ScreenHeader title={t('editTransaction')} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
@@ -193,6 +190,12 @@ export default function EditTransactionScreen() {
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          {senderPhone && (
+            <View style={[styles.detailRow, { marginBottom: 12 }]}>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('phoneNumber')}</Text>
+              <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{senderPhone}</Text>
+            </View>
+          )}
           <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('description')}</Text>
           <TextInput
             style={[styles.notesInput, { color: colors.textPrimary, minHeight: undefined }]}
@@ -354,21 +357,6 @@ export default function EditTransactionScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: FontFamily.bold,
-    textAlign: 'center',
-  },
-  headerRight: { width: 32 },
   scroll: { flex: 1 },
   scrollContent: { padding: 24 },
   amountSection: {
@@ -466,6 +454,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontFamily.medium,
     marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontFamily: FontFamily.regular,
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontFamily: FontFamily.medium,
   },
   addCategoryRow: {
     flexDirection: 'row',

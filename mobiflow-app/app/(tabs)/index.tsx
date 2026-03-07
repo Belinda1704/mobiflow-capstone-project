@@ -27,7 +27,8 @@ import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon'
 import { filterTransactions } from '../../utils/filterTransactions';
 import type { DateRangeFilter } from '../../types/transaction';
 
-const DASHBOARD_PERIODS: DateRangeFilter[] = ['today', 'week', 'month', 'all'];
+// Dashboard = quick snapshot of recent activity only (no "all time"; use Reports for that).
+const DASHBOARD_PERIODS: DateRangeFilter[] = ['today', 'week', 'month'];
 
 // Flag so dashboard shows permission prompts once after signup
 const SHOW_PERMISSIONS_ON_DASHBOARD_KEY = '@mobiflow/showPermissionsOnDashboard';
@@ -53,7 +54,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
-  const [dashboardPeriod, setDashboardPeriod] = useState<DateRangeFilter>('all');
+  const [dashboardPeriod, setDashboardPeriod] = useState<DateRangeFilter>('month');
   const { userId } = useCurrentUser();
   const { transactions, loading } = useTransactions(userId || null);
   const filteredTransactions = useMemo(

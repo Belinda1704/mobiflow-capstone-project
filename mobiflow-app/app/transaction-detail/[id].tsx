@@ -25,6 +25,8 @@ import { translateCategory } from '../../utils/translateCategory';
 import { FontFamily } from '../../constants/colors';
 import type { Transaction, PaymentMethod } from '../../types/transaction';
 import { showError } from '../../services/errorPresenter';
+import { computeFraudRiskForTransaction } from '../../utils/fraudModel';
+import { getDisplayPhoneFromLabel } from '../../services/customerIdentificationService';
 
 function getPaymentLabel(value: PaymentMethod, t: (k: string) => string): string {
   return value === 'cash' ? t('cash') : t('mobileMoneyMomo');
@@ -110,7 +112,7 @@ export default function TransactionDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
-      <ScreenHeader title="Transaction details" />
+      <ScreenHeader title={t('transactionDetails')} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
@@ -132,6 +134,14 @@ export default function TransactionDetailScreen() {
             <Text style={[styles.detailText, { color: colors.textSecondary }]}>{paymentLabel}</Text>
           </View>
           <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('phoneNumber')}</Text>
+            <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{getDisplayPhoneFromLabel(tx.label) || '—'}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{tx.type === 'income' ? t('from') : t('to')}</Text>
+            <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{tx.label}</Text>
+          </View>
+          <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('reference')}</Text>
             <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{reference}</Text>
           </View>
@@ -150,6 +160,16 @@ export default function TransactionDetailScreen() {
             <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('accountBalanceAfter')}</Text>
             <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{formatRWF(balanceAfter)}</Text>
           </View>
+          {tx.type === 'expense' && (tx.paymentMethod === 'cash' || tx.paymentMethod === 'mobile_money') && (() => {
+            const risk = computeFraudRiskForTransaction(tx);
+            const pct = Math.round(risk * 100);
+            return pct > 0 ? (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('modelRisk')}</Text>
+                <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{pct}%</Text>
+              </View>
+            ) : null;
+          })()}
         </View>
 
         <View style={styles.actions}>

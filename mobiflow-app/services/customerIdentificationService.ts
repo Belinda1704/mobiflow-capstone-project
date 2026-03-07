@@ -69,47 +69,72 @@ function formatDisplayPhone(phone: string): string {
   return phone;
 }
 
-// Group by phone, sort by total.
+/** Returns formatted phone from label when present (e.g. "from 078..."), else null. */
+export function getDisplayPhoneFromLabel(label: string): string | null {
+  const phone = extractPhoneFromLabel(label);
+  return phone ? formatDisplayPhone(phone) : null;
+}
+
+// Key: phone if in label, else normalized label so income without phone still shows (e.g. SMS that only had name).
+function customerKey(t: Transaction): string {
+  const phone = extractPhoneFromLabel(t.label);
+  if (phone) return phone;
+  const trimmed = (t.label || '').trim();
+  if (trimmed) return `label:${trimmed}`;
+  return '';
+}
+
+// Group by phone or label, sort by total.
 export function computeTopCustomers(
   transactions: Transaction[],
   limit = 10
 ): CustomerScore[] {
-  const byPhone: Record<
+  const byKey: Record<
     string,
-    { totalAmount: number; count: number; lastDate: Date | null; name: string | null }
+    { totalAmount: number; count: number; lastDate: Date | null; name: string | null; isPhone: boolean }
   > = {};
 
   for (const t of transactions) {
     if (t.type !== 'income' || t.amount <= 0) continue;
-    const phone = extractPhoneFromLabel(t.label);
-    if (!phone) continue;
+    const key = customerKey(t);
+    if (!key) continue;
 
     const amt = Math.abs(t.amount);
     const date = getTransactionDate(t);
     const name = extractNameFromLabel(t.label);
+    const isPhone = !key.startsWith('label:');
+    const displayLabel = isPhone ? '' : key.slice(6);
 
-    if (!byPhone[phone]) {
-      byPhone[phone] = { totalAmount: 0, count: 0, lastDate: null, name: name ?? null };
+    if (!byKey[key]) {
+      byKey[key] = { totalAmount: 0, count: 0, lastDate: null, name: name ?? null, isPhone };
     }
-    byPhone[phone].totalAmount += amt;
-    byPhone[phone].count += 1;
-    if (name && !byPhone[phone].name) {
-      byPhone[phone].name = name;
+    byKey[key].totalAmount += amt;
+    byKey[key].count += 1;
+    if (name && !byKey[key].name) {
+      byKey[key].name = name;
     }
-    if (date && (!byPhone[phone].lastDate || date > byPhone[phone].lastDate!)) {
-      byPhone[phone].lastDate = date;
+    if (displayLabel && !byKey[key].name) {
+      byKey[key].name = displayLabel;
+    }
+    if (date && (!byKey[key].lastDate || date > byKey[key].lastDate!)) {
+      byKey[key].lastDate = date;
     }
   }
 
-  return Object.entries(byPhone)
-    .map(([phone, data]) => ({
-      phone,
-      totalAmount: data.totalAmount,
-      transactionCount: data.count,
-      lastTransactionDate: data.lastDate,
-      displayPhone: formatDisplayPhone(phone),
-      displayName: data.name ?? undefined,
-    }))
+  return Object.entries(byKey)
+    .map(([key, data]) => {
+      const isPhone = data.isPhone;
+      const displayName = data.name ?? (key.startsWith('label:') ? key.slice(6) : undefined);
+      const displayPhone = isPhone ? formatDisplayPhone(key) : (displayName || '—');
+      return {
+        phone: key,
+        totalAmount: data.totalAmount,
+        transactionCount: data.count,
+        lastTransactionDate: data.lastDate,
+        displayPhone,
+        displayName: displayName ?? undefined,
+      };
+    })
     .sort((a, b) => b.totalAmount - a.totalAmount)
     .slice(0, limit);
 }

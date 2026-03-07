@@ -115,7 +115,15 @@ mobiflow-capstone-project/
 - **Business health:** show a 0–100 business‑health score with simple explanations, top spending categories, and income trend over the last months.
 - **Credit readiness report:** generate a credit‑readiness summary and export it as a PDF that can be shared with a bank or MFI.
 - **Financial literacy:** short Kinyarwanda videos inside the app that help users learn about saving, credit, and managing small‑business money.
-- **Fraud‑risk hint:** show a small badge on outgoing transactions that look risky, using a simple model trained on public synthetic mobile‑money data and run only on the device (no user data sent to external services).
+- **Anomaly detector:** in the transactions list, a "Bigger than usual" badge when a transaction is larger than your usual (amount &gt; 2× your average for that type). Rule-based; uses only your own data.
+- **ML risk model:** the same "Bigger than usual" badge can also be triggered by a small model trained on a Kaggle-style dataset (amount, time of day, cash vs mobile money). It runs only on expenses (cash or mobile money) on the device; no user data is sent out.
+- **Top customers:** people who have sent you money (income), grouped by phone number from transaction labels. The list is **all-time** (all your income so far), sorted by total amount received. It updates when you open the screen; there is no daily/weekly/monthly filter.
+
+## How to demonstrate the ML (risk) model
+
+1. **Run the test:** `cd mobiflow-app && npm test -- fraudModel` — shows the model gives zero risk for income, high risk for a very large mobile-money expense, and low risk for a small cash expense.
+2. **Show the notebook:** open `fraud-detection-model/fraud_detection_synthetic.ipynb` — training data, features (amount_scaled, hour_of_day, is_cash_out, is_transfer), and how the weights were learned.
+3. **In the app:** add an expense, type **Expense**, payment **Mobile money**, amount e.g. **50,000,000** RWF, save. Open **Transactions** — that row should show the "Bigger than usual" badge (the model flags it as high-risk). A small expense or any income will not get the badge from the model.
 
 ## Testing and how to run tests
 

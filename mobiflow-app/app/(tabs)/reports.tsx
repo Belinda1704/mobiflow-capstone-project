@@ -21,14 +21,23 @@ import type { ReportSummaryResponse } from '../../services/cloudFunctionsService
 import type { DateRangeFilter } from '../../types/transaction';
 import { useRouter } from 'expo-router';
 
+function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function endOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+}
+
 export default function ReportsScreen() {
   const router = useRouter();
-  const { colors } = useThemeColors();
+  const { colors, isDark } = useThemeColors();
   const { t } = useTranslations();
   const [pendingDateRange, setPendingDateRange] = useState<DateRangeFilter>('month');
   const [dateRange, setDateRange] = useState<DateRangeFilter>('month');
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [customReportStart, setCustomReportStart] = useState<Date>(() => startOfMonth(new Date()));
+  const [customReportEnd, setCustomReportEnd] = useState<Date>(() => endOfMonth(new Date()));
   const [serverReport, setServerReport] = useState<ReportSummaryResponse | null>(null);
 
   const lineChartConfig = useMemo(() => getReportsLineChartConfig(colors), [colors]);
@@ -56,11 +65,13 @@ export default function ReportsScreen() {
     return filterTransactions(transactions, {
       type: 'all',
       dateRange,
+      customStartDate: dateRange === 'custom' ? customReportStart : undefined,
+      customEndDate: dateRange === 'custom' ? customReportEnd : undefined,
       category: '',
       paymentMethod: 'all',
       search: '',
     });
-  }, [transactions, dateRange]);
+  }, [transactions, dateRange, customReportStart, customReportEnd]);
 
   const reports = useMemo(() => computeReports(filteredTransactions), [filteredTransactions]);
   const displayIncome = serverReport?.totalIncome ?? reports.totalIncome;
@@ -100,13 +111,32 @@ export default function ReportsScreen() {
       case '30days': return t('filterLast30Days');
       case 'week': return t('filterThisWeek');
       case 'all': return t('filterAll');
+      case 'custom': return customReportStart.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
       default: return '';
     }
   };
 
+  const applyCalendarDate = (date: Date) => {
+    setCustomReportStart(startOfMonth(date));
+    setCustomReportEnd(endOfMonth(date));
+    setPendingDateRange('custom');
+  };
+
   const onDateChange = (_: any, date?: Date) => {
-    if (Platform.OS === 'android') setDatePickerVisible(false);
-    if (date) setSelectedDate(date);
+    if (Platform.OS === 'android') {
+      setDatePickerVisible(false);
+      if (date) {
+        setSelectedDate(date);
+        applyCalendarDate(date);
+      }
+    } else {
+      if (date) setSelectedDate(date);
+    }
+  };
+
+  const onCalendarDone = () => {
+    setDatePickerVisible(false);
+    applyCalendarDate(selectedDate);
   };
 
   // Render straight away; data from cache
@@ -155,6 +185,15 @@ export default function ReportsScreen() {
             {t('filterAll')}
           </Text>
         </TouchableOpacity>
+        {dateRange === 'custom' && (
+          <TouchableOpacity
+            style={[styles.timeFilterPill, { backgroundColor: colors.accent, borderWidth: 1, borderColor: colors.accent }]}
+            onPress={() => setDatePickerVisible(true)}>
+            <Text style={[styles.timeFilterPillText, { color: colors.black }]}>
+              {getDateRangeLabel('custom')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Large Summary Cards */}
@@ -550,10 +589,10 @@ export default function ReportsScreen() {
       {datePickerVisible && (
         Platform.OS === 'ios' ? (
           <Modal transparent visible animationType="slide">
-            <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
-              <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]}>
+            <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={onCalendarDone}>
+              <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
                 <View style={styles.datePickerHeader}>
-                  <TouchableOpacity onPress={() => setDatePickerVisible(false)}>
+                  <TouchableOpacity onPress={onCalendarDone}>
                     <Text style={[styles.datePickerDone, { color: colors.accent }]}>Done</Text>
                   </TouchableOpacity>
                 </View>
@@ -563,6 +602,7 @@ export default function ReportsScreen() {
                   display="spinner"
                   onChange={onDateChange}
                   maximumDate={new Date()}
+                  themeVariant={isDark ? 'dark' : 'light'}
                 />
               </View>
             </TouchableOpacity>
@@ -574,6 +614,7 @@ export default function ReportsScreen() {
             display="default"
             onChange={onDateChange}
             maximumDate={new Date()}
+            themeVariant={isDark ? 'dark' : 'light'}
           />
         )
       )}
