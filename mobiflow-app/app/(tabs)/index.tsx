@@ -1,4 +1,4 @@
-// Dashboard: balance, period filter, chart, goals link, recent transactions. Asks for SMS/notif once after signup.
+// Dashboard: balance, period filter, chart, goals, recent transactions.
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -21,7 +21,7 @@ import { useAlertsCheck } from '../../hooks/useAlertsCheck';
 import { useAlerts } from '../../hooks/useAlerts';
 import { useAlertTriggers } from '../../hooks/useAlertTriggers';
 import { TabHeader } from '../../components/TabHeader';
-import { getDashboardChartConfig } from '../../constants/chartConfig';
+import { getDashboardChartConfigWithBarColor } from '../../constants/chartConfig';
 import { useSavingsGoals } from '../../hooks/useSavingsGoals';
 import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon';
 import { filterTransactions } from '../../utils/filterTransactions';
@@ -106,10 +106,17 @@ export default function HomeScreen() {
     }, [refetchGoals])
   );
 
-  const barChartConfig = useMemo(() => getDashboardChartConfig(colors), [colors]);
-  const barChartData = {
+  const chartWidth = Dimensions.get('window').width - 88;
+  const chartHeight = 160;
+  const incomeChartConfig = useMemo(() => getDashboardChartConfigWithBarColor(colors, colors.success), [colors]);
+  const expenseChartConfig = useMemo(() => getDashboardChartConfigWithBarColor(colors, colors.error), [colors]);
+  const barChartDataIncome = {
     labels: summary.chartLabels,
-    datasets: [{ data: summary.chartData }],
+    datasets: [{ data: summary.chartDataIncome }],
+  };
+  const barChartDataExpense = {
+    labels: summary.chartLabels,
+    datasets: [{ data: summary.chartDataExpense }],
   };
 
   // When the app has just loaded and transactions are still coming from Firestore,
@@ -216,11 +223,27 @@ export default function HomeScreen() {
           <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{t('cashFlow7DaysDescription')}</Text>
         </View>
         <View style={styles.chartWrap}>
+          <Text style={[styles.chartLabel, { color: colors.success }]}>{t('income')}</Text>
           <BarChart
-            data={barChartData}
-            width={Dimensions.get('window').width - 88}
-            height={200}
-            chartConfig={barChartConfig as Record<string, unknown>}
+            data={barChartDataIncome}
+            width={chartWidth}
+            height={chartHeight}
+            chartConfig={incomeChartConfig as Record<string, unknown>}
+            withInnerLines={true}
+            fromZero
+            style={styles.chart}
+            showBarTops={false}
+            withVerticalLabels={true}
+            withHorizontalLabels={true}
+            yAxisLabel=""
+            yAxisSuffix=""
+          />
+          <Text style={[styles.chartLabel, { color: colors.error, marginTop: 12 }]}>{t('expense')}</Text>
+          <BarChart
+            data={barChartDataExpense}
+            width={chartWidth}
+            height={chartHeight}
+            chartConfig={expenseChartConfig as Record<string, unknown>}
             withInnerLines={true}
             fromZero
             style={styles.chart}
@@ -563,6 +586,12 @@ const styles = StyleSheet.create({
   chartWrap: {
     alignItems: 'center',
     marginHorizontal: -8,
+  },
+  chartLabel: {
+    fontSize: 14,
+    fontFamily: FontFamily.semiBold,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
   },
   chart: {
     marginVertical: 0,

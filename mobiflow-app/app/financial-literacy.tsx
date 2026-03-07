@@ -124,9 +124,12 @@ export default function FinancialLiteracyScreen() {
                         state === PLAYER_STATES.ENDED || state === 'ended' || state === 0;
                       if (!ended) return;
                       if (userId) {
-                        markLessonCompleted(userId, item.id).catch((err) =>
-                          console.warn('Failed to mark lesson completed:', err)
-                        );
+                        markLessonCompleted(userId, item.id)
+                          .then(() => getCompletedLessonIds(userId))
+                          .then((ids) => setCompletedIds(ids))
+                          .catch((err) =>
+                            console.warn('Failed to mark lesson completed:', err)
+                          );
                       }
                     }}
                     webViewProps={webViewProps}

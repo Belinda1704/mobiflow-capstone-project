@@ -233,7 +233,7 @@ export default function SmsCaptureScreen() {
               disabled={scanningPast || !userId || !hasPermissions}
               activeOpacity={0.7}
             >
-              <Text style={[styles.resetLinkText, { color: colors.textSecondary }]}>
+              <Text style={[styles.resetLinkText, { color: colors.accent }]}>
                 {t('scanPastResetButton') || 'Reset and rescan past messages'}
               </Text>
             </TouchableOpacity>
@@ -348,25 +348,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   scanButton: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
-    alignSelf: 'flex-start',
-    minWidth: 160,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scanButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: FontFamily.semiBold,
   },
   resetLink: {
-    paddingVertical: 8,
-    alignSelf: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignSelf: 'center',
+    marginTop: 4,
   },
   resetLinkText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: FontFamily.medium,
+    textDecorationLine: 'underline',
   },
   permissionBanner: {
     marginTop: 24,

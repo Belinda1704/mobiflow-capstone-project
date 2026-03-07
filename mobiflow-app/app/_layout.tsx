@@ -1,4 +1,4 @@
-// Root layout: fonts, language, then app. Notifications only in real build (not Expo Go).
+// Root layout: fonts, language, app.
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
@@ -19,7 +19,7 @@ import 'react-native-reanimated';
 import { AppProviders } from '../components/AppProviders';
 import { createSmsCaptureChannel } from '../services/smsForegroundService';
 
-// SMS foreground service (Android, not Expo Go).
+// SMS foreground service on Android.
 if (Platform.OS === 'android' && Constants.appOwnership !== 'expo') {
   try {
     const notifee = require('@notifee/react-native').default;
@@ -32,7 +32,7 @@ if (Platform.OS === 'android' && Constants.appOwnership !== 'expo') {
   }
 }
 
-// Notification behaviour when they arrive (real build only)
+// How notifications are shown when they arrive
 if (Constants.appOwnership !== 'expo') {
   try {
     const NotificationsModule = require('expo-notifications');

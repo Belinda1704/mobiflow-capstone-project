@@ -86,6 +86,17 @@ export function getDashboardChartConfig(colors: ThemeColors) {
   };
 }
 
+// Same as dashboard but bar color is passed (for income = green, expense = red).
+export function getDashboardChartConfigWithBarColor(colors: ThemeColors, barColor: string) {
+  return {
+    ...getDashboardChartConfig(colors),
+    color: () => barColor,
+    fillShadowGradient: barColor,
+    fillShadowGradientFrom: barColor,
+    fillShadowGradientTo: barColor,
+  };
+}
+
 // Business health: no Y labels, value on top of bar in RWF.
 export function getBusinessHealthChartConfig(colors: ThemeColors) {
   const base = getBarChartConfig(colors);
