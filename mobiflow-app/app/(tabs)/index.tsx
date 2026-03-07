@@ -25,23 +25,9 @@ import { getDashboardChartConfigWithBarColor } from '../../constants/chartConfig
 import { useSavingsGoals } from '../../hooks/useSavingsGoals';
 import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon';
 import { filterTransactions } from '../../utils/filterTransactions';
-import type { DateRangeFilter } from '../../types/transaction';
 
-// Dashboard = quick snapshot of recent activity only (no "all time"; use Reports for that).
-const DASHBOARD_PERIODS: DateRangeFilter[] = ['today', 'week', 'month'];
-
-// Flag so dashboard shows permission prompts once after signup
+// Dashboard = daily snapshot only (last 7 days). Period totals live on Reports (Cloud Functions).
 const SHOW_PERMISSIONS_ON_DASHBOARD_KEY = '@mobiflow/showPermissionsOnDashboard';
-
-function getPeriodLabel(period: DateRangeFilter, t: (key: string) => string): string {
-  switch (period) {
-    case 'today': return t('summaryToday');
-    case 'week': return t('summaryThisWeek');
-    case 'month': return t('summaryThisMonth');
-    case 'all': return t('summaryAllTime');
-    default: return t('summaryAllTime');
-  }
-}
 
 function getTimeBasedGreetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
   const hour = new Date().getHours();
@@ -54,28 +40,28 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
-  const [dashboardPeriod, setDashboardPeriod] = useState<DateRangeFilter>('month');
   const { userId } = useCurrentUser();
   const { transactions, loading } = useTransactions(userId || null);
-  const filteredTransactions = useMemo(
+  const last7DaysTransactions = useMemo(
     () =>
       filterTransactions(transactions, {
         type: 'all',
-        dateRange: dashboardPeriod,
+        dateRange: 'week',
         category: '',
         paymentMethod: 'all',
         search: '',
       }),
-    [transactions, dashboardPeriod]
+    [transactions]
   );
-  const summary = useMemo(() => computeHomeSummary(filteredTransactions), [filteredTransactions]);
+  const summaryAll = useMemo(() => computeHomeSummary(transactions), [transactions]);
+  const summary = useMemo(() => computeHomeSummary(last7DaysTransactions), [last7DaysTransactions]);
   const { goals, refetch: refetchGoals } = useSavingsGoals(userId, transactions);
   const { incomeDrop, budgetBreaches, totalExpenseThisMonth } = useAlertsCheck(userId, transactions);
   const { settings: alertSettings } = useAlerts(userId);
 
   useAlertTriggers(
     userId ?? undefined,
-    summary.balance,
+    summaryAll.balance,
     alertSettings ?? undefined,
     budgetBreaches,
     totalExpenseThisMonth,
@@ -148,29 +134,16 @@ export default function HomeScreen() {
             </View>
           </View>
         ) : null}
-        {/* Period selector: so balance and totals match the period (e.g. Today = only today's txns) */}
-        <View style={styles.periodPillsRow}>
-          {DASHBOARD_PERIODS.map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[styles.periodPill, { backgroundColor: dashboardPeriod === period ? colors.accent : colors.background, borderWidth: 1, borderColor: dashboardPeriod === period ? colors.accent : colors.border }]}
-              onPress={() => setDashboardPeriod(period)}>
-              <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.black : colors.textSecondary }]}>
-                {getPeriodLabel(period, t)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
         <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.balanceHeader}>
           <View style={styles.balanceTitleWrap}>
             <Text style={[styles.balanceLabel, { color: colors.textPrimary }]}>{t('currentBalance')}</Text>
             <Text style={[styles.balanceDescription, { color: colors.textSecondary }]}>{t('currentBalanceDescription')}</Text>
           </View>
-          <Text style={[styles.periodBadge, { color: colors.textSecondary }]}>{getPeriodLabel(dashboardPeriod, t)}</Text>
+          <Text style={[styles.periodBadge, { color: colors.textSecondary }]}>{t('summaryThisWeek')}</Text>
         </View>
         <Text style={[styles.balanceAmount, { color: colors.accent }]}>
-          {isInitialLoading ? '—' : formatRWF(summary.balance)}
+          {isInitialLoading ? '—' : formatRWF(summaryAll.balance)}
         </Text>
         <Text style={[styles.balanceDetailGreen, { color: colors.success }]}>
           {isInitialLoading ? '—' : formatRWFWithSign(summary.totalIncome)}

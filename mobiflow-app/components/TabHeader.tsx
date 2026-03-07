@@ -18,7 +18,7 @@ export function TabHeader({ title, subtitle, rightContent }: TabHeaderProps) {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16, minHeight: 100, backgroundColor: colors.background }]}>
       <View style={styles.topRow}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>{title.toUpperCase()}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         <View style={styles.right}>
           {rightContent ?? null}
         </View>
@@ -44,7 +44,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: FontFamily.bold,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   right: {

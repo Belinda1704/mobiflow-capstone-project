@@ -35,7 +35,7 @@ function TabIcon({
 
 function TabLabel({ focused, label, activeColor, inactiveColor }: { focused: boolean; label: string; activeColor: string; inactiveColor: string }) {
   return (
-    <Text style={{ fontSize: 11, fontFamily: FontFamily.medium, color: focused ? activeColor : inactiveColor, textTransform: 'uppercase' }}>
+    <Text style={{ fontSize: 11, fontFamily: FontFamily.medium, color: focused ? activeColor : inactiveColor }}>
       {label}
     </Text>
   );

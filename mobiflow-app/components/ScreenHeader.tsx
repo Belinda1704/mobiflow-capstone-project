@@ -30,7 +30,7 @@ export function ScreenHeader({ title, subtitle, rightContent, backgroundColor }:
         <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
       <View style={styles.titleWrap}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>{title.toUpperCase()}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
       </View>
       <View style={styles.right}>{rightContent ?? <View style={styles.spacer} />}</View>
@@ -57,7 +57,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: FontFamily.bold,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'left',
   },

@@ -22,7 +22,7 @@ export function SettingsRow({ icon, label, subtitle, value, onPress, colors: c }
         <Ionicons name={icon} size={22} color={colors.listIcon ?? colors.primary} />
       </View>
       <View style={styles.textWrap}>
-        <Text style={[styles.label, { color: colors.textPrimary }]}>{label.toUpperCase()}</Text>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
         {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
       </View>
       {value ? <Text style={[styles.value, { color: colors.textSecondary }]}>{value}</Text> : null}
