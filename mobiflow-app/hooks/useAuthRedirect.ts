@@ -3,8 +3,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 import { auth } from '../config/firebase';
 
-// Send to tabs if logged in, else to login. Waits for Firebase to restore session so we don't redirect to login before persistence loads.
-const AUTH_RESTORE_WAIT_MS = 2500;
+// Give Firebase time to restore session before redirecting to login.
+const AUTH_RESTORE_WAIT_MS = 4500;
 
 export function useAuthRedirect(
   onAuthenticated: () => void,

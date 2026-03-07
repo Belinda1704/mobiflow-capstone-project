@@ -1,6 +1,6 @@
-// First screen: onboarding or redirect to login/tabs
+// First screen: onboarding or redirect to login/tabs.
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,7 +47,17 @@ export default function OnboardingScreen() {
   };
 
   if (checking) {
-    return null; // auth redirect will send to login or tabs
+    return null;
+  }
+
+  // User opened app before: show splash until we redirect to dashboard.
+  if (hasCompletedOnboarding) {
+    return (
+      <View style={styles.splashWrap}>
+        <StatusBar style="light" />
+        <Image source={require('../assets/images/app-icon.png')} style={styles.splashLogo} />
+      </View>
+    );
   }
 
   return (
@@ -105,6 +115,17 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  splashWrap: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  splashLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+  },
   container: {
     flex: 1,
     backgroundColor: OnboardingColors.background,

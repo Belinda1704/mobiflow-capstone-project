@@ -14,7 +14,7 @@ if (!firebaseConfig?.apiKey) {
 
 const app = initializeApp(firebaseConfig);
 
-// keep login after app close – use AsyncStorage so user stays signed in across app restarts
+// Keep user signed in after app close using AsyncStorage.
 let auth: Auth;
 if (Platform.OS === 'web') {
   auth = getAuth(app);
@@ -25,7 +25,6 @@ if (Platform.OS === 'web') {
       persistence: rnAuth.getReactNativePersistence(AsyncStorage),
     });
   } catch (err: unknown) {
-    // already init (e.g. hot reload)
     if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'auth/already-initialized') {
       auth = getAuth(app);
     } else {
