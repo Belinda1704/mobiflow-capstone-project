@@ -1,4 +1,5 @@
-// Business health: 0–100 score, top spending, income chart, summary.
+// Business health: score, top spending, income chart.
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
@@ -16,6 +17,15 @@ import { FontFamily } from '../constants/colors';
 import { getBusinessHealthChartConfig } from '../constants/chartConfig';
 import { formatRWF } from '../utils/formatCurrency';
 import { translateCategory } from '../utils/translateCategory';
+import { fetchHealthScoreFromServer } from '../services/cloudFunctionsService';
+import type { HealthScoreResponse } from '../services/cloudFunctionsService';
+
+function getScoreLabelKey(label: string): string {
+  return label === 'Excellent' ? 'scoreExcellent' : label === 'Good' ? 'scoreGood' : label === 'Fair' ? 'scoreFair' : label === 'No data' ? 'scoreNoData' : 'scoreNeedsAttention';
+}
+function getScoreMessageKey(label: string): string {
+  return label === 'Excellent' ? 'scoreMessageThriving' : label === 'Good' ? 'scoreMessageOnTrack' : label === 'Fair' ? 'scoreMessageConsider' : label === 'No data' ? 'scoreMessageNoData' : 'scoreMessageFocus';
+}
 
 export default function BusinessHealthScreen() {
   const router = useRouter();
@@ -24,34 +34,26 @@ export default function BusinessHealthScreen() {
   const { userId } = useCurrentUser();
   const { transactions, loading } = useTransactions(userId || null);
   const data = useBusinessHealth(transactions);
+  const [serverScore, setServerScore] = useState<HealthScoreResponse | null>(null);
 
-  // Data from cache
-  const scoreLabelKey =
-    data.score.label === 'Excellent'
-      ? 'scoreExcellent'
-      : data.score.label === 'Good'
-        ? 'scoreGood'
-        : data.score.label === 'Fair'
-          ? 'scoreFair'
-          : data.score.label === 'No data'
-            ? 'scoreNoData'
-            : 'scoreNeedsAttention';
-  const scoreMessageKey =
-    data.score.label === 'Excellent'
-      ? 'scoreMessageThriving'
-      : data.score.label === 'Good'
-        ? 'scoreMessageOnTrack'
-        : data.score.label === 'Fair'
-          ? 'scoreMessageConsider'
-          : data.score.label === 'No data'
-            ? 'scoreMessageNoData'
-            : 'scoreMessageFocus';
+  useEffect(() => {
+    let cancelled = false;
+    fetchHealthScoreFromServer().then((result) => {
+      if (!cancelled && result.ok && result.status === 200) setServerScore(result.data);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const effectiveScore = serverScore ? { score: serverScore.score, label: serverScore.label, message: serverScore.message } : data.score;
+  const scoreLabelKey = getScoreLabelKey(effectiveScore.label);
+  const scoreMessageKey = getScoreMessageKey(effectiveScore.label);
+  const scoreMessage = effectiveScore.message;
   const gaugeColor =
-    data.score.label === 'Excellent' || data.score.label === 'Good'
+    effectiveScore.label === 'Excellent' || effectiveScore.label === 'Good'
       ? colors.success
-      : data.score.label === 'Fair'
+      : effectiveScore.label === 'Fair'
         ? colors.accent
-        : data.score.label === 'No data'
+        : effectiveScore.label === 'No data'
           ? colors.grayLight
           : colors.error;
 
@@ -70,12 +72,12 @@ export default function BusinessHealthScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.gaugeWrap}>
           <CircularGauge
-            value={data.score.score}
+            value={effectiveScore.score}
             label={t(scoreLabelKey)}
             color={gaugeColor}
           />
-          <Text style={[styles.scoreMessage, { color: data.score.label === 'No data' ? colors.textSecondary : colors.textPrimary }]}>
-            {t(scoreMessageKey)}
+          <Text style={[styles.scoreMessage, { color: effectiveScore.label === 'No data' ? colors.textSecondary : colors.textPrimary }]}>
+            {scoreMessage}
           </Text>
         </View>
 

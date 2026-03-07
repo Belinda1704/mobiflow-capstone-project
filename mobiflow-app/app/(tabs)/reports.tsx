@@ -1,6 +1,6 @@
 // Reports: income vs expense chart, category list, date filter, export PDF/CSV.
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Platform, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Platform, Pressable, Dimensions, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,8 @@ import { formatRWF } from '../../utils/formatCurrency';
 import { computeReports } from '../../services/reportsService';
 import { filterTransactions } from '../../utils/filterTransactions';
 import { useReportsExport } from '../../hooks/useReportsExport';
+import { fetchReportSummaryFromServer } from '../../services/cloudFunctionsService';
+import type { ReportSummaryResponse } from '../../services/cloudFunctionsService';
 import type { DateRangeFilter } from '../../types/transaction';
 import { useRouter } from 'expo-router';
 
@@ -23,24 +25,33 @@ export default function ReportsScreen() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
-  // Pill updates right away; dateRange updates on next frame for heavy filter.
   const [pendingDateRange, setPendingDateRange] = useState<DateRangeFilter>('month');
   const [dateRange, setDateRange] = useState<DateRangeFilter>('month');
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [serverReport, setServerReport] = useState<ReportSummaryResponse | null>(null);
 
   const lineChartConfig = useMemo(() => getReportsLineChartConfig(colors), [colors]);
   const { userId } = useCurrentUser();
   const { transactions } = useTransactions(userId || null);
 
-  // Defer dateRange update so pill stays responsive when "All" is slow.
   useEffect(() => {
     if (pendingDateRange === dateRange) return;
     const id = requestAnimationFrame(() => setDateRange(pendingDateRange));
     return () => cancelAnimationFrame(id);
   }, [pendingDateRange, dateRange]);
-  
-  // Filter by selected range
+
+  const reportDateRangeForApi = dateRange === '30days' ? 'month' : dateRange === 'week' || dateRange === 'all' ? dateRange : 'month';
+
+  useEffect(() => {
+    setServerReport(null);
+    let cancelled = false;
+    fetchReportSummaryFromServer(reportDateRangeForApi).then((result) => {
+      if (!cancelled && result.ok && result.status === 200) setServerReport(result.data);
+    });
+    return () => { cancelled = true; };
+  }, [reportDateRangeForApi]);
+
   const filteredTransactions = useMemo(() => {
     return filterTransactions(transactions, {
       type: 'all',
@@ -50,8 +61,12 @@ export default function ReportsScreen() {
       search: '',
     });
   }, [transactions, dateRange]);
-  
+
   const reports = useMemo(() => computeReports(filteredTransactions), [filteredTransactions]);
+  const displayIncome = serverReport?.totalIncome ?? reports.totalIncome;
+  const displayExpense = serverReport?.totalExpense ?? reports.totalExpense;
+  const displayNet = serverReport?.net ?? reports.net;
+  const displayCategoryCount = serverReport?.categoryCount ?? reports.categories.length;
 
   // Export (PDF, CSV, statement) lives in hook
   const {
@@ -152,9 +167,9 @@ export default function ReportsScreen() {
               <Text style={[styles.summaryCardDescription, { color: colors.textSecondary }]}>{t('incomeDescription')}</Text>
             </View>
           </View>
-          <Text style={[styles.summaryCardAmount, { color: colors.success }]}>{formatRWF(reports.totalIncome)}</Text>
+          <Text style={[styles.summaryCardAmount, { color: colors.success }]}>{formatRWF(displayIncome)}</Text>
           <Text style={[styles.summaryCardNet, { color: colors.textSecondary }]}>
-            {t('net')}: <Text style={{ color: reports.net >= 0 ? colors.success : colors.error }}>{formatRWF(reports.net)}</Text>
+            {t('net')}: <Text style={{ color: displayNet >= 0 ? colors.success : colors.error }}>{formatRWF(displayNet)}</Text>
           </Text>
         </View>
         <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -165,9 +180,9 @@ export default function ReportsScreen() {
               <Text style={[styles.summaryCardDescription, { color: colors.textSecondary }]}>{t('expenseDescription')}</Text>
             </View>
           </View>
-          <Text style={[styles.summaryCardAmount, { color: colors.error }]}>{formatRWF(reports.totalExpense)}</Text>
+          <Text style={[styles.summaryCardAmount, { color: colors.error }]}>{formatRWF(displayExpense)}</Text>
           <Text style={[styles.summaryCardMeta, { color: colors.textSecondary }]}>
-            {reports.categories.length} {reports.categories.length === 1 ? 'category' : 'categories'}
+            {displayCategoryCount} {displayCategoryCount === 1 ? 'category' : 'categories'}
           </Text>
         </View>
       </View>
