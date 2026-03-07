@@ -12,6 +12,7 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 - [How to install and run the app](#how-to-install-and-run-the-app)
 - [Project structure and core functionalities](#project-structure-and-core-functionalities)
 - [Testing and how to run tests](#testing-and-how-to-run-tests)
+- [Android device requirements (APK)](#android-device-requirements-apk)
 - [How to build and install the APK](#how-to-build-and-install-the-apk)
 - [Tech stack](#tech-stack)
 - [Designs (Figma)](#designs-figma)
@@ -79,9 +80,11 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 ```text
 mobiflow-capstone-project/
 ├── README.md
-├── mobiflow-app/
-│   ├── app/                     # Screens (Expo Router)
-│   │   ├── (tabs)/              # Home, Transactions, Reports, More
+├── firebase.json                 # Firebase project config (functions deploy)
+├── .firebaserc                   # Firebase project ID
+├── mobiflow-app/                 # Mobile app (React Native / Expo)
+│   ├── app/                      # Screens (Expo Router)
+│   │   ├── (tabs)/               # Home, Transactions, Reports, More
 │   │   ├── login.tsx, signup.tsx, forgot-password.tsx
 │   │   ├── add-transaction.tsx, edit-transaction/
 │   │   ├── alerts.tsx, savings-budget-goals.tsx
@@ -89,19 +92,23 @@ mobiflow-capstone-project/
 │   │   ├── sms-capture.tsx, notifications.tsx, how-to-use.tsx
 │   │   ├── financial-literacy.tsx, financial-video.tsx
 │   │   └── ...
-│   ├── components/              # Reusable UI components
-│   ├── hooks/                   # useTransactions, useAlerts, useSmsCapture, etc.
-│   ├── services/                # Firebase, transactions, SMS capture, fraud model, alerts
-│   ├── utils/                   # Formatting, filters, anomaly rules, fraudModel.ts
-│   ├── constants/               # Colors, categories
-│   ├── locales/                 # en.json, rw.json (translations)
-│   ├── config/                  # Firebase init
+│   ├── components/               # Reusable UI components
+│   ├── hooks/                    # useTransactions, useAlerts, useSmsCapture, etc.
+│   ├── services/                 # Firebase, transactions, SMS capture, fraud model, alerts, Cloud Functions client
+│   ├── utils/                    # Formatting, filters, anomaly rules, fraudModel.ts
+│   ├── constants/                # Colors, categories
+│   ├── locales/                  # en.json, rw.json (translations)
+│   ├── config/                   # Firebase init
 │   └── package.json, app.json, tsconfig.json, etc.
-└── fraud-detection-model/       # Jupyter notebook for fraud model (synthetic data)
+├── functions/                    # Firebase Cloud Functions (Node.js)
+│   ├── index.js                  # getHealthScore, getReportSummary (HTTP, auth)
+│   └── package.json
+└── fraud-detection-model/        # Jupyter notebook for fraud model (synthetic data)
 ```
 
 **Core functionalities**
 
+- **Backend (Cloud Functions):** health score and report summary are computed on the server; the app loads them when you open Business Health or Reports.
 - **Savings goals & budgets:** set savings goals, track progress, and create simple category budgets with suggested amounts based on past spending.
 - **Alerts:** configure practical alerts such as low balance and high expenses so the user gets early warnings.
 - **SMS capture (Android):** listen to new mobile‑money SMS and turn them into transactions automatically, plus a one‑time “scan past SMS” option to import older messages.
@@ -139,6 +146,15 @@ MobiFlow was tested using automated tests and manual scenarios.
     maestro test maestro/flows/onboarding.yaml
     ```
 
+## Android device requirements (APK)
+
+The app was built for **Android 14 (API 34) or higher** with **2 GB RAM minimum**. The SMS capture library requires API 34.
+
+| Requirement | Minimum |
+|-------------|---------|
+| Android version | 14 (API 34) or higher |
+| RAM | 2 GB |
+
 ## How to build and install the APK (Windows – optional)
 
 Most reviewers can simply install the APK from the link above.  
@@ -166,7 +182,7 @@ This section is only needed on **Windows machines that hit long‑path Gradle er
 ## Tech stack
 
 - **Frontend:** React Native (Expo), TypeScript, Expo Router, React Navigation.
-- **Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage (for backups/profile photos).
+- **Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage (backups and profile photos), Firebase Cloud Functions (health score and report summary).
 - **Testing:** Jest, React Native Testing Library, Maestro (mobile E2E).
 - **ML / data work:** Python, pandas, scikit‑learn, Jupyter Notebook (`fraud-detection-model/fraud_detection_synthetic.ipynb`).
 
