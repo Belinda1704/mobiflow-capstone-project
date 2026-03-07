@@ -1,0 +1,90 @@
+// Calls Cloud Functions with auth token.
+import Constants from 'expo-constants';
+import { auth } from '../config/firebase';
+
+const firebaseExtra = (Constants.expoConfig?.extra?.firebase ?? {}) as { projectId?: string; functionsRegion?: string };
+const REGION = firebaseExtra.functionsRegion || 'us-central1';
+const PROJECT_ID = firebaseExtra.projectId || 'mobiflow-app';
+const BASE_URL = `https://${REGION}-${PROJECT_ID}.cloudfunctions.net`;
+
+export type HealthScoreResponse = {
+  score: number;
+  label: string;
+  message: string;
+};
+
+export type ReportSummaryResponse = {
+  totalIncome: number;
+  totalExpense: number;
+  net: number;
+  categoryCount: number;
+  categories: { name: string; amount: number }[];
+  dateRange: string;
+};
+
+export type ApiResult<T> =
+  | { ok: true; data: T; status: number }
+  | { ok: false; status: number; error: string };
+
+async function callFunction<T>(
+  name: string,
+  options: { method?: 'GET' | 'POST'; body?: object } = {}
+): Promise<ApiResult<T>> {
+  const user = auth.currentUser;
+  if (!user) {
+    return { ok: false, status: 401, error: 'Not signed in' };
+  }
+  let idToken: string;
+  try {
+    idToken = await user.getIdToken(false);
+  } catch (e) {
+    return { ok: false, status: 401, error: 'Could not get token. Sign out and sign in again, or check your connection.' };
+  }
+  if (!idToken) {
+    return { ok: false, status: 401, error: 'No token. Sign out and sign in again.' };
+  }
+  const url = `${BASE_URL}/${name}`;
+  const init: RequestInit = {
+    method: options.method || 'GET',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (options.body && options.method === 'POST') {
+    init.body = JSON.stringify(options.body);
+  }
+  try {
+    const res = await fetch(url, init);
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      const err = typeof data === 'object' && data !== null && 'error' in data
+        ? String((data as { error: string }).error)
+        : res.statusText || `HTTP ${res.status}`;
+      return { ok: false, status: res.status, error: err };
+    }
+    return { ok: true, data: data as T, status: res.status };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Network error';
+    return { ok: false, status: 0, error: message };
+  }
+}
+
+export async function fetchHealthScoreFromServer(): Promise<ApiResult<HealthScoreResponse>> {
+  return callFunction<HealthScoreResponse>('getHealthScore', { method: 'GET' });
+}
+
+export async function fetchReportSummaryFromServer(
+  dateRange: 'week' | 'month' | 'all' = 'month'
+): Promise<ApiResult<ReportSummaryResponse>> {
+  return callFunction<ReportSummaryResponse>('getReportSummary', {
+    method: 'POST',
+    body: { dateRange },
+  });
+}
