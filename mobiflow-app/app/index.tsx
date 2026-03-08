@@ -11,8 +11,15 @@ import { useAuthRedirect } from '../hooks/useAuthRedirect';
 import { useTranslations } from '../hooks/useTranslations';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { OnboardingColors, FontFamily } from '../constants/colors';
+import { getLanguage } from '../services/preferencesService';
+import type { LanguageOption } from '../services/preferencesService';
+import { changeAppLanguage } from '../i18n';
 
 const ONBOARDING_KEY = 'hasCompletedOnboarding';
+
+function getLangLabels(t: (k: string) => string): Record<LanguageOption, string> {
+  return { en: t('english'), rw: t('kinyarwanda') };
+}
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -20,11 +27,14 @@ export default function OnboardingScreen() {
   const { t } = useTranslations();
   const [checking, setChecking] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [language, setLanguage] = useState<LanguageOption>('en');
 
   useEffect(() => {
     const init = async () => {
       const hasCompleted = (await AsyncStorage.getItem(ONBOARDING_KEY)) === 'true';
       setHasCompletedOnboarding(hasCompleted);
+      const lang = await getLanguage();
+      setLanguage(lang);
       setChecking(false);
     };
     init();
@@ -78,6 +88,26 @@ export default function OnboardingScreen() {
 
           <View style={styles.topCopy}>
             <Text style={styles.headline}>{t('onboardingHeadline')}</Text>
+          </View>
+
+          <View style={styles.languageSection}>
+            <Text style={styles.languageLabel}>{t('language')}</Text>
+            <View style={styles.languageRow}>
+              {(['en', 'rw'] as LanguageOption[]).map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[styles.languagePill, language === lang && styles.languagePillActive]}
+                  onPress={async () => {
+                    await changeAppLanguage(lang);
+                    setLanguage(lang);
+                  }}
+                  activeOpacity={0.8}>
+                  <Text style={[styles.languagePillText, language === lang && styles.languagePillTextActive]}>
+                    {getLangLabels(t)[lang]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           <View style={styles.heroSection}>
@@ -142,6 +172,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     marginBottom: 16,
     alignItems: 'center',
+  },
+  languageSection: {
+    paddingHorizontal: 28,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  languageLabel: {
+    fontSize: 14,
+    fontFamily: FontFamily.medium,
+    color: OnboardingColors.textSecondary,
+    marginBottom: 10,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  languagePill: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: OnboardingColors.textSecondary + '60',
+    backgroundColor: 'transparent',
+  },
+  languagePillActive: {
+    borderColor: OnboardingColors.link,
+    backgroundColor: OnboardingColors.link + '20',
+  },
+  languagePillText: {
+    fontSize: 15,
+    fontFamily: FontFamily.medium,
+    color: OnboardingColors.textSecondary,
+  },
+  languagePillTextActive: {
+    color: OnboardingColors.link,
   },
   brandRow: {
     flexDirection: 'row',
