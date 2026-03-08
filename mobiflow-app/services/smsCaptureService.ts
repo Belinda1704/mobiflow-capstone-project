@@ -231,7 +231,7 @@ async function processSmsMessage(
     recordSmsBodyProcessed(smsBody, smsAddress);
   }
 
-  const tx = parseSmsTransaction(smsBody);
+  const tx = parseSmsTransaction(smsBody, { senderAddress: smsAddress });
   if (!tx) {
     console.log('[SMS Capture] Failed to parse transaction from SMS body');
     return { added: false };
