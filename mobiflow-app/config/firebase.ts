@@ -1,4 +1,4 @@
-// Firebase: auth, Firestore, Storage. Config from .env via app.config.js
+// Firebase setup: auth, Firestore, Storage. Config comes from .env in app.config.js
 import Constants from 'expo-constants';
 import { initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
@@ -14,19 +14,19 @@ if (!firebaseConfig?.apiKey) {
 
 const app = initializeApp(firebaseConfig);
 
-// Keep user signed in after app close using AsyncStorage.
+// On native, AsyncStorage is used so login persists after closing the app. @firebase/auth is required so the bundler picks the react-native build with getReactNativePersistence.
 let auth: Auth;
 if (Platform.OS === 'web') {
   auth = getAuth(app);
 } else {
+  const rnAuth = require('@firebase/auth');
   try {
-    const rnAuth = require('@firebase/auth');
     auth = rnAuth.initializeAuth(app, {
       persistence: rnAuth.getReactNativePersistence(AsyncStorage),
     });
   } catch (err: unknown) {
     if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'auth/already-initialized') {
-      auth = getAuth(app);
+      auth = rnAuth.getAuth(app);
     } else {
       throw err;
     }
@@ -39,7 +39,7 @@ export { auth };
 
 export const db = getFirestore(app);
 
-// Firestore offline cache – IndexedDB is web-only; on Android/iOS the JS SDK uses in-memory cache (no enableIndexedDbPersistence)
+// Firestore offline cache: only on web (IndexedDB). On Android/iOS the SDK uses in-memory only.
 if (Platform.OS === 'web') {
   enableIndexedDbPersistence(db).catch((err: { code: string }) => {
     if (err.code === 'failed-precondition') {

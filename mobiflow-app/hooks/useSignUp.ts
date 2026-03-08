@@ -5,9 +5,7 @@ import { showError } from '../services/errorPresenter';
 import { isPasswordStrong } from '../utils/passwordStrength';
 import { validateRwandaPhone } from '../utils/phoneUtils';
 
-/**
- * Hook for sign-up. Handles validation and loading. Error presentation via errorPresenter.
- */
+// Sign-up: validation, loading, errors shown via errorPresenter.
 export function useSignUp(): {
   signUp: (phone: string, password: string, confirmPassword: string) => Promise<boolean>;
   loading: boolean;

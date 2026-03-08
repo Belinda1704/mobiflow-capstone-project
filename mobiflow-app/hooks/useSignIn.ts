@@ -4,9 +4,7 @@ import { signIn, getAuthErrorMessage } from '../services/authService';
 import { showError } from '../services/errorPresenter';
 import { validateRwandaPhone } from '../utils/phoneUtils';
 
-/**
- * Hook for sign-in. Handles validation and loading. Error presentation via errorPresenter.
- */
+// Sign-in: validation, loading, errors shown via errorPresenter.
 export function useSignIn(): {
   signIn: (phone: string, password: string) => Promise<boolean>;
   loading: boolean;

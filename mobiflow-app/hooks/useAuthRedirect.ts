@@ -3,8 +3,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 import { auth } from '../config/firebase';
 
-// Give Firebase time to restore session before redirecting to login.
-const AUTH_RESTORE_WAIT_MS = 4500;
+// Give Firebase time to restore persisted session from AsyncStorage before redirecting to login.
+const AUTH_RESTORE_WAIT_MS = 6000;
 
 export function useAuthRedirect(
   onAuthenticated: () => void,
