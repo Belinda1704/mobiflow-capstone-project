@@ -31,9 +31,16 @@ function isInDateRange(
     case 'today':
       return date >= todayStart && date < todayEnd;
     case 'week': {
+      // This week = Monday 00:00 through end of today (so on Sunday you see Mon–Sun, not just Sunday).
+      const daysSinceMonday = (now.getDay() + 6) % 7;
       const weekStart = new Date(todayStart);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      return date >= weekStart && date < todayEnd;
+      weekStart.setDate(weekStart.getDate() - daysSinceMonday);
+      return date >= weekStart && date <= todayEnd;
+    }
+    case 'last7days': {
+      const sevenDaysAgo = new Date(todayStart);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      return date >= sevenDaysAgo && date <= todayEnd;
     }
     case 'month': {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

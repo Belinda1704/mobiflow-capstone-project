@@ -25,9 +25,19 @@ import { getDashboardChartConfigWithBarColor } from '../../constants/chartConfig
 import { useSavingsGoals } from '../../hooks/useSavingsGoals';
 import { getTransactionCategoryIcon } from '../../utils/transactionCategoryIcon';
 import { filterTransactions } from '../../utils/filterTransactions';
+import type { DateRangeFilter } from '../../types/transaction';
 
-// Dashboard = daily snapshot only (last 7 days). Period totals live on Reports (Cloud Functions).
 const SHOW_PERMISSIONS_ON_DASHBOARD_KEY = '@mobiflow/showPermissionsOnDashboard';
+
+const DASHBOARD_PERIODS: DateRangeFilter[] = ['today', 'week'];
+
+function getPeriodLabel(period: DateRangeFilter, t: (key: string) => string): string {
+  switch (period) {
+    case 'today': return t('summaryToday');
+    case 'week': return t('summaryThisWeek');
+    default: return t('summaryThisWeek');
+  }
+}
 
 function getTimeBasedGreetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
   const hour = new Date().getHours();
@@ -40,13 +50,25 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
+  const [dashboardPeriod, setDashboardPeriod] = useState<DateRangeFilter>('week');
   const { userId } = useCurrentUser();
   const { transactions, loading } = useTransactions(userId || null);
-  const last7DaysTransactions = useMemo(
+  const filteredTransactions = useMemo(
     () =>
       filterTransactions(transactions, {
         type: 'all',
-        dateRange: 'week',
+        dateRange: dashboardPeriod,
+        category: '',
+        paymentMethod: 'all',
+        search: '',
+      }),
+    [transactions, dashboardPeriod]
+  );
+  const chartTransactions = useMemo(
+    () =>
+      filterTransactions(transactions, {
+        type: 'all',
+        dateRange: 'last7days',
         category: '',
         paymentMethod: 'all',
         search: '',
@@ -54,7 +76,12 @@ export default function HomeScreen() {
     [transactions]
   );
   const summaryAll = useMemo(() => computeHomeSummary(transactions), [transactions]);
-  const summary = useMemo(() => computeHomeSummary(last7DaysTransactions), [last7DaysTransactions]);
+  const summary = useMemo(() => computeHomeSummary(filteredTransactions), [filteredTransactions]);
+  const chartSummary = useMemo(() => computeHomeSummary(chartTransactions), [chartTransactions]);
+  const recentTransactions = useMemo(
+    () => summaryAll.recentTransactions,
+    [summaryAll.recentTransactions]
+  );
   const { goals, refetch: refetchGoals } = useSavingsGoals(userId, transactions);
   const { incomeDrop, budgetBreaches, totalExpenseThisMonth } = useAlertsCheck(userId, transactions);
   const { settings: alertSettings } = useAlerts(userId);
@@ -98,20 +125,16 @@ export default function HomeScreen() {
   const incomeChartConfig = useMemo(() => getDashboardChartConfigWithBarColor(colors, colors.success), [colors]);
   const expenseChartConfig = useMemo(() => getDashboardChartConfigWithBarColor(colors, colors.error), [colors]);
   const barChartDataIncome = {
-    labels: summary.chartLabels,
-    datasets: [{ data: summary.chartDataIncome }],
+    labels: chartSummary.chartLabels,
+    datasets: [{ data: chartSummary.chartDataIncome }],
   };
   const barChartDataExpense = {
-    labels: summary.chartLabels,
-    datasets: [{ data: summary.chartDataExpense }],
+    labels: chartSummary.chartLabels,
+    datasets: [{ data: chartSummary.chartDataExpense }],
   };
 
-  // When the app has just loaded and transactions are still coming from Firestore,
-  // avoid flashing 0s – show placeholders instead, similar to how chat apps show
-  // the screen first while data updates in the background.
+  // Data still loading from Firestore – avoid showing 0s, use placeholders until we have data.
   const isInitialLoading = loading && transactions.length === 0;
-
-  // No spinner – data from cache
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
@@ -134,16 +157,28 @@ export default function HomeScreen() {
             </View>
           </View>
         ) : null}
+        <View style={styles.periodPillsRow}>
+          {DASHBOARD_PERIODS.map((period) => (
+            <TouchableOpacity
+              key={period}
+              style={[styles.periodPill, { backgroundColor: dashboardPeriod === period ? colors.accent : colors.background, borderWidth: 1, borderColor: dashboardPeriod === period ? colors.accent : colors.border }]}
+              onPress={() => setDashboardPeriod(period)}>
+              <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.black : colors.textSecondary }]}>
+                {getPeriodLabel(period, t)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.balanceHeader}>
           <View style={styles.balanceTitleWrap}>
             <Text style={[styles.balanceLabel, { color: colors.textPrimary }]}>{t('currentBalance')}</Text>
             <Text style={[styles.balanceDescription, { color: colors.textSecondary }]}>{t('currentBalanceDescription')}</Text>
           </View>
-          <Text style={[styles.periodBadge, { color: colors.textSecondary }]}>{t('summaryThisWeek')}</Text>
+          <Text style={[styles.periodBadge, { color: colors.textSecondary }]}>{getPeriodLabel(dashboardPeriod, t)}</Text>
         </View>
         <Text style={[styles.balanceAmount, { color: colors.accent }]}>
-          {isInitialLoading ? '—' : formatRWF(summaryAll.balance)}
+          {isInitialLoading ? '—' : formatRWF(summary.balance)}
         </Text>
         <Text style={[styles.balanceDetailGreen, { color: colors.success }]}>
           {isInitialLoading ? '—' : formatRWFWithSign(summary.totalIncome)}
@@ -292,10 +327,10 @@ export default function HomeScreen() {
             <Text style={[styles.viewAll, { color: colors.textSecondary }]}>{t('viewAll')}</Text>
           </TouchableOpacity>
         </View>
-        {summary.recentTransactions.length === 0 ? (
+        {recentTransactions.length === 0 ? (
           <Text style={[styles.emptyRecent, { color: colors.textSecondary }]}>{t('noTransactionsYet')}</Text>
         ) : (
-          summary.recentTransactions.slice(0, 6).map((tx) => {
+          recentTransactions.map((tx) => {
             const catIcon = getTransactionCategoryIcon(tx.category ?? 'Other', tx.type);
             return (
               <View key={tx.id} style={[styles.transactionRow, { borderBottomColor: colors.border }]}>
@@ -410,6 +445,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: FontFamily.bold,
     marginBottom: 8,
+  },
+  balanceDetailLabel: {
+    fontSize: 11,
+    fontFamily: FontFamily.medium,
+    marginTop: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   balanceDetailGreen: {
     fontSize: 12,
