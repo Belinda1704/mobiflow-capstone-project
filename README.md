@@ -1,5 +1,7 @@
 # MobiFlow: A Mobile Financial Visibility Application for Informal SMEs in Rwanda
 
+**Author:** Belinda Belange Larose
+
 ## Overview
 
 MobiFlow is designed for small shop owners, salon owners, and other informal businesses who mainly use mobile money and cash. The app keeps all their income and expenses in one place, shows a clear picture of cash coming in and going out, and lets them capture mobile‑money activity automatically through SMS. It also provides a one‑time “scan past SMS” option to import older messages, plus tools like savings goals, alerts, business‑health summaries, and a credit‑readiness report they can share with a lender.
@@ -20,17 +22,20 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 
 ## Links
 
-### 5‑minute demo video
+### Video demo of core functionalities
 
-*Link will be added here before submission. The demo will focus on core features (transactions, reports, SMS capture, goals, alerts) and not spend much time on sign‑up/sign‑in.*
+**Link to demo:** [Watch demo video (Google Drive)](https://drive.google.com/file/d/1sZGbDIiEVUt1p8g_G_9IXd0SdNLsDVrg/view?usp=sharing)
 
-### Android APK
+### MobiFlow APK
 
-*Link to the APK file will be added here before submission.*
+**Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/app-release.apk)  
+Share this link by WhatsApp, email, etc. You can also use the [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) page and download the APK from Assets. When uploading a new release you can name the file `MobiFlow.apk` so the downloaded file is called MobiFlow APK.
 
-### Extra report document
+**To install:** Open the downloaded file on the phone. Android may block the install and say something like "For your security, your phone is not allowed to install unknown apps from this source." If so: go to **Settings** → **Apps** → open the app you used to download (e.g. Chrome or Files) → **Install unknown apps** (or "Special app access") → turn **Allow from this source** on. Then tap the APK again and follow the prompts. Requires Android 14+ and 2 GB RAM.
 
-*A single Google Doc link will be added here. It will contain analysis of results vs objectives, discussion, and recommendations/future work.*
+### Project report: analysis, discussion & recommendations
+
+**Link to report:** [Project report (analysis, discussion & recommendations)](https://docs.google.com/document/d/1mnZ5QHzBgCN8ddCLAgUAqSX9sm2uIqub3y1Dvo9JCws/edit?usp=sharing) — analysis of results vs objectives, discussion on milestones and impact, and recommendations & future work (with supervisor).
 
 ## How to install and run the app
 
@@ -46,7 +51,7 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Belinda1704/mobiflow-capstone-project.git
-   cd mobiflow-capstone-project/mobiflow-app
+   cd mobiflow-app
    ```
 
 2. **Install dependencies**
@@ -115,15 +120,13 @@ mobiflow-capstone-project/
 - **Business health:** show a 0–100 business‑health score with simple explanations, top spending categories, and income trend over the last months.
 - **Credit readiness report:** generate a credit‑readiness summary and export it as a PDF that can be shared with a bank or MFI.
 - **Financial literacy:** short Kinyarwanda videos inside the app that help users learn about saving, credit, and managing small‑business money.
-- **Anomaly detector:** in the transactions list, a "Bigger than usual" badge when a transaction is larger than your usual (amount &gt; 2× your average for that type). Rule-based; uses only your own data.
-- **ML risk model:** the same "Bigger than usual" badge can also be triggered by a small model trained on a Kaggle-style dataset (amount, time of day, cash vs mobile money). It runs only on expenses (cash or mobile money) on the device; no user data is sent out.
+- **Anomaly detector:** in the transactions list, a "Bigger than usual" badge when a transaction is larger than your usual (amount &gt; 2× your average for that type). Rule-based; uses only your own data. This is what triggers the badge.
+- **ML risk model:** a small on-device model trained on synthetic data (amount, time of day, cash vs mobile money). It runs only on expenses and outputs a risk score shown on the **transaction detail** screen as "Model risk" (e.g. 98%). It does not trigger the "Bigger than usual" badge; no user data is sent out.
 - **Top customers:** people who have sent you money (income), grouped by phone number from transaction labels. The list is **all-time** (all your income so far), sorted by total amount received. It updates when you open the screen; there is no daily/weekly/monthly filter.
 
-## How to demonstrate the ML (risk) model
+**Risk model – how it works:** The app uses a small on-device model that looks at expense amount, time of day, and whether it’s cash or mobile money. It was trained on synthetic data (see the notebook). For each expense it outputs a risk score, shown on the transaction detail screen as "Model risk" (a percentage). It does not trigger the "Bigger than usual" badge; that badge comes only from the anomaly detector above. Income is not scored. No data is sent to a server.
 
-1. **Run the test:** `cd mobiflow-app && npm test -- fraudModel` — shows the model gives zero risk for income, high risk for a very large mobile-money expense, and low risk for a small cash expense.
-2. **Show the notebook:** open `fraud-detection-model/fraud_detection_synthetic.ipynb` — training data, features (amount_scaled, hour_of_day, is_cash_out, is_transfer), and how the weights were learned.
-3. **In the app:** add an expense, type **Expense**, payment **Mobile money**, amount e.g. **50,000,000** RWF, save. Open **Transactions** — that row should show the "Bigger than usual" badge (the model flags it as high-risk). A small expense or any income will not get the badge from the model.
+**How to test the model:** From the project root run `cd mobiflow-app && npm test -- fraudModel`. The test checks that income gets zero risk, a large mobile-money expense gets high risk, and a small cash expense gets low risk. To see how the model was built (data, features, weights), open `fraud-detection-model/fraud_detection_synthetic.ipynb` in Jupyter.
 
 ## Testing and how to run tests
 
@@ -140,7 +143,7 @@ MobiFlow was tested using automated tests and manual scenarios.
     cd mobiflow-capstone-project/mobiflow-app
     npm test
     ```
-  - Run with **coverage** (for screenshots in the report):
+  - Run with **coverage**:
     ```bash
     npx jest --coverage
     # HTML report: mobiflow-app/coverage/lcov-report/index.html
@@ -201,7 +204,7 @@ This section is only needed on **Windows machines that hit long‑path Gradle er
 
 ## References
 
-Main documentation used while building MobiFlow:
+Documentation and resources used for this project:
 
 - Expo documentation – `https://docs.expo.dev/`
 - React Native documentation – `https://reactnative.dev/docs/getting-started`
