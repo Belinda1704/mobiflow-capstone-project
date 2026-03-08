@@ -18,7 +18,7 @@ export function getPasswordRequirements(password: string): PasswordRequirements 
   };
 }
 
-/** True if the password meets all the rules the app needs for signup. */
+/** True if password meets all signup rules. */
 export function isPasswordStrong(password: string): boolean {
   const r = getPasswordRequirements(password);
   return r.minLength && r.hasUppercase && r.hasLowercase && r.hasNumber && r.hasSpecial;

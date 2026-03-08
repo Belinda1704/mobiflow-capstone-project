@@ -1,4 +1,4 @@
-/** A category the user created; the app stores these in Firestore. */
+/** User-created category, stored in Firestore. */
 export type CustomCategory = {
   id: string;
   name: string;

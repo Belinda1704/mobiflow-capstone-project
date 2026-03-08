@@ -1,4 +1,4 @@
-/** Maps category names to i18n keys so the app can show them in the user’s language. */
+/** Map category names to i18n keys for language. */
 const CATEGORY_KEY_MAP: Record<string, string> = {
   Sales: 'categorySales',
   Supplies: 'categorySupplies',

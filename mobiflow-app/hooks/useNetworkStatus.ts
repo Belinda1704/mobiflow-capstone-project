@@ -13,7 +13,7 @@ export function useNetworkStatus() {
 
   const isConnected = state?.isConnected ?? true;
   const isInternetReachable = state?.isInternetReachable ?? true;
-  // Show "offline" when the app knows the device is disconnected; if unknown, assume online to avoid flashing
+  // Show offline when device is disconnected; else assume online
   const isOffline = state != null && state.isConnected === false;
 
   return { isConnected, isInternetReachable, isOffline, state };

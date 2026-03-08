@@ -16,7 +16,7 @@ export type DefaultCategoryConfig = {
   icon: CategoryIcon;
 };
 
-/** Default categories that come with the app (user can’t delete these). */
+/** Built-in categories (user can’t delete). */
 export const DEFAULT_SME_CATEGORIES: DefaultCategoryConfig[] = [
   { name: 'Sales', color: '#22C55E', icon: 'briefcase-outline' },
   { name: 'Supplies', color: MobiFlowColors.primary, icon: 'cart-outline' },

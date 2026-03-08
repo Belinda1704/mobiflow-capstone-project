@@ -90,7 +90,7 @@ export async function getCategoryCorrections(userId: string): Promise<CategoryCo
   }
 }
 
-/** When the user changes a transaction’s category the app saves it for same label next time. */
+/** Save category for this label’s so we suggest it next time. */
 export async function saveCategoryCorrection(
   userId: string,
   label: string,

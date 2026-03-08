@@ -98,7 +98,7 @@ export async function recordGoalReminder(
   await addToNotificationHistory(userId, { type: 'goalReminder', title, details });
 }
 
-/** Send a notification when the user goes over their monthly expense limit (the app only reminds once per month). */
+/** Notify when user goes over monthly expense limit. Only once per month. */
 export async function triggerExpenseLimitIfNeeded(
   userId: string,
   totalExpenseThisMonthRwf: number,
