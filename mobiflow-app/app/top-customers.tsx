@@ -44,8 +44,8 @@ export default function TopCustomersScreen() {
           <View
             key={c.phone}
             style={[styles.customerRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={[styles.rankBadge, { backgroundColor: colors.accent }]}>
-              <Text style={[styles.rankText, { color: colors.black }]}>{i + 1}</Text>
+            <View style={[styles.rankBadge, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+              <Text style={[styles.rankText, { color: colors.textPrimary }]}>{i + 1}</Text>
             </View>
             <View style={styles.customerInfo}>
               <View style={styles.customerHeader}>
@@ -58,13 +58,17 @@ export default function TopCustomersScreen() {
                   </View>
                 )}
                 {c.valueTier === 'medium' && (
-                  <View style={[styles.tierBadge, { backgroundColor: colors.warning + '20', borderColor: colors.warning }]}>
-                    <Text style={[styles.tierText, { color: colors.warning }]}>Medium</Text>
+                  <View style={[styles.tierBadge, { backgroundColor: (colors.accent || '#6366f1') + '25', borderColor: colors.accent || '#6366f1' }]}>
+                    <Text style={[styles.tierText, { color: colors.accent || '#6366f1' }]}>Medium</Text>
                   </View>
                 )}
               </View>
               <Text style={[styles.customerMeta, { color: colors.textSecondary }]}>
-                {c.displayPhone} · {c.transactionCount} {t('transactions').toLowerCase()} · {t('lastActivity')}: {formatDate(c.lastTransactionDate)}
+                {[
+                  c.displayName && c.displayPhone !== c.displayName ? c.displayPhone : null,
+                  `${c.transactionCount} ${t('transactions').toLowerCase()}`,
+                  `${t('lastActivity')}: ${formatDate(c.lastTransactionDate)}`,
+                ].filter(Boolean).join(' · ')}
               </Text>
             </View>
             <View style={styles.amountColumn}>
@@ -122,6 +126,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,

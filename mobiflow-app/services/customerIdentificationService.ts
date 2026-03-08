@@ -75,6 +75,18 @@ export function getDisplayPhoneFromLabel(label: string): string | null {
   return phone ? formatDisplayPhone(phone) : null;
 }
 
+// Labels that are generic/categories, not actual customers (excluded from top customers list).
+const EXCLUDED_LABELS = new Set([
+  'shop sales', 'pos', 'cash', 'walk-in', 'walk in', 'sales', 'general', 'other',
+  'misc', 'miscellaneous', 'in-store', 'instore', 'retail', 'counter',
+]);
+
+function isExcludedLabel(label: string): boolean {
+  const normalized = (label || '').trim().toLowerCase();
+  if (!normalized) return true;
+  return EXCLUDED_LABELS.has(normalized);
+}
+
 // Key: phone if in label, else normalized label so income without phone still shows (e.g. SMS that only had name).
 function customerKey(t: Transaction): string {
   const phone = extractPhoneFromLabel(t.label);
@@ -98,6 +110,8 @@ export function computeTopCustomers(
     if (t.type !== 'income' || t.amount <= 0) continue;
     const key = customerKey(t);
     if (!key) continue;
+    // Skip generic/category labels (e.g. "Shop sales") so only real senders appear as customers.
+    if (key.startsWith('label:') && isExcludedLabel(key.slice(6))) continue;
 
     const amt = Math.abs(t.amount);
     const date = getTransactionDate(t);
