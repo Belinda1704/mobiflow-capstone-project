@@ -13,7 +13,6 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 - [Project structure and core functionalities](#project-structure-and-core-functionalities)
 - [Testing and how to run tests](#testing-and-how-to-run-tests)
 - [Android device requirements (APK)](#android-device-requirements-apk)
-- [How to build and install the APK](#how-to-build-and-install-the-apk)
 - [Tech stack](#tech-stack)
 - [Designs (Figma)](#designs-figma)
 - [References](#references)
@@ -29,7 +28,9 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 **Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/app-release.apk)  
 Share this link by WhatsApp, email, etc. You can also use the [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) page and download the APK from Assets. When uploading a new release you can name the file `MobiFlow.apk` so the downloaded file is called MobiFlow APK.
 
-**To install:** Open the downloaded file on the phone. Android may block the install and say something like "For your security, your phone is not allowed to install unknown apps from this source." If so: go to **Settings** → **Apps** → open the app you used to download (e.g. Chrome or Files) → **Install unknown apps** (or "Special app access") → turn **Allow from this source** on. Then tap the APK again and follow the prompts. Requires Android 14+ and 2 GB RAM.
+**To install:** Open the downloaded file on the phone. Android may block the install and say something like "For your security, your phone is not allowed to install unknown apps from this source." If so: go to **Settings** → **Apps** → open the app you used to download (e.g. Chrome or Files) → **Install unknown apps** (or "Special app access") → turn **Allow from this source** on. Then tap the APK again and follow the prompts.
+
+SMS capture and notifications require the APK or a development build; they do not work in Expo Go. Core transaction and report features work in Expo Go.
 
 ### Project report: analysis, discussion & recommendations
 
@@ -163,30 +164,6 @@ The app was built for **Android 14 (API 34) or higher** with **2 GB RAM minimum*
 |-------------|---------|
 | Android version | 14 (API 34) or higher |
 | RAM | 2 GB |
-
-## How to build and install the APK (Windows – optional)
-
-Most reviewers can simply install the APK from the link above.  
-This section is only needed on **Windows machines that hit long‑path Gradle errors**.
-
-1. From the main project on Windows:
-   ```powershell
-   cd "C:\Users\HP\Desktop\Capstone development\mobiflow-capstone-project\mobiflow-app"
-   .\scripts\SETUP_SHORT_PATH.ps1 -PreserveCache
-   ```
-   This copies the project to `C:\mobiflow\mobiflow-app` and keeps Gradle cache for faster builds.
-
-2. Build the release APK:
-   ```powershell
-   cd C:\mobiflow\mobiflow-app
-   .\BUILD_RELEASE_APK.ps1
-   ```
-
-3. Install the APK on a phone:
-   - File path: `C:\mobiflow\mobiflow-app\android\app\build\outputs\apk\release\app-release.apk`
-   - Copy it to the phone (USB / Google Drive) and tap to install, or let the script install to a connected device.
-
-> Note: SMS capture and notifications only work in the **APK / development build** (not in Expo Go). Core transaction and report features still work in Expo Go for quick demos.
 
 ## Tech stack
 
