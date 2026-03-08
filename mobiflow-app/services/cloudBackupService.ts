@@ -1,8 +1,9 @@
-// Cloud backup: upload, list, download (Firebase Storage).
-import { ref, uploadString, getDownloadURL, listAll, deleteObject } from 'firebase/storage';
+// Cloud backup: upload, list, download (Firebase Storage). Monthly report PDF upload.
+import { ref, uploadString, uploadBytes, getDownloadURL, listAll, deleteObject } from 'firebase/storage';
 import { storage } from '../config/firebase';
 
 const BACKUP_PREFIX = 'backups';
+const MONTHLY_REPORTS_PREFIX = 'monthly-reports';
 
 function backupPath(userId: string, filename?: string): string {
   if (filename) return `${BACKUP_PREFIX}/${userId}/${filename}`;
@@ -55,4 +56,16 @@ export async function downloadBackupFromCloud(fullPath: string): Promise<string>
 export async function deleteCloudBackup(fullPath: string): Promise<void> {
   const storageRef = ref(storage, fullPath);
   await deleteObject(storageRef);
+}
+
+/** Upload monthly report PDF (base64) to Storage. monthKey = YYYY-MM. */
+export async function uploadMonthlyReportPdf(
+  userId: string,
+  monthKey: string,
+  base64Content: string
+): Promise<string> {
+  const path = `${MONTHLY_REPORTS_PREFIX}/${userId}/${monthKey}.pdf`;
+  const storageRef = ref(storage, path);
+  await uploadString(storageRef, base64Content, 'base64');
+  return getDownloadURL(storageRef);
 }
