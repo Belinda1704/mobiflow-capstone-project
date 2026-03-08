@@ -1,7 +1,5 @@
 # MobiFlow: A Mobile Financial Visibility Application for Informal SMEs in Rwanda
 
-**Author:** Belinda Belange Larose
-
 ## Overview
 
 MobiFlow is designed for small shop owners, salon owners, and other informal businesses who mainly use mobile money and cash. The app keeps all their income and expenses in one place, shows a clear picture of cash coming in and going out, and lets them capture mobile‑money activity automatically through SMS. It also provides a one‑time “scan past SMS” option to import older messages, plus tools like savings goals, alerts, business‑health summaries, and a credit‑readiness report they can share with a lender.
@@ -214,4 +212,6 @@ Documentation and resources used for this project:
 - Maestro mobile testing – `https://maestro.mobile.dev/`
 - react-native-youtube-iframe – `https://github.com/LonelyCpp/react-native-youtube-iframe`
 - scikit‑learn logistic regression – `https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html`
+
+**Author:** Belinda Belange Larose
 
