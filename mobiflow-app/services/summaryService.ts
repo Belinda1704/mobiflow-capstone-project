@@ -63,7 +63,13 @@ export function computeHomeSummary(transactions: Transaction[]): HomeSummary {
     chartDataExpense.push(Math.round(bucket.expense / 1000));
   }
 
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = [...transactions]
+    .sort((a, b) => {
+      const da = getTransactionDate(a)?.getTime() ?? 0;
+      const db = getTransactionDate(b)?.getTime() ?? 0;
+      return db - da;
+    })
+    .slice(0, 6);
 
   return {
     balance,

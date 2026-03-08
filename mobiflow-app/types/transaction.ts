@@ -33,7 +33,7 @@ export type CreateTransactionInput = {
 
 export type FilterTab = 'all' | 'income' | 'expense';
 
-export type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | '30days' | 'custom';
+export type DateRangeFilter = 'all' | 'today' | 'week' | 'last7days' | 'month' | '30days' | 'custom';
 
 export type PaymentFilter = 'all' | 'cash' | 'mobile_money';
 
