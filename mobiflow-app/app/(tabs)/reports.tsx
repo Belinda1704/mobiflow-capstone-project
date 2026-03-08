@@ -79,7 +79,7 @@ export default function ReportsScreen() {
   const displayNet = serverReport?.net ?? reports.net;
   const displayCategoryCount = serverReport?.categoryCount ?? reports.categories.length;
 
-  // Export (PDF, CSV, statement) lives in hook
+  // Export (statement, CSV, Excel) with period selection
   const {
     exporting,
     statementPeriodModalVisible,
@@ -100,9 +100,11 @@ export default function ReportsScreen() {
     setStartMonthPickerVisible,
     endMonthPickerVisible,
     setEndMonthPickerVisible,
-    handleExportPDF,
-    handleExportCSV,
+    handlePeriodChosen,
+    handleCustomPeriodConfirm,
     handleExportStatement,
+    handleExportCSV,
+    handleExportExcel,
   } = useReportsExport(transactions, filteredTransactions, reports, t);
 
   const getDateRangeLabel = (range: DateRangeFilter): string => {
@@ -316,7 +318,7 @@ export default function ReportsScreen() {
           onPress={() => setExportMenuVisible(!exportMenuVisible)}
           disabled={!!exporting}>
           <Text style={[styles.exportDropdownText, { color: colors.black }]}>
-            {exporting === 'pdf' ? t('exporting') : exporting === 'csv' ? t('exporting') : exporting === 'statement' ? t('exporting') : t('downloadReport') || 'Download Report'}
+            {exporting ? t('exporting') : t('downloadReport') || 'Download Report'}
           </Text>
           <Ionicons name={exportMenuVisible ? 'chevron-up' : 'chevron-down'} size={20} color={colors.black} />
         </TouchableOpacity>
@@ -357,11 +359,11 @@ export default function ReportsScreen() {
                 style={[styles.exportMenuItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   setExportMenuVisible(false);
-                  handleExportPDF();
+                  handleExportStatement();
                 }}
                 disabled={!!exporting}>
-                <Ionicons name="document-text" size={20} color={colors.textPrimary} />
-                <Text style={[styles.exportMenuItemText, { color: colors.textPrimary }]}>{t('downloadPDF') || 'Download PDF'}</Text>
+                <Ionicons name="download" size={20} color={colors.textPrimary} />
+                <Text style={[styles.exportMenuItemText, { color: colors.textPrimary }]}>{t('downloadStatement')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.exportMenuItem, { borderBottomColor: colors.border }]}
@@ -377,11 +379,11 @@ export default function ReportsScreen() {
                 style={styles.exportMenuItem}
                 onPress={() => {
                   setExportMenuVisible(false);
-                  handleExportStatement();
+                  handleExportExcel();
                 }}
                 disabled={!!exporting}>
-                <Ionicons name="download" size={20} color={colors.textPrimary} />
-                <Text style={[styles.exportMenuItemText, { color: colors.textPrimary }]}>{t('downloadStatement')}</Text>
+                <Ionicons name="grid" size={20} color={colors.textPrimary} />
+                <Text style={[styles.exportMenuItemText, { color: colors.textPrimary }]}>{t('exportExcel')}</Text>
               </TouchableOpacity>
             </Pressable>
           )}
@@ -401,8 +403,7 @@ export default function ReportsScreen() {
                 style={[styles.periodOption, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   setStatementPeriod('30days');
-                  setStatementPeriodModalVisible(false);
-                  handleExportStatement('30days');
+                  handlePeriodChosen('30days');
                 }}>
                 <Text style={[styles.periodOptionText, { color: colors.textPrimary }]}>{t('last30Days')}</Text>
               </TouchableOpacity>
@@ -410,8 +411,7 @@ export default function ReportsScreen() {
                 style={[styles.periodOption, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   setStatementPeriod('3months');
-                  setStatementPeriodModalVisible(false);
-                  handleExportStatement('3months');
+                  handlePeriodChosen('3months');
                 }}>
                 <Text style={[styles.periodOptionText, { color: colors.textPrimary }]}>{t('last3Months')}</Text>
               </TouchableOpacity>
@@ -419,8 +419,7 @@ export default function ReportsScreen() {
                 style={[styles.periodOption, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   setStatementPeriod('6months');
-                  setStatementPeriodModalVisible(false);
-                  handleExportStatement('6months');
+                  handlePeriodChosen('6months');
                 }}>
                 <Text style={[styles.periodOptionText, { color: colors.textPrimary }]}>{t('last6Months')}</Text>
               </TouchableOpacity>
@@ -483,10 +482,7 @@ export default function ReportsScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.customPeriodConfirmBtn, { backgroundColor: colors.accent }]}
-                onPress={() => {
-                  setCustomPeriodModalVisible(false);
-                  handleExportStatement('custom');
-                }}>
+                onPress={handleCustomPeriodConfirm}>
                 <Text style={[styles.customPeriodConfirmText, { color: colors.black }]}>{t('generateStatement') || 'Generate Statement'}</Text>
               </TouchableOpacity>
             </View>

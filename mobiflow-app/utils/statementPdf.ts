@@ -1,4 +1,4 @@
-// Builds the HTML for the Statement of Account PDF (period, summary, and transaction list for lenders).
+// Statement of Account PDF: period, summary and transaction list.
 import type { Transaction } from '../types/transaction';
 import { getTransactionDate } from './transactionDate';
 import { formatRWFWithSign } from './formatCurrency';
@@ -16,6 +16,8 @@ export type StatementPdfLabels = {
   amount: string;
   noTransactionsInPeriod: string;
   generatedBy: string;
+  businessName: string;
+  dateGenerated: string;
 };
 
 function escapeHtml(text: string): string {
@@ -60,33 +62,41 @@ export function buildStatementHtml(
     )
     .join('');
 
+  const generatedOn = formatStatementDate(new Date());
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${escapeHtml(labels.statementTitle)}</title>
+  <title>${escapeHtml(labels.statementTitle)} - ${escapeHtml(labels.businessName)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; color: #1f2937; }
-    h1 { font-size: 20px; margin-bottom: 4px; }
-    .period { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 28px; color: #1f2937; max-width: 800px; margin: 0 auto; }
+    .header { border-bottom: 2px solid #1f2937; padding-bottom: 16px; margin-bottom: 20px; }
+    .business-name { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 4px; letter-spacing: -0.02em; }
+    .doc-title { font-size: 16px; color: #374151; font-weight: 600; margin-bottom: 12px; }
+    .meta-row { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+    .meta-row strong { color: #374151; }
     .summary { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
     .summary-card { flex: 1; min-width: 100px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
-    .summary-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+    .summary-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
     .summary-value { font-size: 14px; font-weight: 700; }
     .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-    .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: #374151; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-    th { font-size: 12px; color: #6b7280; font-weight: 500; }
-    td { font-size: 14px; }
-    .footer { margin-top: 24px; font-size: 12px; color: #9ca3af; }
+    th { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    td { font-size: 13px; }
+    .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; }
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(labels.statementTitle)}</h1>
-  <p class="period">${escapeHtml(labels.statementPeriod)}: ${escapeHtml(periodLabel)}</p>
+  <div class="header">
+    <div class="business-name">${escapeHtml(labels.businessName)}</div>
+    <div class="doc-title">${escapeHtml(labels.statementTitle)}</div>
+    <div class="meta-row"><strong>${escapeHtml(labels.statementPeriod)}:</strong> ${escapeHtml(periodLabel)}</div>
+    <div class="meta-row"><strong>${escapeHtml(labels.dateGenerated)}:</strong> ${generatedOn}</div>
+  </div>
 
   <div class="summary">
     <div class="summary-card">
@@ -118,7 +128,7 @@ export function buildStatementHtml(
     </table>
   </div>
 
-  <p class="footer">${escapeHtml(labels.generatedBy)} • ${new Date().toLocaleDateString()}</p>
+  <p class="footer">${escapeHtml(labels.generatedBy)} • ${generatedOn}</p>
 </body>
 </html>
 `.trim();
