@@ -1,6 +1,6 @@
 // Data & storage: export/import, cloud backup, restore, delete all.
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Switch } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -34,6 +34,10 @@ import {
   setDisplayName,
   setBusinessName,
   setBusinessType,
+  getLastAutomatedBackupAt,
+  setLastAutomatedBackupAt,
+  getAutomatedBackupEnabled,
+  setAutomatedBackupEnabled,
 } from '../services/preferencesService';
 import { deleteAllTransactionsForUser } from '../services/transactionsService';
 import { clearPastSmsScannedFlag } from '../services/smsCaptureService';
@@ -51,11 +55,18 @@ export default function DataStorageScreen() {
   const [cloudBackups, setCloudBackups] = useState<CloudBackupItem[] | null>(null);
   const [cloudBackupCount, setCloudBackupCount] = useState<number | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
+  const [automatedBackupEnabled, setAutomatedBackupEnabledState] = useState<boolean>(true);
 
   useEffect(() => {
     if (!userId) return;
     listCloudBackups(userId).then((list) => setCloudBackupCount(list.length)).catch(() => setCloudBackupCount(0));
   }, [userId]);
+
+  useEffect(() => {
+    getLastAutomatedBackupAt().then(setLastBackupAt);
+    getAutomatedBackupEnabled().then(setAutomatedBackupEnabledState);
+  }, []);
 
   async function handleExport() {
     if (!userId) return;
@@ -185,6 +196,9 @@ export default function DataStorageScreen() {
       });
       const json = JSON.stringify(backup, null, 2);
       await uploadBackupToCloud(userId, json);
+      const nowIso = new Date().toISOString();
+      await setLastAutomatedBackupAt(nowIso);
+      setLastBackupAt(nowIso);
       const list = await listCloudBackups(userId);
       setCloudBackupCount(list.length);
       Alert.alert(t('backupToCloudSuccess'), '');
@@ -338,6 +352,35 @@ export default function DataStorageScreen() {
           />
         </View>
 
+        <View style={[styles.automatedBackupCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.listRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+              <Ionicons name="cloud-upload-outline" size={20} color={colors.listIcon ?? colors.primary} />
+            </View>
+            <View style={styles.listRowText}>
+              <Text style={[styles.listRowTitle, { color: colors.textPrimary }]}>{t('automatedDailyBackup')}</Text>
+              <Text style={[styles.listRowSubtitle, { color: colors.textSecondary }]}>{t('automatedDailyBackupDescription')}</Text>
+            </View>
+            <Switch
+              value={automatedBackupEnabled}
+              onValueChange={async (value) => {
+                setAutomatedBackupEnabledState(value);
+                await setAutomatedBackupEnabled(value);
+              }}
+              trackColor={{ false: colors.border, true: (colors.accent as string) + '80' }}
+              thumbColor={automatedBackupEnabled ? colors.accent : colors.textSecondary}
+            />
+          </View>
+          {lastBackupAt && (
+            <View style={[styles.lastBackupRow, { borderTopColor: colors.border }]}>
+              <Text style={[styles.lastBackupLabel, { color: colors.textSecondary }]}>{t('lastBackupAt')}</Text>
+              <Text style={[styles.lastBackupValue, { color: colors.textPrimary }]}>
+                {new Date(lastBackupAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+              </Text>
+            </View>
+          )}
+        </View>
+
         <Text style={[styles.introLine, { color: colors.textSecondary }]}>{t('dataStorageDescription')}</Text>
 
         <View style={[styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -469,6 +512,27 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
   },
   primaryCtaWrap: { marginBottom: 16 },
+  automatedBackupCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 4,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  lastBackupRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderTopWidth: 1,
+  },
+  lastBackupLabel: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    marginBottom: 2,
+  },
+  lastBackupValue: {
+    fontSize: 14,
+    fontFamily: FontFamily.medium,
+  },
   introLine: {
     fontSize: 14,
     fontFamily: FontFamily.regular,

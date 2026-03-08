@@ -11,6 +11,7 @@ import { useTranslations } from '../../hooks/useTranslations';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { FontFamily } from '../../constants/colors';
 import { CoreDataGate } from '../../components/CoreDataGate';
+import { AutomatedBackupChecker } from '../../components/AutomatedBackupChecker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSmsCaptureEnabled } from '../../services/preferencesService';
 import { checkSmsPermissions, isSmsCaptureSupported, startSmsListener, scanPastSmsMessages } from '../../services/smsCaptureService';
@@ -76,6 +77,7 @@ export default function TabLayout() {
 
   return (
     <CoreDataGate>
+    <AutomatedBackupChecker />
     <SwipeableTabs
       tabBarPosition="bottom"
       screenOptions={{
