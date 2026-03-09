@@ -143,10 +143,7 @@ export default function ReportsScreen() {
 
   // Render straight away; data from cache
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.surfaceElevated }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
       <TabHeader
         title={t('reports')}
         subtitle={t('reportsSubtitle')}
@@ -156,9 +153,12 @@ export default function ReportsScreen() {
           </TouchableOpacity>
         }
       />
-      
-      {/* Time Filter Pills – each in its own pill */}
-      <View style={styles.timeFilterPills}>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        {/* Time Filter Pills – each in its own pill */}
+        <View style={styles.timeFilterPills}>
         <TouchableOpacity
           style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'month' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'month' ? colors.accent : colors.border }]}
           onPress={() => setPendingDateRange('month')}>
@@ -613,8 +613,9 @@ export default function ReportsScreen() {
             themeVariant={isDark ? 'dark' : 'light'}
           />
         )
-      )}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 

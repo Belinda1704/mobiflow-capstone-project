@@ -139,36 +139,39 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
       <TabHeader title={t('dashboard')} subtitle={t(getTimeBasedGreetingKey())} />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-          {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </Text>
 
-        {(incomeDrop || budgetBreaches.length > 0) ? (
-          <View style={[styles.alertsBanner, { backgroundColor: colors.warningBg, borderColor: colors.warning }]}>
-            <Ionicons name="alert-circle" size={20} color={colors.warning} />
-            <View style={styles.alertsBannerText}>
-              {incomeDrop && (
-                <Text style={[styles.alertsBannerItem, { color: colors.warningText }]}>{t('incomeDropAlert', { percent: Math.min(incomeDrop.percentDrop, 99) })}</Text>
-              )}
-              {budgetBreaches.slice(0, 2).map((b) => (
-                <Text key={b.category} style={[styles.alertsBannerItem, { marginTop: 4, color: colors.warningText }]}>{t('budgetBreachAlert', { category: b.category, percent: b.percentOver })}</Text>
-              ))}
-            </View>
+      <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+        {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+      </Text>
+
+      {(incomeDrop || budgetBreaches.length > 0) ? (
+        <View style={[styles.alertsBanner, { backgroundColor: colors.warningBg, borderColor: colors.warning }]}>
+          <Ionicons name="alert-circle" size={20} color={colors.warning} />
+          <View style={styles.alertsBannerText}>
+            {incomeDrop && (
+              <Text style={[styles.alertsBannerItem, { color: colors.warningText }]}>{t('incomeDropAlert', { percent: Math.min(incomeDrop.percentDrop, 99) })}</Text>
+            )}
+            {budgetBreaches.slice(0, 2).map((b) => (
+              <Text key={b.category} style={[styles.alertsBannerItem, { marginTop: 4, color: colors.warningText }]}>{t('budgetBreachAlert', { category: b.category, percent: b.percentOver })}</Text>
+            ))}
           </View>
-        ) : null}
-        <View style={styles.periodPillsRow}>
-          {DASHBOARD_PERIODS.map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[styles.periodPill, { backgroundColor: dashboardPeriod === period ? colors.accent : colors.background, borderWidth: 1, borderColor: dashboardPeriod === period ? colors.accent : colors.border }]}
-              onPress={() => setDashboardPeriod(period)}>
-              <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.black : colors.textSecondary }]}>
-                {getPeriodLabel(period, t)}
-              </Text>
-            </TouchableOpacity>
-          ))}
         </View>
+      ) : null}
+
+      <View style={styles.periodPillsRow}>
+        {DASHBOARD_PERIODS.map((period) => (
+          <TouchableOpacity
+            key={period}
+            style={[styles.periodPill, { backgroundColor: dashboardPeriod === period ? colors.accent : colors.background, borderWidth: 1, borderColor: dashboardPeriod === period ? colors.accent : colors.border }]}
+            onPress={() => setDashboardPeriod(period)}>
+            <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.black : colors.textSecondary }]}>
+              {getPeriodLabel(period, t)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.balanceHeader}>
           <View style={styles.balanceTitleWrap}>
