@@ -153,6 +153,9 @@ export default function SmsCaptureScreen() {
               <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
                 {t('smsAccessSubtitle') || 'Read & receive SMS for MTN MoMo and Airtel Money'}
               </Text>
+              <Text style={[styles.settingSubtitle, { color: colors.textSecondary, marginTop: 4 }]}>
+                {t('smsCaptureTurnOffHint') || 'You can turn this off anytime in Settings.'}
+              </Text>
             </View>
             <Switch
               value={hasPermissions}
