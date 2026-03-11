@@ -1,17 +1,8 @@
 // Categories: add/delete custom categories, list all.
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-} from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useCategories } from '../hooks/useCategories';
@@ -19,10 +10,9 @@ import { showConfirm } from '../services/errorPresenter';
 import { useThemeColors } from '../contexts/ThemeContext';
 import { useTranslations } from '../hooks/useTranslations';
 import { FontFamily } from '../constants/colors';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 export default function ManageCategoriesScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { colors } = useThemeColors();
   const { t } = useTranslations();
   const { userId } = useCurrentUser();
@@ -76,13 +66,7 @@ export default function ManageCategoriesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: colors.surfaceElevated, borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('manageCategories')}</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <ScreenHeader title={t('manageCategories')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('defaultCategoriesSME')}</Text>
         <Text style={[styles.sectionHint, { color: colors.textSecondary }]}>{t('defaultCategoriesHint')}</Text>
@@ -165,21 +149,6 @@ export default function ManageCategoriesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: FontFamily.bold,
-    textAlign: 'center',
-  },
-  headerRight: { width: 32 },
   content: { flex: 1, padding: 24 },
   sectionLabel: {
     fontSize: 14,

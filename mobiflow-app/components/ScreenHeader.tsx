@@ -21,7 +21,7 @@ export function ScreenHeader({ title, subtitle, rightContent, backgroundColor }:
   const bg = backgroundColor ?? colors.background;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, backgroundColor: bg, borderBottomColor: colors.border }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 16, backgroundColor: bg }]}>
       <TouchableOpacity
         testID="screen-header-back"
         style={styles.backBtn}
@@ -44,7 +44,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
   },
   backBtn: {
     padding: 8,

@@ -16,7 +16,7 @@ export function TabHeader({ title, subtitle, rightContent }: TabHeaderProps) {
   const { colors } = useThemeColors();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, minHeight: 100, backgroundColor: colors.background }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 16, minHeight: 80, backgroundColor: colors.background }]}>
       <View style={styles.topRow}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         <View style={styles.right}>
@@ -31,10 +31,7 @@ export function TabHeader({ title, subtitle, rightContent }: TabHeaderProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingBottom: 18,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
+    paddingBottom: 12,
   },
   topRow: {
     flexDirection: 'row',

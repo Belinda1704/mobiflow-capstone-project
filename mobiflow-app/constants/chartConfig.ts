@@ -40,9 +40,9 @@ export function getBarChartConfig(colors: ThemeColors) {
 
 // Static fallback (no theme); use getBarChartConfig(colors) when you have theme.
 export const BAR_CHART_CONFIG = {
-  backgroundColor: '#F8FAFC',
-  backgroundGradientFrom: '#F8FAFC',
-  backgroundGradientTo: '#F8FAFC',
+  backgroundColor: '#FFFFFF',
+  backgroundGradientFrom: '#FFFFFF',
+  backgroundGradientTo: '#FFFFFF',
   backgroundGradientToOpacity: 1,
   decimalPlaces: 0,
   color: () => YELLOW,
