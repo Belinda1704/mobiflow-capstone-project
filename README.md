@@ -25,10 +25,35 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 
 ### MobiFlow APK
 
-**Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/app-release.apk)  
-Share this link by WhatsApp, email, etc. You can also use the [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) page and download the APK from Assets. When uploading a new release you can name the file `MobiFlow.apk` so the downloaded file is called MobiFlow APK.
+**Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/MobiFlow-v1.0.1.apk)  
+Share this link by WhatsApp, email, etc. You can also use the [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) page and download the APK from **Assets**.
 
-**To install:** Open the downloaded file on the phone. Android may block the install and say something like "For your security, your phone is not allowed to install unknown apps from this source." If so: go to **Settings** → **Apps** → open the app you used to download (e.g. Chrome or Files) → **Install unknown apps** (or "Special app access") → turn **Allow from this source** on. Then tap the APK again and follow the prompts.
+**Android requirements**
+
+- Android 14 (API 34) or higher  
+- 2 GB RAM minimum
+
+**How to install**
+
+1. Download `MobiFlow-v1.0.1.apk` from the link above (or from the Releases page).
+2. On your phone, open the downloaded file (for example from **Files** → **Downloads**).
+3. If Android says something like **"For your security, your phone is not allowed to install unknown apps from this source"**:
+   - Go to **Settings** → **Apps** → open the app you used to download (e.g. Chrome or Files).
+   - Tap **Install unknown apps** (or "Special app access") and turn **Allow from this source** on.
+4. Tap the APK again and follow the prompts to install.
+
+> **Note about Google Play Protect**
+>
+> Some phones may show a warning like **"App blocked by Play Protect"** when you try to install the APK, because it is not from the Play Store and it requests SMS and notification permissions.
+>
+> If this happens:
+> 1. Tap **More details → Install anyway** (or similar), **or**
+> 2. Temporarily turn off Play Protect:
+>    - Open the **Play Store** app.
+>    - Tap your profile picture → **Play Protect**.
+>    - Tap the settings icon (top‑right) and turn off **Scan apps with Play Protect**.
+>    - Install the APK.
+>    - After installation, you can turn Play Protect back on.
 
 SMS capture and notifications require the APK or a development build; they do not work in Expo Go. Core transaction and report features work in Expo Go.
 
@@ -155,15 +180,6 @@ MobiFlow was tested using automated tests and manual scenarios.
     ```bash
     maestro test maestro/flows/onboarding.yaml
     ```
-
-## Android device requirements (APK)
-
-The app was built for **Android 14 (API 34) or higher** with **2 GB RAM minimum**. The SMS capture library requires API 34.
-
-| Requirement | Minimum |
-|-------------|---------|
-| Android version | 14 (API 34) or higher |
-| RAM | 2 GB |
 
 ## Tech stack
 
