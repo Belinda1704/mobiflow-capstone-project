@@ -25,7 +25,7 @@ MobiFlow is designed for small shop owners, salon owners, and other informal bus
 
 ### MobiFlow APK
 
-**Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/MobiFlow-v1.0.1.apk)  
+**Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/MobiFlow-v1.0.2.apk)  
 Share this link by WhatsApp, email, etc. You can also use the [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) page and download the APK from **Assets**.
 
 **Android requirements**
