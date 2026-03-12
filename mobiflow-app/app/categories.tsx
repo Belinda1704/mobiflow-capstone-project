@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useCategories } from '../hooks/useCategories';
