@@ -1,11 +1,11 @@
 // Financial literacy - list of videos, tap to expand and watch
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import YoutubeIframe, { PLAYER_STATES } from 'react-native-youtube-iframe';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { InlineLessonPlayer } from '../components/InlineLessonPlayer';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useThemeColors } from '../contexts/ThemeContext';
 import { useTranslations } from '../hooks/useTranslations';
@@ -68,13 +68,6 @@ export default function FinancialLiteracyScreen() {
   const { userId } = useCurrentUser();
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
-  const { width } = useWindowDimensions();
-  const playerHeight = Math.min((width - 48) * (9 / 16), 260);
-
-  const webViewProps =
-    Platform.OS === 'android'
-      ? { scrollEnabled: false, nestedScrollEnabled: true }
-      : { scrollEnabled: false };
 
   useFocusEffect(
     useCallback(() => {
@@ -114,27 +107,15 @@ export default function FinancialLiteracyScreen() {
               style={[styles.videoCard, { backgroundColor: colors.background, borderColor: colors.border }]}
             >
               {isOpen && videoId ? (
-                <View style={styles.inlinePlayerWrap} collapsable={false}>
-                  <YoutubeIframe
-                    key={item.id}
-                    height={playerHeight}
-                    videoId={videoId}
-                    onChangeState={(state) => {
-                      const ended =
-                        state === PLAYER_STATES.ENDED || state === 'ended' || state === 0;
-                      if (!ended) return;
-                      if (userId) {
-                        markLessonCompleted(userId, item.id)
-                          .then(() => getCompletedLessonIds(userId))
-                          .then((ids) => setCompletedIds(ids))
-                          .catch((err) =>
-                            console.warn('Failed to mark lesson completed:', err)
-                          );
-                      }
-                    }}
-                    webViewProps={webViewProps}
-                  />
-                </View>
+                <InlineLessonPlayer
+                  videoId={videoId}
+                  onCompleted={() => {
+                    if (!userId) return;
+                    return markLessonCompleted(userId, item.id)
+                      .then(() => getCompletedLessonIds(userId))
+                      .then((ids) => setCompletedIds(ids));
+                  }}
+                />
               ) : null}
               <TouchableOpacity
                 style={styles.videoRow}
@@ -271,11 +252,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FontFamily.regular,
     marginTop: 4,
-  },
-  inlinePlayerWrap: {
-    width: '100%',
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
   },
 });
