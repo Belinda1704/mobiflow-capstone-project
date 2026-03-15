@@ -52,6 +52,24 @@ if (Constants.appOwnership !== 'expo') {
   }
 }
 import { initI18n } from '../i18n';
+import { getFriendlyAuthErrorMessage } from '../utils/authErrorUtils';
+
+// Show a clearer message when token refresh is blocked (e.g. app not set up in Firebase).
+const setupAuthErrorHandler = () => {
+  const g = typeof globalThis !== 'undefined' ? globalThis : typeof global !== 'undefined' ? global : undefined;
+  if (!g || typeof (g as any).addEventListener !== 'function') return;
+  const handler = (event: PromiseRejectionEvent) => {
+    const msg = (event?.reason?.message ?? event?.reason ?? '') + '';
+    if (msg.includes('securetoken') && (msg.includes('blocked') || msg.includes('granttoken'))) {
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      const { Alert } = require('react-native');
+      Alert.alert('Error', getFriendlyAuthErrorMessage(event.reason));
+    }
+  };
+  (g as any).addEventListener('unhandledrejection', handler);
+};
+setupAuthErrorHandler();
 
 SplashScreen.preventAutoHideAsync();
 

@@ -1,24 +1,52 @@
-// Forgot password: reset link or contact support.
+// Forgot password: send a support request or contact support.
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
+import { AuthInput } from '../components/AuthInput';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useThemeColors } from '../contexts/ThemeContext';
+import { usePhoneInput } from '../hooks/usePhoneInput';
 import { useTranslations } from '../hooks/useTranslations';
 import { FontFamily } from '../constants/colors';
 import { SUPPORT_EMAIL } from '../constants/support';
+import { createPasswordResetSupportRequest } from '../services/supportRequestsService';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslations();
   const { colors, isDark } = useThemeColors();
+  const { value: phone, onChangeText: setPhone, setValue: setPhoneValue } = usePhoneInput();
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function handleContactSupport() {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+  }
+
+  async function handleSubmitRequest() {
+    setSubmitting(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      await createPasswordResetSupportRequest(phone);
+      setPhoneValue('');
+      setMessage(t('passwordHelpRequestSent'));
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error && requestError.message.trim()
+          ? requestError.message
+          : t('passwordHelpRequestFailed')
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -46,10 +74,24 @@ export default function ForgotPasswordScreen() {
               </Text>
             </View>
 
+            <AuthInput
+              placeholder="781234567"
+              value={phone}
+              onChangeText={setPhone}
+              icon="phone"
+              keyboardType="phone-pad"
+              showCountryPrefix={true}
+              testID="forgot-password-phone-input"
+            />
+
+            {error ? <Text style={[styles.feedback, { color: '#dc2626' }]}>{error}</Text> : null}
+            {message ? <Text style={[styles.feedback, { color: '#059669' }]}>{message}</Text> : null}
+
             <PrimaryButton
-              title={t('contactSupport')}
-              onPress={handleContactSupport}
+              title={submitting ? t('sendingRequest') : t('sendPasswordHelpRequest')}
+              onPress={() => void handleSubmitRequest()}
               variant="yellow"
+              disabled={submitting}
             />
 
             <Text style={[styles.orLabel, { color: colors.textSecondary }]}>{t('orSendEmailTo')}</Text>
@@ -118,6 +160,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontFamily.regular,
     lineHeight: 21,
+  },
+  feedback: {
+    fontSize: 14,
+    fontFamily: FontFamily.medium,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   orLabel: {
     fontSize: 13,

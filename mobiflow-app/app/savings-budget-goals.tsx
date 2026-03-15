@@ -51,6 +51,10 @@ export default function SavingsBudgetGoalsScreen() {
   const [applyingSuggestions, setApplyingSuggestions] = useState(false);
   const [editingGoal, setEditingGoal] = useState<typeof goals[0] | null>(null);
   const [contributionAmount, setContributionAmount] = useState('');
+  const [addGoalSaving, setAddGoalSaving] = useState(false);
+  const [addGoalSaved, setAddGoalSaved] = useState(false);
+  const [contributionSaving, setContributionSaving] = useState(false);
+  const [contributionSaved, setContributionSaved] = useState(false);
 
   // Pop celebration when a goal hits 100%
   useEffect(() => {
@@ -89,17 +93,30 @@ export default function SavingsBudgetGoalsScreen() {
       showError(t('error'), t('enterValidTargetAmount'));
       return;
     }
-    const saved = await addOrUpdateGoal({
-      name,
-      target,
-      current: 0,
-      durationMonths,
-    });
-    if (saved) {
-      setGoalName('');
-      setGoalTarget('');
-       setGoalDuration('');
-      setShowAddGoal(false);
+    setAddGoalSaving(true);
+    setAddGoalSaved(false);
+    try {
+      const saved = await addOrUpdateGoal({
+        name,
+        target,
+        current: 0,
+        durationMonths,
+      });
+      if (saved) {
+        setAddGoalSaving(false);
+        setAddGoalSaved(true);
+        setGoalName('');
+        setGoalTarget('');
+        setGoalDuration('');
+        setTimeout(() => {
+          setShowAddGoal(false);
+          setAddGoalSaved(false);
+        }, 1200);
+      } else {
+        setAddGoalSaving(false);
+      }
+    } catch {
+      setAddGoalSaving(false);
     }
   }
 
@@ -111,19 +128,32 @@ export default function SavingsBudgetGoalsScreen() {
       showError(t('error'), t('enterValidTargetAmount'));
       return;
     }
-    const currentBase = (editingGoal.current as number) || 0;
-    const newCurrent = currentBase + delta;
-    const saved = await addOrUpdateGoal({
-      id: editingGoal.id,
-      name: editingGoal.name,
-      target: editingGoal.target,
-      current: newCurrent,
-      createdAt: editingGoal.createdAt,
-      durationMonths: editingGoal.durationMonths,
-    });
-    if (saved) {
-      setContributionAmount('');
-      setEditingGoal(null);
+    setContributionSaving(true);
+    setContributionSaved(false);
+    try {
+      const currentBase = (editingGoal.current as number) || 0;
+      const newCurrent = currentBase + delta;
+      const saved = await addOrUpdateGoal({
+        id: editingGoal.id,
+        name: editingGoal.name,
+        target: editingGoal.target,
+        current: newCurrent,
+        createdAt: editingGoal.createdAt,
+        durationMonths: editingGoal.durationMonths,
+      });
+      if (saved) {
+        setContributionSaving(false);
+        setContributionSaved(true);
+        setContributionAmount('');
+        setTimeout(() => {
+          setEditingGoal(null);
+          setContributionSaved(false);
+        }, 1200);
+      } else {
+        setContributionSaving(false);
+      }
+    } catch {
+      setContributionSaving(false);
     }
   }
 
@@ -308,11 +338,13 @@ export default function SavingsBudgetGoalsScreen() {
                 keyboardType="numeric"
               />
               <View style={styles.modalActions}>
-                <TouchableOpacity style={[styles.cancelBtn, { backgroundColor: colors.background }]} onPress={() => setShowAddGoal(false)}>
+                <TouchableOpacity style={[styles.cancelBtn, { backgroundColor: colors.background }]} onPress={() => setShowAddGoal(false)} disabled={addGoalSaving}>
                   <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddGoal}>
-                  <Text style={[styles.saveBtnText, { color: colors.black }]}>{t('save')}</Text>
+                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddGoal} disabled={addGoalSaving}>
+                  <Text style={[styles.saveBtnText, { color: colors.black }]}>
+                    {addGoalSaved ? t('saved') : addGoalSaving ? t('saving') : t('save')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -352,11 +384,14 @@ export default function SavingsBudgetGoalsScreen() {
                   onPress={() => {
                     setEditingGoal(null);
                     setContributionAmount('');
-                  }}>
+                  }}
+                  disabled={contributionSaving}>
                   <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddContribution}>
-                  <Text style={[styles.saveBtnText, { color: colors.black }]}>{t('save')}</Text>
+                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddContribution} disabled={contributionSaving}>
+                  <Text style={[styles.saveBtnText, { color: colors.black }]}>
+                    {contributionSaved ? t('saved') : contributionSaving ? t('saving') : t('save')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -1,13 +1,15 @@
 // Profile – user info, manage profile, settings, sign out, change photo
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useSignOut } from '../hooks/useSignOut';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useProfileDisplay } from '../hooks/usePreferences';
 import { useThemeColors } from '../contexts/ThemeContext';
 import { useTranslations } from '../hooks/useTranslations';
 import { FontFamily } from '../constants/colors';
@@ -15,6 +17,7 @@ import { getDisplayLabelFromAuthId, getInitialsFromAuthId } from '../utils/userU
 import { deleteAccount, updateProfilePhoto } from '../services/authService';
 import { uploadProfilePhoto } from '../services/profilePhotoService';
 import { showError } from '../services/errorPresenter';
+import { getFriendlyAuthErrorMessage } from '../utils/authErrorUtils';
 
 const MENU_ITEMS: { labelKey: string; icon: React.ComponentProps<typeof Ionicons>['name']; route?: string }[] = [
   { labelKey: 'manageProfile', icon: 'person-outline', route: '/manage-profile' },
@@ -29,12 +32,21 @@ export default function ProfileScreen() {
   const { t } = useTranslations();
   const { user } = useCurrentUser();
   const { signOut, loading } = useSignOut();
+  const { displayName, businessName, refresh } = useProfileDisplay();
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const authId = user?.email ?? '';
   const displayLabel = getDisplayLabelFromAuthId(authId);
   const initials = getInitialsFromAuthId(authId || '??');
   const photoURL = user?.photoURL ?? null;
   const [updatingPhoto, setUpdatingPhoto] = useState(false);
+  const primaryLabel = (displayName && displayName.trim()) || displayLabel;
+  const secondaryLabel = businessName && businessName.trim() && businessName !== 'My Business' ? businessName : (authId || t('notSignedIn'));
 
   async function handleChangePhoto() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -54,7 +66,7 @@ export default function ProfileScreen() {
       const url = await uploadProfilePhoto(result.assets[0].uri);
       await updateProfilePhoto(url);
     } catch (e: any) {
-      showError(t('error') || 'Error', e?.message || 'Failed to update profile picture.');
+      showError(t('error') || 'Error', getFriendlyAuthErrorMessage(e) || 'Failed to update profile picture.');
     } finally {
       setUpdatingPhoto(false);
     }
@@ -83,7 +95,7 @@ export default function ProfileScreen() {
               if (code === 'auth/requires-recent-login') {
                 showError('Re-authentication required', 'Please sign out and sign in again, then try deleting your account.');
               } else {
-                showError('Error', e?.message || 'Could not delete account. Please try again or contact support.');
+                showError('Error', getFriendlyAuthErrorMessage(e) || 'Could not delete account. Please try again or contact support.');
               }
             }
           },
@@ -118,8 +130,8 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.profileInfo}>
-          <Text style={[styles.profileName, { color: colors.textPrimary }]}>{displayLabel}</Text>
-          <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{authId ? displayLabel : t('notSignedIn')}</Text>
+          <Text style={[styles.profileName, { color: colors.textPrimary }]}>{primaryLabel}</Text>
+          <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{secondaryLabel}</Text>
         </View>
         </View>
         <View style={[styles.menuSection, { backgroundColor: colors.background, borderColor: colors.border }]}>

@@ -65,6 +65,7 @@ export default function AddTransactionScreen() {
   const paymentTriggerRef = useRef<View>(null);
 
   const { addTransaction, loading } = useAddTransaction(activeUserId);
+  const [saved, setSaved] = useState(false);
   const { categories, addCategory } = useCategories(activeUserId, 'open');
   const { transactions } = useTransactions(activeUserId);
   const { suggest } = useCategorySuggestion(activeUserId, transactions);
@@ -130,7 +131,8 @@ export default function AddTransactionScreen() {
       notes: notes.trim() || undefined,
     });
     if (success) {
-      router.back();
+      setSaved(true);
+      setTimeout(() => router.back(), 1200);
     }
   }
 
@@ -289,9 +291,10 @@ export default function AddTransactionScreen() {
 
         <View style={{ marginTop: 8 }}>
           <PrimaryButton
-            title={loading ? t('saving') : t('saveTransaction')}
+            title={saved ? t('saved') : loading ? t('saving') : t('saveTransaction')}
             onPress={handleSave}
             variant="yellow"
+            disabled={loading || saved}
           />
         </View>
       </ScrollView>

@@ -31,6 +31,8 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const hasConfirmPassword = confirmPassword.trim().length > 0;
+  const passwordsMatch = hasConfirmPassword && password === confirmPassword;
 
   const { signUp, loading } = useSignUp();
 
@@ -86,6 +88,23 @@ export default function SignupScreen() {
               onEyePress={() => setShowConfirm(!showConfirm)}
               eyeOpen={showConfirm}
             />
+            {hasConfirmPassword ? (
+              <View style={styles.matchRow}>
+                <Ionicons
+                  name={passwordsMatch ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={16}
+                  color={passwordsMatch ? colors.success : colors.error}
+                  style={styles.matchIcon}
+                />
+                <Text
+                  style={[
+                    styles.matchText,
+                    { color: passwordsMatch ? colors.success : colors.error },
+                  ]}>
+                  {passwordsMatch ? t('passwordsMatch') : t('signupPasswordsDoNotMatch')}
+                </Text>
+              </View>
+            ) : null}
 
             <TouchableOpacity
               style={styles.termsRow}
@@ -166,6 +185,19 @@ const styles = StyleSheet.create({
   },
   termsText: { fontSize: 14, fontFamily: FontFamily.regular, flex: 1, lineHeight: 20 },
   termsLink: { fontFamily: FontFamily.semiBold, textDecorationLine: 'underline' },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: -4,
+    marginBottom: 12,
+  },
+  matchIcon: {
+    marginRight: 8,
+  },
+  matchText: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+  },
   successCard: {
     flex: 1,
     justifyContent: 'center',

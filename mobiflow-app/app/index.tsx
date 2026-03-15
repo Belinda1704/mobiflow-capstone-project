@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +23,7 @@ function getLangLabels(t: (k: string) => string): Record<LanguageOption, string>
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { t } = useTranslations();
   const [checking, setChecking] = useState(true);
@@ -43,7 +44,7 @@ export default function OnboardingScreen() {
   useAuthRedirect(
     () => router.replace('/(tabs)'),
     () => router.replace('/login'),
-    checking || !hasCompletedOnboarding
+    checking || !hasCompletedOnboarding || pathname !== '/'
   );
 
   const handleGetStarted = async () => {

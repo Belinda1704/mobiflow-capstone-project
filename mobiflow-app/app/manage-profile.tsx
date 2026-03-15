@@ -11,6 +11,7 @@ import { useTranslations } from '../hooks/useTranslations';
 import { FontFamily } from '../constants/colors';
 import { getDisplayLabelFromAuthId } from '../utils/userUtils';
 import { showError } from '../services/errorPresenter';
+import { getFriendlyAuthErrorMessage } from '../utils/authErrorUtils';
 import type { BusinessType } from '../services/preferencesService';
 
 const BUSINESS_TYPES: BusinessType[] = ['retail', 'services', 'agriculture', 'other'];
@@ -53,16 +54,20 @@ export default function ManageProfileScreen() {
     return { top, left: layout.x, width: layout.width, maxHeight: maxH };
   }
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setSaving(true);
+    setSaved(false);
     try {
       await updateDisplayName(name.trim());
       await updateBusinessName(business.trim());
       await updateBusinessType(type);
       setSaving(false);
-    } catch {
-      showError('Error', 'Could not save profile.');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    } catch (e) {
+      showError('Error', getFriendlyAuthErrorMessage(e) || 'Could not save profile.');
       setSaving(false);
     }
   }
@@ -103,7 +108,9 @@ export default function ManageProfileScreen() {
           style={[styles.saveBtn, { backgroundColor: colors.accent }, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={saving}>
-          <Text style={[styles.saveBtnText, { color: colors.black }]}>{saving ? t('saving') : t('save')}</Text>
+          <Text style={[styles.saveBtnText, { color: colors.black }]}>
+            {saved ? t('saved') : saving ? t('saving') : t('save')}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 

@@ -1,7 +1,7 @@
 // Login – phone + password, then go to dashboard
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
@@ -16,6 +16,7 @@ import { FontFamily } from '../constants/colors';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ redirect?: string }>();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useThemeColors();
   const { t } = useTranslations();
@@ -24,12 +25,13 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const { signIn, loading } = useSignIn();
+  const redirectTo = typeof params.redirect === 'string' && params.redirect.startsWith('/') ? params.redirect : '/(tabs)';
 
-  useAuthRedirect(() => router.replace('/(tabs)'));
+  useAuthRedirect(() => router.replace(redirectTo as any));
 
   async function handleSignIn() {
     const success = await signIn(phone, password);
-    if (success) router.replace('/(tabs)');
+    if (success) router.replace(redirectTo as any);
   }
 
   return (

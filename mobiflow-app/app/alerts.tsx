@@ -24,6 +24,7 @@ export default function AlertsScreen() {
   const [lowBalance, setLowBalance] = useState('');
   const [expenseLimit, setExpenseLimit] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Defaults until loaded
   const alertSettings = settings || {
@@ -38,15 +39,18 @@ export default function AlertsScreen() {
 
   async function handleSave() {
     setSaving(true);
+    setSaved(false);
     try {
       const lb = lowBalance.trim() ? parseInt(lowBalance.replace(/\D/g, ''), 10) : undefined;
       const el = expenseLimit.trim() ? parseInt(expenseLimit.replace(/\D/g, ''), 10) : undefined;
       if (lb !== undefined && (isNaN(lb) || lb < 0)) {
         showError(t('error'), t('enterValidLowBalance'));
+        setSaving(false);
         return;
       }
       if (el !== undefined && (isNaN(el) || el < 0)) {
         showError(t('error'), t('enterValidExpenseLimit'));
+        setSaving(false);
         return;
       }
       await update({
@@ -55,7 +59,10 @@ export default function AlertsScreen() {
       });
       setLowBalance('');
       setExpenseLimit('');
-    } finally {
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    } catch {
       setSaving(false);
     }
   }
@@ -110,7 +117,9 @@ export default function AlertsScreen() {
           style={[styles.saveBtn, { backgroundColor: colors.accent }, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={saving}>
-          <Text style={[styles.saveBtnText, { color: colors.black }]}>{saving ? t('saving') : t('save')}</Text>
+          <Text style={[styles.saveBtnText, { color: colors.black }]}>
+            {saved ? t('saved') : saving ? t('saving') : t('save')}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
