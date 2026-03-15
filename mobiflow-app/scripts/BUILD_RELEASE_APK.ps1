@@ -90,6 +90,7 @@ if (-not (Test-Path $gradlew)) {
     Write-Host "Then run this script again. If you sync from source, run .\scripts\SETUP_SHORT_PATH.ps1 from your main project first." -ForegroundColor Gray
     exit 1
 }
+
 Push-Location android
 .\gradlew.bat assembleRelease
 $buildOk = ($LASTEXITCODE -eq 0)
