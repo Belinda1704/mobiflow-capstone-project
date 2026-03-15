@@ -199,7 +199,7 @@ UI and flows were designed in Figma.
 **Figma file:** [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1)
 
 <p align="center">
-  <img src="mobiflow-app/app/assets/images/mobiflow-figma-design.png" alt="MobiFlow Figma design" width="800" />
+  <img src="https://github.com/Belinda1704/mobiflow-capstone-project/raw/main/mobiflow-app/app/assets/images/mobiflow-figma-design.png" alt="MobiFlow Figma design" width="800" />
 </p>
 
 ## References & Author
