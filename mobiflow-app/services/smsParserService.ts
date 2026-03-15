@@ -47,6 +47,20 @@ function normalizePhone(phone: string): string {
   return p || phone;
 }
 
+/** If the name is the same phrase repeated (e.g. "Jean Pierre Jean Pierre"), return it once. */
+function deduplicateRepeatedName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return trimmed;
+  const words = trimmed.split(/\s+/);
+  if (words.length < 2) return trimmed;
+  for (let k = 1; k <= Math.floor(words.length / 2); k++) {
+    const first = words.slice(0, k).join(' ');
+    const second = words.slice(k, 2 * k).join(' ');
+    if (first === second) return first;
+  }
+  return trimmed;
+}
+
 function extractNameOrPhone(text: string): { name?: string; phoneNumber?: string } {
   const trimmed = text.trim();
   const phoneMatch = trimmed.match(/(\+?25?0?\d{9})/);
@@ -265,18 +279,19 @@ export function parseSmsTransaction(sms: string, options?: ParseSmsOptions): Par
     }
   }
 
-  // Label: include phone when available for Top Customers
+  // Label: include phone when available for Top Customers; deduplicate repeated names from SMS
   let label: string;
   const displayPhone = phoneNumber ? (phoneNumber.length === 9 && !phoneNumber.startsWith('0') ? `0${phoneNumber}` : phoneNumber) : undefined;
-  if (senderName && displayPhone) {
-    label = type === 'income' ? `${senderName.trim()} from ${displayPhone}` : `${senderName.trim()} to ${displayPhone}`;
-  } else if (senderName) {
-    label = senderName.trim();
+  const nameForLabel = senderName ? deduplicateRepeatedName(senderName.trim()) : undefined;
+  if (nameForLabel && displayPhone) {
+    label = type === 'income' ? `${nameForLabel} from ${displayPhone}` : `${nameForLabel} to ${displayPhone}`;
+  } else if (nameForLabel) {
+    label = nameForLabel;
   } else if (displayPhone) {
     label = type === 'income' ? `${provider} from ${displayPhone}` : `${provider} to ${displayPhone}`;
   } else {
     label = type === 'income' ? `${provider} received` : `${provider} sent`;
   }
 
-  return { amount, type, label, phoneNumber, senderName, provider, rawSms: trimmed };
+  return { amount, type, label, phoneNumber, senderName: nameForLabel ?? senderName, provider, rawSms: trimmed };
 }

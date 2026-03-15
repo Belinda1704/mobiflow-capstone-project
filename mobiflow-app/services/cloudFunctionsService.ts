@@ -1,6 +1,7 @@
 // Calls Cloud Functions with auth token.
 import Constants from 'expo-constants';
 import { auth } from '../config/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const firebaseExtra = (Constants.expoConfig?.extra?.firebase ?? {}) as { projectId?: string; functionsRegion?: string };
 const REGION = firebaseExtra.functionsRegion || 'us-central1';
@@ -20,6 +21,25 @@ export type ReportSummaryResponse = {
   categoryCount: number;
   categories: { name: string; amount: number }[];
   dateRange: string;
+};
+
+export type AdminOverviewResponse = {
+  totalUsers: number;
+  totalTransactions: number;
+  transactionsLast7Days: number;
+  activeUsersLast7Days: number;
+  recentActivity: {
+    id: string;
+    userId: string;
+    phone: string;
+    label: string;
+    amount: number;
+    type: string;
+    category: string;
+    createdAt: string | null;
+  }[];
+  generatedAt: string;
+  adminUserId: string;
 };
 
 export type ApiResult<T> =
@@ -87,4 +107,25 @@ export async function fetchReportSummaryFromServer(
     method: 'POST',
     body: { dateRange },
   });
+}
+
+export async function fetchAdminOverviewFromServer(): Promise<ApiResult<AdminOverviewResponse>> {
+  const user = auth.currentUser;
+  if (!user) {
+    return { ok: false, status: 401, error: 'Not signed in' };
+  }
+
+  try {
+    const functionsClient = getFunctions(auth.app, REGION);
+    const callable = httpsCallable<void, AdminOverviewResponse>(functionsClient, 'getAdminOverviewCallable');
+    const result = await callable();
+    return { ok: true, data: result.data, status: 200 };
+  } catch (e: any) {
+    const message =
+      e?.message ||
+      e?.details ||
+      'Could not load admin dashboard. Please try again.';
+    const code = e?.code === 'functions/unauthenticated' ? 401 : e?.code === 'functions/permission-denied' ? 403 : 500;
+    return { ok: false, status: code, error: String(message) };
+  }
 }
