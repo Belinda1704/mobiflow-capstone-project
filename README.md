@@ -15,7 +15,6 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 - [Authentication (Firebase)](#authentication-firebase)
 - [Environment Variables](#environment-variables)
 - [Testing](#testing)
-- [Continuous Integration (CI)](#continuous-integration-ci)
 - [Versioning & Changelog](#versioning--changelog)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
@@ -96,14 +95,13 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 ```text
 mobiflow-capstone-project/
 ├── README.md
-├── assets/images/              # Docs images (e.g. mobiflow-figma-design.png)
 ├── firebase.json               # Firebase config (Firestore, functions)
 ├── firestore.rules
 │
 ├── mobiflow-app/               # Mobile app (React Native / Expo)
 │   ├── app/                    # Screens (Expo Router)
 │   ├── components/, hooks/, services/, utils/, constants/, locales/, config/
-│   └── assets/images/          # App icon, splash, favicon
+│   └── app/assets/images/      # App icon, splash, favicon; Figma design (mobiflow-figma-design.png) for README
 │
 ├── admin-dashboard/            # Admin web app (React + Vite)
 │   └── src/pages/, components/, services/, auth/
@@ -173,10 +171,6 @@ Get these from **Firebase Console → Project settings → Your apps → Web app
 - **Admin dashboard (Vitest)**  
   - Run: `cd admin-dashboard && npm test`
 
-## Continuous Integration (CI)
-
-CI is not configured in this repository. You can add GitHub Actions (or similar) to run tests on push (e.g. `mobiflow-app` Jest, `admin-dashboard` Vitest) and optional deploy steps for Firebase or static hosting.
-
 ## Versioning & Changelog
 
 Releases and version history are maintained on GitHub:
@@ -188,7 +182,7 @@ Releases and version history are maintained on GitHub:
 
 - **Mobile app (APK):** Build locally (e.g. with the project’s Android build script and short-path setup). Output: signed or debug APK; distribute via [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) or direct install.
 - **Firebase (Firestore, Functions):** `firebase deploy` (or `firebase deploy --only firestore:rules` / `--only functions`). Requires Firebase CLI and project selected.
-- **Admin dashboard:** Build with `cd admin-dashboard && npm run build`; host the `dist/` output on any static host (Firebase Hosting, Vercel, Netlify, etc.) or serve behind your own server.
+- **Admin dashboard:** Deployed on [Render](https://render.com). Build with `cd admin-dashboard && npm run build`; the `dist/` output is deployed as a static site on Render.
 
 ## Contributing
 
@@ -205,7 +199,7 @@ UI and flows were designed in Figma.
 **Figma file:** [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1)
 
 <p align="center">
-  <img src="assets/images/mobiflow-figma-design.png" alt="MobiFlow Figma design" width="800" />
+  <img src="mobiflow-app/app/assets/images/mobiflow-figma-design.png" alt="MobiFlow Figma design" width="800" />
 </p>
 
 ## References & Author
