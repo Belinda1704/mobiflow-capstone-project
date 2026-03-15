@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --page-bg: #ffffff;
+    --page-accent: #fff9e8;
+    --panel-bg: #ffffff;
+    --panel-soft: #ffffff;
+    --input-bg: #f9fafb;
+    --border-muted: rgba(17, 24, 39, 0.08);
+    --border-strong: rgba(17, 24, 39, 0.14);
+    --text-main: #111315;
+    --text-muted: #666666;
+    --text-soft: #8a8a8a;
+    --chart-secondary: #111315;
+    --shadow-soft: 0 1px 3px rgba(17, 24, 39, 0.04);
+    --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06);
+    --sidebar-bg: #ffffff;
+    --sidebar-border: rgba(17, 24, 39, 0.08);
+    --sidebar-muted: #6b7280;
+    --sidebar-link: #374151;
+    --sidebar-link-hover: rgba(17, 24, 39, 0.06);
+  }
+
+  html[data-theme='dark'] {
+    --page-bg: #0f1112;
+    --page-accent: #181b1e;
+    --panel-bg: #16191b;
+    --panel-soft: #1d2124;
+    --input-bg: #1a1d20;
+    --border-muted: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text-main: #f4f4f5;
+    --text-muted: #c6c7ca;
+    --text-soft: #8f9499;
+    --chart-secondary: #d7dadd;
+    --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.15);
+    --sidebar-bg: #1a1a1a;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-muted: rgba(255, 255, 255, 0.36);
+    --sidebar-link: rgba(255, 255, 255, 0.84);
+    --sidebar-link-hover: rgba(255, 255, 255, 0.08);
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Segoe UI', Roboto, sans-serif;
+    @apply m-0 min-h-screen min-w-80 antialiased;
+    background: var(--page-bg);
+    color: var(--text-main);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
