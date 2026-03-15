@@ -1,81 +1,78 @@
-# MobiFlow: A Mobile Financial Visibility Application for Informal SMEs in Rwanda
+# MobiFlow — A Mobile Financial Visibility Application for Informal SMEs in Rwanda
 
-## Overview
+MobiFlow helps small shop owners, salon owners, and other informal businesses track income and expenses in one place. It uses mobile money and cash, captures transactions automatically from SMS, and offers savings goals, alerts, business health summaries, and a credit-readiness report for lenders.
 
-MobiFlow is designed for small shop owners, salon owners, and other informal businesses who mainly use mobile money and cash. The app keeps all their income and expenses in one place, shows a clear picture of cash coming in and going out, and lets them capture mobile‑money activity automatically through SMS. It also provides a one‑time “scan past SMS” option to import older messages, plus tools like savings goals, alerts, business‑health summaries, and a credit‑readiness report they can share with a lender.
+## Table of Contents
 
-## Table of contents
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Repository Structure](#repository-structure)
+- [Architecture Overview](#architecture-overview)
+- [Example API Endpoints](#example-api-endpoints)
+- [Authentication (Firebase)](#authentication-firebase)
+- [Environment Variables](#environment-variables)
+- [Testing](#testing)
+- [Continuous Integration (CI)](#continuous-integration-ci)
+- [Versioning & Changelog](#versioning--changelog)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Design (Figma)](#design-figma)
+- [References & Author](#references--author)
 
-- [Overview](#overview)
-- [Table of contents](#table-of-contents)
-- [Links](#links)
-- [How to install and run the app](#how-to-install-and-run-the-app)
-- [Project structure and core functionalities](#project-structure-and-core-functionalities)
-- [Testing and how to run tests](#testing-and-how-to-run-tests)
-- [Android device requirements (APK)](#android-device-requirements-apk)
-- [Tech stack](#tech-stack)
-- [Designs (Figma)](#designs-figma)
-- [References](#references)
+## Features
 
-## Links
+| Area | Description |
+|------|-------------|
+| **Transactions** | Add income/expense manually; auto-capture from mobile-money SMS (Android). Scan past SMS to import history. |
+| **Savings & budgets** | Set savings goals, track progress, and category budgets with suggestions from past spending. |
+| **Alerts** | Low balance, high expenses, and income-drop alerts. |
+| **Business health** | 0–100 score, top categories, income trend. Server-backed summary via Cloud Functions. |
+| **Credit readiness** | PDF report to share with banks or MFIs. |
+| **Financial literacy** | In-app Kinyarwanda videos on saving, credit, and small-business money. |
+| **Risk & anomalies** | On-device expense risk score (“Fraud risk” on transaction detail). “Bigger than usual” badge from your own averages. |
+| **Top customers** | All-time list of who sent you money (income), by phone/label. |
+| **Admin dashboard** | Web app for admins: platform metrics, users, transactions, insights, support requests, and settings. |
 
-### Video demo of core functionalities
+## Tech Stack
 
-**Link to demo:** [Watch demo video (Google Drive)](https://drive.google.com/file/d/1sZGbDIiEVUt1p8g_G_9IXd0SdNLsDVrg/view?usp=sharing)
+| Layer | Technologies |
+|-------|----------------|
+| **Mobile app** | React Native (Expo), TypeScript, Expo Router |
+| **Admin dashboard** | React, TypeScript, Vite, Tailwind CSS |
+| **Backend** | Firebase Auth, Firestore, Storage, Cloud Functions |
+| **Testing** | Jest, React Native Testing Library, Maestro, Vitest |
+| **ML / data** | Python, pandas, scikit-learn, Jupyter |
 
-### MobiFlow APK
+## Quick Start
 
-**Link to APK:** [Download MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/MobiFlow-v1.0.1.apk)  
-Share this link by WhatsApp, email, etc. You can also use the [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) page and download the APK from **Assets**.
+| Resource | Link |
+|----------|------|
+| **Demo video** | [Watch on Google Drive](https://drive.google.com/file/d/1sZGbDIiEVUt1p8g_G_9IXd0SdNLsDVrg/view?usp=sharing) |
+| **Download APK** | [Releases – MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases) |
+| **Project report** | [Analysis, discussion & recommendations](https://docs.google.com/document/d/1mnZ5QHzBgCN8ddCLAgUAqSX9sm2uIqub3y1Dvo9JCws/edit?usp=sharing) |
+| **Figma design** | [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1) |
 
-**Android requirements**
+**Android APK – install:** Download from [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) (Assets) → open on device → allow “unknown apps” if prompted.  
+**Requirements:** Android 14 (API 34)+, 2 GB RAM. The app is **Android only** (no iOS build). SMS capture requires the APK (not Expo Go).
 
-- Android 14 (API 34) or higher  
-- 2 GB RAM minimum
+## Prerequisites
 
-**How to install**
+- **Node.js** v18+
+- **npm**
+- **Expo Go** (optional, for quick testing on device)
+- **Android Studio** (for Android emulator — the project targets **Android only**; iOS is not supported)
+- **Firebase project** (for Auth, Firestore, Storage, Functions)
 
-1. Download `MobiFlow-v1.0.1.apk` from the link above (or from the Releases page).
-2. On your phone, open the downloaded file (for example from **Files** → **Downloads**).
-3. If Android says something like **"For your security, your phone is not allowed to install unknown apps from this source"**:
-   - Go to **Settings** → **Apps** → open the app you used to download (e.g. Chrome or Files).
-   - Tap **Install unknown apps** (or "Special app access") and turn **Allow from this source** on.
-4. Tap the APK again and follow the prompts to install.
+## Installation
 
-> **Note about Google Play Protect**
->
-> Some phones may show a warning like **"App blocked by Play Protect"** when you try to install the APK, because it is not from the Play Store and it requests SMS and notification permissions.
->
-> If this happens:
-> 1. Tap **More details → Install anyway** (or similar), **or**
-> 2. Temporarily turn off Play Protect:
->    - Open the **Play Store** app.
->    - Tap your profile picture → **Play Protect**.
->    - Tap the settings icon (top‑right) and turn off **Scan apps with Play Protect**.
->    - Install the APK.
->    - After installation, you can turn Play Protect back on.
-
-SMS capture and notifications require the APK or a development build; they do not work in Expo Go. Core transaction and report features work in Expo Go.
-
-### Project report: analysis, discussion & recommendations
-
-**Link to report:** [Project report (analysis, discussion & recommendations)](https://docs.google.com/document/d/1mnZ5QHzBgCN8ddCLAgUAqSX9sm2uIqub3y1Dvo9JCws/edit?usp=sharing) — analysis of results vs objectives, discussion on milestones and impact, and recommendations & future work (with supervisor).
-
-## How to install and run the app
-
-### Prerequisites
-
-- **Node.js** v18 or later (`https://nodejs.org`)
-- **npm** (comes with Node)
-- **Expo Go** on your phone (optional, for quick testing)
-- **Android Studio** (for Android emulator) or **Xcode** (for iOS simulator, macOS only)
-
-### Steps
-
-1. **Clone the repository**
+1. **Clone and enter the mobile app**
    ```bash
    git clone https://github.com/Belinda1704/mobiflow-capstone-project.git
-   cd mobiflow-app
+   cd mobiflow-capstone-project/mobiflow-app
    ```
 
 2. **Install dependencies**
@@ -83,128 +80,138 @@ SMS capture and notifications require the APK or a development build; they do no
    npm install
    ```
 
-3. **Configure Firebase (required for login and data)**
-   - In `mobiflow-app/`, create a file named `.env`.
-   - Add your Firebase web app credentials (from Firebase Console → Project settings → Your apps):
-     ```env
-     EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key
-     EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-     EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-     EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-     EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-     EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
-     ```
+3. **Configure environment**  
+   Create `mobiflow-app/.env` with your Firebase web app credentials (see [Environment Variables](#environment-variables)).
 
-4. **Start the development server**
+4. **Start the dev server**
    ```bash
    npx expo start
    ```
+   Press **`a`** for Android emulator, or scan the QR code with Expo Go on an Android device.
 
-5. **Run the app**
-   - Press **`a`** for Android emulator, or **`i`** for iOS simulator, **or**
-   - Scan the QR code with **Expo Go** on your device (same Wi‑Fi as your computer).
+**Admin dashboard:** `cd admin-dashboard && npm install && npm run dev` (after setting env; see [Environment Variables](#environment-variables)).
 
-## Project structure and core functionalities
+## Repository Structure
 
 ```text
 mobiflow-capstone-project/
 ├── README.md
-├── firebase.json                 # Firebase project config (functions deploy)
-├── .firebaserc                   # Firebase project ID
-├── mobiflow-app/                 # Mobile app (React Native / Expo)
-│   ├── app/                      # Screens (Expo Router)
-│   │   ├── (tabs)/               # Home, Transactions, Reports, More
-│   │   ├── login.tsx, signup.tsx, forgot-password.tsx
-│   │   ├── add-transaction.tsx, edit-transaction/
-│   │   ├── alerts.tsx, savings-budget-goals.tsx
-│   │   ├── business-health.tsx, business-insights.tsx
-│   │   ├── sms-capture.tsx, notifications.tsx, how-to-use.tsx
-│   │   ├── financial-literacy.tsx, financial-video.tsx
-│   │   └── ...
-│   ├── components/               # Reusable UI components
-│   ├── hooks/                    # useTransactions, useAlerts, useSmsCapture, etc.
-│   ├── services/                 # Firebase, transactions, SMS capture, fraud model, alerts, Cloud Functions client
-│   ├── utils/                    # Formatting, filters, anomaly rules, fraudModel.ts
-│   ├── constants/                # Colors, categories
-│   ├── locales/                  # en.json, rw.json (translations)
-│   ├── config/                   # Firebase init
-│   └── package.json, app.json, tsconfig.json, etc.
-├── functions/                    # Firebase Cloud Functions (Node.js)
-│   ├── index.js                  # getHealthScore, getReportSummary (HTTP, auth)
-│   └── package.json
-└── fraud-detection-model/        # Jupyter notebook for fraud model (synthetic data)
+├── assets/images/              # Docs images (e.g. mobiflow-figma-design.png)
+├── firebase.json               # Firebase config (Firestore, functions)
+├── firestore.rules
+│
+├── mobiflow-app/               # Mobile app (React Native / Expo)
+│   ├── app/                    # Screens (Expo Router)
+│   ├── components/, hooks/, services/, utils/, constants/, locales/, config/
+│   └── assets/images/          # App icon, splash, favicon
+│
+├── admin-dashboard/            # Admin web app (React + Vite)
+│   └── src/pages/, components/, services/, auth/
+│
+├── functions/                  # Firebase Cloud Functions (Node.js)
+│   └── index.js
+│
+└── fraud-detection-model/      # Jupyter notebook (fraud model)
 ```
 
-**Core functionalities**
+## Architecture Overview
 
-- **Backend (Cloud Functions):** health score and report summary are computed on the server; the app loads them when you open Business Health or Reports.
-- **Savings goals & budgets:** set savings goals, track progress, and create simple category budgets with suggested amounts based on past spending.
-- **Alerts:** configure practical alerts such as low balance and high expenses so the user gets early warnings.
-- **SMS capture (Android):** listen to new mobile‑money SMS and turn them into transactions automatically, plus a one‑time “scan past SMS” option to import older messages.
-- **Business health:** show a 0–100 business‑health score with simple explanations, top spending categories, and income trend over the last months.
-- **Credit readiness report:** generate a credit‑readiness summary and export it as a PDF that can be shared with a bank or MFI.
-- **Financial literacy:** short Kinyarwanda videos inside the app that help users learn about saving, credit, and managing small‑business money.
-- **Anomaly detector:** in the transactions list, a "Bigger than usual" badge when a transaction is larger than your usual (amount &gt; 2× your average for that type). Rule-based; uses only your own data. This is what triggers the badge.
-- **ML risk model:** a small on-device model trained on synthetic data (amount, time of day, cash vs mobile money). It runs only on expenses and outputs a risk score shown on the **transaction detail** screen as "Model risk" (e.g. 98%). It does not trigger the "Bigger than usual" badge; no user data is sent out.
-- **Top customers:** people who have sent you money (income), grouped by phone number from transaction labels. The list is **all-time** (all your income so far), sorted by total amount received. It updates when you open the screen; there is no daily/weekly/monthly filter.
+**Mobile app backend:** The mobile app uses **Firebase** as its backend: **Auth** (sign up/sign in), **Firestore** (transactions, user settings, savings goals, lesson completions, support requests), and **Storage** (profile photos). Server logic runs in **Firebase Cloud Functions**: business health score, credit-readiness report summary, and any aggregated data the app needs. The app talks to Firestore and Storage directly (with security rules) and calls callable functions for health and report data.
 
-**Risk model – how it works:** The app uses a small on-device model that looks at expense amount, time of day, and whether it’s cash or mobile money. It was trained on synthetic data (see the notebook). For each expense it outputs a risk score, shown on the transaction detail screen as "Model risk" (a percentage). It does not trigger the "Bigger than usual" badge; that badge comes only from the anomaly detector above. Income is not scored. No data is sent to a server.
+- **Mobile app (Expo)** → Firebase Auth, Firestore, Storage; callable **Cloud Functions** for health score and report summary.
+- **Admin dashboard (Vite/React)** → Firebase Auth (admin users only), Firestore where needed, **Cloud Functions** for dashboard metrics, users, transactions, insights, and support requests.
+- **Cloud Functions** → Used for aggregated metrics, business health, report summary, and admin API.
 
-**How to test the model:** From the project root run `cd mobiflow-app && npm test -- fraudModel`. The test checks that income gets zero risk, a large mobile-money expense gets high risk, and a small cash expense gets low risk. To see how the model was built (data, features, weights), open `fraud-detection-model/fraud_detection_synthetic.ipynb` in Jupyter.
+## Example API Endpoints
 
-## Testing and how to run tests
+Backend is **Firebase Cloud Functions** (callable from the app and admin dashboard). Main endpoints:
 
-MobiFlow was tested using automated tests and manual scenarios.
+| Purpose | How it’s used |
+|--------|----------------|
+| **Admin dashboard data** | Callable `getDashboardOverview` (metrics, activity, date range). Invoked by `admin-dashboard` with auth. |
+| **Business health** | HTTP or callable for health score / report summary. Used by mobile app. |
+| **Report summary** | Callable for credit-readiness / report data. Used by mobile app. |
 
-- **Unit and integration tests (Jest)**
-  - Location: `mobiflow-app/__tests__`
-  - Cover:
-    - Utilities: currency formatting, date formatting, transaction filters, password strength.
-    - Services: backup/restore, financial insights, fraud model.
-    - Components: core buttons and headers.
-  - Run all tests:
-    ```bash
-    cd mobiflow-capstone-project/mobiflow-app
-    npm test
-    ```
-  - Run with **coverage**:
-    ```bash
-    npx jest --coverage
-    # HTML report: mobiflow-app/coverage/lcov-report/index.html
-    ```
+Example (admin dashboard): `getFunctions().httpsCallable('getDashboardOverview')({ dateRange, startDate, endDate })`.  
+Authentication is via Firebase Auth; the function checks the user’s admin claim or email allowlist.
 
-- **Mobile E2E tests (Maestro) – Android**
-  - Location: `mobiflow-app/maestro/flows/*.yaml`.
-  - Flows cover onboarding and login using the real APK.
-  - Example command (from `mobiflow-app/` with a device/emulator connected):
-    ```bash
-    maestro test maestro/flows/onboarding.yaml
-    ```
+## Authentication (Firebase)
 
-## Tech stack
+- **Mobile app:** Firebase Authentication (email/password or phone as used in the app). Users sign up / sign in; tokens are used for Firestore and Storage.
+- **Admin dashboard:** Firebase Authentication with email/password. Only accounts that exist in your admin list (e.g. Firestore or env) can access the dashboard; the app and Cloud Functions enforce this.
 
-- **Frontend:** React Native (Expo), TypeScript, Expo Router, React Navigation.
-- **Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage (backups and profile photos), Firebase Cloud Functions (health score and report summary).
-- **Testing:** Jest, React Native Testing Library, Maestro (mobile E2E).
-- **ML / data work:** Python, pandas, scikit‑learn, Jupyter Notebook (`fraud-detection-model/fraud_detection_synthetic.ipynb`).
+## Environment Variables
 
-## Designs (Figma)
+**Mobile app (`mobiflow-app/.env`):**
 
-- **Figma UI design:**  
-  `https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1`
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
+```
 
-## References
+Get these from **Firebase Console → Project settings → Your apps → Web app.**
 
-Documentation and resources used for this project:
+**Admin dashboard:** Same Firebase project; ensure the admin user can sign in (e.g. created in Firebase Auth and allowed in your admin logic). Optional: `.env` in `admin-dashboard/` with same vars if you use them at build time.
 
-- Expo documentation – `https://docs.expo.dev/`
-- React Native documentation – `https://reactnative.dev/docs/getting-started`
-- Firebase Web SDK (Auth & Firestore) – `https://firebase.google.com/docs`
-- React Navigation – `https://reactnavigation.org/docs/getting-started`
-- Jest testing framework – `https://jestjs.io/docs/getting-started`
-- Maestro mobile testing – `https://maestro.mobile.dev/`
-- react-native-youtube-iframe – `https://github.com/LonelyCpp/react-native-youtube-iframe`
-- scikit‑learn logistic regression – `https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html`
+**Never commit real keys.** Use `.env` and add `.env` to `.gitignore` (already done).
+
+## Testing
+
+- **Mobile app – unit/integration (Jest)**  
+  - Location: `mobiflow-app/__tests__`  
+  - Run: `cd mobiflow-app && npm test`  
+  - Coverage: `npx jest --coverage`
+
+- **Mobile app – E2E (Maestro, Android)**  
+  - Flows: `mobiflow-app/maestro/flows/*.yaml`  
+  - Run (device/emulator connected): `maestro test maestro/flows/onboarding.yaml`
+
+- **Admin dashboard (Vitest)**  
+  - Run: `cd admin-dashboard && npm test`
+
+## Continuous Integration (CI)
+
+CI is not configured in this repository. You can add GitHub Actions (or similar) to run tests on push (e.g. `mobiflow-app` Jest, `admin-dashboard` Vitest) and optional deploy steps for Firebase or static hosting.
+
+## Versioning & Changelog
+
+Releases and version history are maintained on GitHub:
+
+- **Releases (APK and version tags):** [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases)  
+- For a changelog, add a `CHANGELOG.md` in the repo or describe changes in the Release notes for each tag.
+
+## Deployment
+
+- **Mobile app (APK):** Build locally (e.g. with the project’s Android build script and short-path setup). Output: signed or debug APK; distribute via [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) or direct install.
+- **Firebase (Firestore, Functions):** `firebase deploy` (or `firebase deploy --only firestore:rules` / `--only functions`). Requires Firebase CLI and project selected.
+- **Admin dashboard:** Build with `cd admin-dashboard && npm run build`; host the `dist/` output on any static host (Firebase Hosting, Vercel, Netlify, etc.) or serve behind your own server.
+
+## Contributing
+
+Contributions are welcome. Please open an issue to discuss larger changes, then submit a pull request. Ensure tests pass (`mobiflow-app`: `npm test`; `admin-dashboard`: `npm test`).
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Design (Figma)
+
+UI and flows were designed in Figma.
+
+**Figma file:** [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1)
+
+<p align="center">
+  <img src="assets/images/mobiflow-figma-design.png" alt="MobiFlow Figma design" width="800" />
+</p>
+
+## References & Author
+
+- [Expo](https://docs.expo.dev/) · [React Native](https://reactnative.dev/docs/getting-started) · [Firebase](https://firebase.google.com/docs) · [React Navigation](https://reactnavigation.org/docs/getting-started)
+- [Jest](https://jestjs.io/docs/getting-started) · [Maestro](https://maestro.mobile.dev/)
+- [react-native-youtube-iframe](https://github.com/LonelyCpp/react-native-youtube-iframe) · [scikit-learn LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
 
 **Author:** Belinda Belange Larose
-
