@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['phone', 'createdAt'])
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 9
+        && request.resource.data.phone.size() <= 16;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['phone'])
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 9
+        && request.resource.data.phone.size() <= 16;
+
+      allow delete: if false;
+
+      match /lessonCompletions/{lessonId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /userSettings/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.label is string
+        && request.resource.data.label.size() > 0
+        && request.resource.data.amount is number
+        && request.resource.data.type is string
+        && request.resource.data.category is string;
+
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /supportRequests/{requestId} {
+      allow create: if request.auth == null
+        && request.resource.data.keys().hasOnly([
+          'type',
+          'status',
+          'source',
+          'phone',
+          'normalizedPhone',
+          'createdAt',
+        ])
+        && request.resource.data.type == 'password_reset'
+        && request.resource.data.status == 'open'
+        && request.resource.data.source == 'mobile-app'
+        && request.resource.data.phone is string
+        && request.resource.data.phone.matches('^0(78|79|72|73)[0-9]{7}$')
+        && request.resource.data.normalizedPhone is string
+        && request.resource.data.normalizedPhone.matches('^250(78|79|72|73)[0-9]{7}$')
+        && request.resource.data.createdAt == request.time;
+
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
