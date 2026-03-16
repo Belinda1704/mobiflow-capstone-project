@@ -28,10 +28,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-[var(--page-bg)] px-6 py-10">
-      <div className="w-full max-w-[430px]">
-        <div className={`${ui.panel} overflow-hidden rounded-[30px] border border-(--border-muted) bg-[var(--panel-bg)] shadow-[0_24px_80px_rgba(17,24,39,0.1)]`}>
-          <div className="border-b border-(--border-muted) bg-[var(--panel-soft)] px-8 py-8">
+    <div className="grid min-h-screen place-items-center bg-(--page-bg) px-6 py-10">
+      <div className="w-full max-w-107.5">
+        <div className={`${ui.panel} overflow-hidden rounded-[30px] border border-(--border-muted) bg-(--panel-bg) shadow-[0_24px_80px_rgba(17,24,39,0.1)]`}>
+          <div className="border-b border-(--border-muted) bg-(--panel-soft) px-8 py-8">
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-1.5">
                 <img src={brandIcon} alt="MobiFlow" className="h-10 w-10 shrink-0 rounded-xl object-cover" />

@@ -175,7 +175,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(420px,480px)] xl:items-start">
-        <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-(--border-muted) bg-[var(--panel-bg)] p-5 shadow-[var(--shadow-card)]">
+        <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-5 shadow-(--shadow-card)">
           <div className="mb-4">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-(--text-soft)">Latest 50 records</p>
             <h3 className="mt-1 text-lg font-semibold text-(--text-main)">Recent transactions</h3>
@@ -183,7 +183,7 @@ export function DashboardPage() {
           <RecentActivityTable activity={overview.recentActivity} />
         </section>
 
-        <section className="flex min-w-0 flex-col gap-5 rounded-2xl border border-(--border-muted) bg-[var(--panel-bg)] p-6 shadow-[var(--shadow-card)]">
+        <section className="flex min-w-0 flex-col gap-5 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-6 shadow-(--shadow-card)">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-(--text-soft)">Breakdown</p>
             <h3 className="mt-1 text-lg font-semibold text-(--text-main)">Transaction categories</h3>
