@@ -13,7 +13,7 @@ export type ParsedSmsTransaction = {
 // MTN MoMo: received RWF from 078...
 const MTN_RECEIVED = /(?:received|recu|you have received)\s+(?:RWF|rwf)\s*([\d\s,]+)\s+from\s+(\+?25?0?\d{9})/i;
 const MTN_SENT = /(?:sent|envoye|you have sent)\s+(?:RWF|rwf)\s*([\d\s,]+)\s+to\s+(\+?25?0?\d{9})/i;
-// MTN with name instead of phone (greedy name so we get "John Mukiza" not "J")
+// MTN with name instead of phone (greedy name capture so it returns "John Mukiza" not "J")
 const MTN_RECEIVED_NAME = /(?:received|recu|you have received)\s+([\d\s,]+)\s+(?:RWF|rwf)\s+from\s+([A-Za-z\s]+)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
 const MTN_SENT_NAME = /(?:sent|envoye|you have sent)\s+([\d\s,]+)\s+(?:RWF|rwf)\s+to\s+([A-Za-z\s]+)(?:\s*\([^)]*\))?(?:\s+at|\s*\.|$)/i;
 // USSD transfer *165*S*AMOUNT RWF transferred to NAME...
@@ -92,7 +92,7 @@ function scrapeNameFromBody(body: string, type: 'income' | 'expense'): string | 
   if (sender?.[1]) candidates.push(sender[1].trim());
   const to = body.match(TO_LABEL);
   if (to?.[1]) candidates.push(to[1].trim());
-  // Prefer "from" name for income and "to" name for expense when we have multiple
+  // Prefer "from" name for income and "to" name for expense when there are multiple
   const valid = candidates.filter((n) => n.length >= 2 && /[A-Za-z]{2,}/.test(n));
   if (valid.length === 0) return undefined;
   return valid.reduce((a, b) => (a.length >= b.length ? a : b));
@@ -260,7 +260,7 @@ export function parseSmsTransaction(sms: string, options?: ParseSmsOptions): Par
 
   if (!type || amount <= 0) return null;
 
-  // Single-letter "names" are usually regex noise; ignore so we can try full-body scrape or address
+  // Single-letter "names" are usually regex noise; ignore so the parser can try full-body scrape or address
   if (senderName && senderName.trim().length < 2) senderName = undefined;
 
   // Whenever we don't have a proper name, scrape the whole body (from/to, Sender:, From:, etc.)
@@ -269,7 +269,7 @@ export function parseSmsTransaction(sms: string, options?: ParseSmsOptions): Par
     if (scraped && scraped.length >= 2) senderName = scraped;
   }
 
-  // Use SMS sender address when body has no phone so we don't show "unknown sent"
+  // Use SMS sender address when body has no phone to avoid showing "unknown sent"
   if (!phoneNumber && options?.senderAddress) {
     const addr = options.senderAddress.trim();
     const digits = addr.replace(/\D/g, '');
