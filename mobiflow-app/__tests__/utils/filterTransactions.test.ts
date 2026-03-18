@@ -29,49 +29,55 @@ const oldTx = tx({ id: '4', amount: 1000, type: 'expense', label: 'Old', created
 const allTx = [todayIncome, todayExpense, yesterdayIncome, oldTx];
 
 describe('filterTransactions', () => {
-  it('returns all when filters are default (all)', () => {
-    const result = filterTransactions(allTx, {
-      type: 'all',
-      dateRange: 'all',
-      category: '',
-      paymentMethod: 'all',
-      search: '',
+  describe('Default behaviour', () => {
+    it('returns all transactions when type and date range are "all"', () => {
+      const result = filterTransactions(allTx, {
+        type: 'all',
+        dateRange: 'all',
+        category: '',
+        paymentMethod: 'all',
+        search: '',
+      });
+      expect(result).toHaveLength(4);
     });
-    expect(result).toHaveLength(4);
   });
 
-  it('filters by type income', () => {
-    const result = filterTransactions(allTx, {
-      type: 'income',
-      dateRange: 'all',
-      category: '',
-      paymentMethod: 'all',
-      search: '',
+  describe('Filter by type', () => {
+    it('returns only income transactions when type is income', () => {
+      const result = filterTransactions(allTx, {
+        type: 'income',
+        dateRange: 'all',
+        category: '',
+        paymentMethod: 'all',
+        search: '',
+      });
+      expect(result).toHaveLength(2);
+      expect(result.every((t) => t.type === 'income')).toBe(true);
     });
-    expect(result).toHaveLength(2);
-    expect(result.every((t) => t.type === 'income')).toBe(true);
+
+    it('returns only expense transactions when type is expense', () => {
+      const result = filterTransactions(allTx, {
+        type: 'expense',
+        dateRange: 'all',
+        category: '',
+        paymentMethod: 'all',
+        search: '',
+      });
+      expect(result).toHaveLength(2);
+      expect(result.every((t) => t.type === 'expense')).toBe(true);
+    });
   });
 
-  it('filters by type expense', () => {
-    const result = filterTransactions(allTx, {
-      type: 'expense',
-      dateRange: 'all',
-      category: '',
-      paymentMethod: 'all',
-      search: '',
+  describe('Filter by date range', () => {
+    it('returns only transactions in the current month when dateRange is month', () => {
+      const result = filterTransactions(allTx, {
+        type: 'all',
+        dateRange: 'month',
+        category: '',
+        paymentMethod: 'all',
+        search: '',
+      });
+      expect(result.map((t) => t.id)).not.toContain('4');
     });
-    expect(result).toHaveLength(2);
-    expect(result.every((t) => t.type === 'expense')).toBe(true);
-  });
-
-  it('filters by dateRange month (current month only)', () => {
-    const result = filterTransactions(allTx, {
-      type: 'all',
-      dateRange: 'month',
-      category: '',
-      paymentMethod: 'all',
-      search: '',
-    });
-    expect(result.map((t) => t.id)).not.toContain('4');
   });
 });

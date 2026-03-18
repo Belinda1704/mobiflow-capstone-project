@@ -212,9 +212,9 @@ export function AdminShell() {
   }
 
   return (
-    <div className="grid min-h-screen bg-(--page-bg) lg:grid-cols-[250px_minmax(0,1fr)]">
-      <aside className="flex flex-col justify-between border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] px-5 py-6 text-[var(--sidebar-link)]">
-        <div className="space-y-8">
+    <div className="grid h-screen overflow-hidden bg-(--page-bg) lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-x-0">
+      <aside className="flex h-full flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] px-5 py-6 text-[var(--sidebar-link)]">
+        <div className="flex min-h-0 flex-1 flex-col gap-8">
           <div className="px-2">
             <div className="flex items-center gap-3">
               <img src={brandIcon} alt="MobiFlow" className="h-10 w-10 rounded-xl object-cover" />
@@ -225,38 +225,40 @@ export function AdminShell() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            {navSections.map((section) => (
-              <div key={section.title}>
-                <p className="mb-2 px-2 text-[11px] uppercase tracking-[0.18em] text-[var(--sidebar-muted)]">
-                  {section.title}
-                </p>
-                <nav className="space-y-2">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) =>
-                          [sidebarLinkBase, isActive ? sidebarLinkActive : sidebarLinkIdle].join(' ')
-                        }>
-                        {({ isActive }) => (
-                          <span className="flex items-center gap-3">
-                            <Icon size={17} className={isActive ? 'text-[#F5C518]' : 'text-[var(--sidebar-muted)]'} />
-                            <span>{item.label}</span>
-                          </span>
-                        )}
-                      </NavLink>
-                    );
-                  })}
-                </nav>
-              </div>
-            ))}
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="space-y-6">
+              {navSections.map((section) => (
+                <div key={section.title}>
+                  <p className="mb-2 px-2 text-[11px] uppercase tracking-[0.18em] text-[var(--sidebar-muted)]">
+                    {section.title}
+                  </p>
+                  <nav className="space-y-2">
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          className={({ isActive }) =>
+                            [sidebarLinkBase, isActive ? sidebarLinkActive : sidebarLinkIdle].join(' ')
+                          }>
+                          {({ isActive }) => (
+                            <span className="flex items-center gap-3">
+                              <Icon size={17} className={isActive ? 'text-[#F5C518]' : 'text-[var(--sidebar-muted)]'} />
+                              <span>{item.label}</span>
+                            </span>
+                          )}
+                        </NavLink>
+                      );
+                    })}
+                  </nav>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-[var(--sidebar-border)] pt-4">
+        <div className="shrink-0 border-t border-[var(--sidebar-border)] pt-4">
           <div className="flex w-full items-center gap-3 rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-link-hover)] px-4 py-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5C518] text-sm font-semibold text-neutral-900">
               {initials}
@@ -276,126 +278,130 @@ export function AdminShell() {
         </div>
       </aside>
 
-      <main className="bg-(--page-bg) px-5 py-5 lg:px-6">
-        <header className="mb-6 rounded-2xl border border-(--border-muted) bg-[var(--panel-bg)] px-5 py-4 shadow-[var(--shadow-card)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div ref={searchMenuRef} className="relative flex-1 lg:max-w-md">
-              <div className="flex items-center gap-3 rounded-2xl border border-(--border-muted) bg-(--input-bg) px-4 py-3">
-                <Search size={18} className="text-(--text-soft)" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => {
-                    setSearchQuery(event.target.value);
-                    setIsSearchMenuOpen(true);
-                  }}
-                  onFocus={() => setIsSearchMenuOpen(true)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && filteredSearchItems.length) {
-                      navigate(filteredSearchItems[0].to);
-                      setIsSearchMenuOpen(false);
-                      setSearchQuery('');
-                    }
-                  }}
-                  placeholder="Search pages..."
-                  className="w-full border-none bg-transparent text-sm text-(--text-main) outline-none placeholder:text-(--text-soft)"
-                />
-              </div>
-              {isSearchMenuOpen ? (
-                <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-2 shadow-(--shadow-soft)">
-                  {filteredSearchItems.length ? (
-                    <div className="space-y-1">
-                      {filteredSearchItems.slice(0, 6).map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.to}
-                            type="button"
-                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-(--text-main) transition hover:bg-(--panel-soft)"
-                            onClick={() => {
-                              navigate(item.to);
-                              setIsSearchMenuOpen(false);
-                              setSearchQuery('');
-                            }}>
-                            <Icon size={16} className="text-(--text-soft)" />
-                            <span className="flex-1">{item.label}</span>
-                            <span className="text-xs uppercase tracking-[0.12em] text-(--text-soft)">
-                              {item.section}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="px-3 py-2 text-sm text-(--text-muted)">No matching pages.</p>
-                  )}
+      <main className="flex h-full min-w-0 flex-col overflow-y-auto bg-(--page-bg) px-5 py-5 lg:px-6">
+        <header className="sticky top-0 z-20 mb-4 border-b border-(--border-muted) bg-(--page-bg)/90 px-5 py-4 backdrop-blur lg:px-6">
+          <div className="w-full">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div ref={searchMenuRef} className="relative flex-1 lg:max-w-md">
+                <div className="flex items-center gap-3 rounded-2xl border border-(--border-muted) bg-(--input-bg) px-4 py-3">
+                  <Search size={18} className="text-(--text-soft)" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      setIsSearchMenuOpen(true);
+                    }}
+                    onFocus={() => setIsSearchMenuOpen(true)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && filteredSearchItems.length) {
+                        navigate(filteredSearchItems[0].to);
+                        setIsSearchMenuOpen(false);
+                        setSearchQuery('');
+                      }
+                    }}
+                    placeholder="Search pages..."
+                    className="w-full border-none bg-transparent text-sm text-(--text-main) outline-none placeholder:text-(--text-soft)"
+                  />
                 </div>
-              ) : null}
-            </div>
-
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                className={iconButton}
-                aria-label="Toggle theme"
-                onClick={toggleTheme}>
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-              </button>
-              <div ref={notificationMenuRef} className="relative">
-                <button
-                  type="button"
-                  className={iconButton}
-                  aria-label="Notifications"
-                  onClick={() => setIsNotificationMenuOpen((open) => !open)}>
-                  <Bell size={18} />
-                  {notificationBadgeCount ? (
-                    <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
-                      {notifications.length > 9 ? '9+' : notificationBadgeCount}
-                    </span>
-                  ) : null}
-                </button>
-                {isNotificationMenuOpen ? (
-                  <div className="absolute right-0 z-20 mt-2 w-[320px] rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-3 shadow-(--shadow-soft)">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-(--text-soft)">Notifications</p>
-                        <p className="mt-1 text-sm font-medium text-(--text-main)">Recent activity</p>
+                {isSearchMenuOpen ? (
+                  <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-2 shadow-(--shadow-soft)">
+                    {filteredSearchItems.length ? (
+                      <div className="space-y-1">
+                        {filteredSearchItems.slice(0, 6).map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.to}
+                              type="button"
+                              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-(--text-main) transition hover:bg-(--panel-soft)"
+                              onClick={() => {
+                                navigate(item.to);
+                                setIsSearchMenuOpen(false);
+                                setSearchQuery('');
+                              }}>
+                              <Icon size={16} className="text-(--text-soft)" />
+                              <span className="flex-1">{item.label}</span>
+                              <span className="text-xs uppercase tracking-[0.12em] text-(--text-soft)">
+                                {item.section}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </div>
-
-                    {loadingNotifications ? <p className="text-sm text-(--text-muted)">Loading...</p> : null}
-                    {notificationError ? <p className="text-sm text-rose-600">{notificationError}</p> : null}
-                    {!loadingNotifications && !notificationError ? (
-                      <div className="space-y-3">
-                        {notifications.length ? (
-                          notifications.slice(0, 5).map((item) => (
-                            <div key={item.id} className="rounded-xl bg-(--panel-soft) px-3 py-3">
-                              <p className="text-sm font-medium text-(--text-main)">{item.title}</p>
-                              <p className="mt-1 text-sm text-(--text-muted)">{item.detail}</p>
-                              <p className="mt-2 text-xs text-(--text-soft)">
-                                {formatNotificationTime(item.createdAt)}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-(--text-muted)">No recent activity.</p>
-                        )}
-                      </div>
-                    ) : null}
+                    ) : (
+                      <p className="px-3 py-2 text-sm text-(--text-muted)">No matching pages.</p>
+                    )}
                   </div>
                 ) : null}
               </div>
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f5c518] text-xs font-semibold text-neutral-900"
-                title={`Logged in as ${adminName}`}
-                aria-label={`Logged in as ${adminName}`}
-                role="img">
-                {user?.email ? initials : '?'}
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  className={iconButton}
+                  aria-label="Toggle theme"
+                  onClick={toggleTheme}>
+                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                </button>
+                <div ref={notificationMenuRef} className="relative">
+                  <button
+                    type="button"
+                    className={iconButton}
+                    aria-label="Notifications"
+                    onClick={() => setIsNotificationMenuOpen((open) => !open)}>
+                    <Bell size={18} />
+                    {notificationBadgeCount ? (
+                      <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+                        {notifications.length > 9 ? '9+' : notificationBadgeCount}
+                      </span>
+                    ) : null}
+                  </button>
+                  {isNotificationMenuOpen ? (
+                    <div className="absolute right-0 z-20 mt-2 w-[320px] rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-3 shadow-(--shadow-soft)">
+                      <div className="mb-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-(--text-soft)">Notifications</p>
+                          <p className="mt-1 text-sm font-medium text-(--text-main)">Recent activity</p>
+                        </div>
+                      </div>
+
+                      {loadingNotifications ? <p className="text-sm text-(--text-muted)">Loading...</p> : null}
+                      {notificationError ? <p className="text-sm text-rose-600">{notificationError}</p> : null}
+                      {!loadingNotifications && !notificationError ? (
+                        <div className="space-y-3">
+                          {notifications.length ? (
+                            notifications.slice(0, 5).map((item) => (
+                              <div key={item.id} className="rounded-xl bg-(--panel-soft) px-3 py-3">
+                                <p className="text-sm font-medium text-(--text-main)">{item.title}</p>
+                                <p className="mt-1 text-sm text-(--text-muted)">{item.detail}</p>
+                                <p className="mt-2 text-xs text-(--text-soft)">
+                                  {formatNotificationTime(item.createdAt)}
+                                </p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-(--text-muted)">No recent activity.</p>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f5c518] text-xs font-semibold text-neutral-900"
+                  title={`Logged in as ${adminName}`}
+                  aria-label={`Logged in as ${adminName}`}
+                  role="img">
+                  {user?.email ? initials : '?'}
+                </div>
               </div>
             </div>
           </div>
+        </header>
 
-          <div className="mt-5 flex items-center justify-between gap-4">
+        <div className="w-full">
+          <div className="mb-6 flex items-center justify-between gap-4">
             <div>
               <p className={ui.sectionEyebrow}>Overview</p>
               <h2 className="mt-2 text-3xl font-semibold text-(--text-main)">{currentMeta.title}</h2>
@@ -481,9 +487,9 @@ export function AdminShell() {
               ) : null}
             </div>
           </div>
-        </header>
 
-        <Outlet />
+          <Outlet />
+        </div>
       </main>
     </div>
   );

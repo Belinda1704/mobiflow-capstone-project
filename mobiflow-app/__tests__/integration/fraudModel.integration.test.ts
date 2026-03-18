@@ -18,33 +18,39 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 describe('Fraud model integration', () => {
-  it('returns zero risk for non-expense transactions', () => {
-    const incomeTx = makeTx({ type: 'income' });
-    const risk = computeFraudRiskForTransaction(incomeTx);
-    expect(risk).toBe(0);
+  describe('Risk for non-expenses', () => {
+    it('returns zero risk for non-expense transactions', () => {
+      const incomeTx = makeTx({ type: 'income' });
+      const risk = computeFraudRiskForTransaction(incomeTx);
+      expect(risk).toBe(0);
+    });
   });
 
-  it('flags extremely large mobile_money expenses as high risk', () => {
-    const largeExpense = makeTx({
-      amount: 50_000_000, // 50M RWF to stress the model
-      type: 'expense',
-      paymentMethod: 'mobile_money',
+  describe('High risk (mobile money)', () => {
+    it('flags extremely large mobile_money expenses as high risk', () => {
+      const largeExpense = makeTx({
+        amount: 50_000_000, // 50M RWF to stress the model
+        type: 'expense',
+        paymentMethod: 'mobile_money',
+      });
+      const risk = computeFraudRiskForTransaction(largeExpense);
+      expect(risk).toBeGreaterThan(0.98);
+      expect(isHighFraudRisk(largeExpense)).toBe(true);
     });
-    const risk = computeFraudRiskForTransaction(largeExpense);
-    expect(risk).toBeGreaterThan(0.98);
-    expect(isHighFraudRisk(largeExpense)).toBe(true);
   });
 
-  it('keeps small cash expenses as low risk', () => {
-    const smallCashExpense = makeTx({
-      amount: 1_000,
-      type: 'expense',
-      paymentMethod: 'cash',
+  describe('Low risk (cash)', () => {
+    it('keeps small cash expenses as low risk', () => {
+      const smallCashExpense = makeTx({
+        amount: 1_000,
+        type: 'expense',
+        paymentMethod: 'cash',
+      });
+      const risk = computeFraudRiskForTransaction(smallCashExpense);
+      expect(risk).toBeGreaterThanOrEqual(0);
+      expect(risk).toBeLessThan(0.5);
+      expect(isHighFraudRisk(smallCashExpense)).toBe(false);
     });
-    const risk = computeFraudRiskForTransaction(smallCashExpense);
-    expect(risk).toBeGreaterThanOrEqual(0);
-    expect(risk).toBeLessThan(0.5);
-    expect(isHighFraudRisk(smallCashExpense)).toBe(false);
   });
 });
 

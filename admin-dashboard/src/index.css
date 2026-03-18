@@ -2,23 +2,23 @@
 
 @layer base {
   :root {
-    --page-bg: #ffffff;
+    --page-bg: #f6f7f9;
     --page-accent: #fff9e8;
     --panel-bg: #ffffff;
-    --panel-soft: #ffffff;
+    --panel-soft: #f9fafb;
     --input-bg: #f9fafb;
     --border-muted: rgba(17, 24, 39, 0.08);
     --border-strong: rgba(17, 24, 39, 0.14);
     --text-main: #111315;
-    --text-muted: #666666;
-    --text-soft: #8a8a8a;
+    --text-muted: #4b5563;
+    --text-soft: #6b7280;
     --chart-secondary: #111315;
     --shadow-soft: 0 1px 3px rgba(17, 24, 39, 0.04);
     --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06);
     --sidebar-bg: #ffffff;
     --sidebar-border: rgba(17, 24, 39, 0.08);
     --sidebar-muted: #6b7280;
-    --sidebar-link: #374151;
+    --sidebar-link: #1f2937;
     --sidebar-link-hover: rgba(17, 24, 39, 0.06);
   }
 

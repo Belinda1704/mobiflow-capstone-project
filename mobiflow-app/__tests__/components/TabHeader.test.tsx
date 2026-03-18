@@ -25,30 +25,34 @@ jest.mock('../../contexts/ThemeContext', () => ({
 }));
 
 describe('TabHeader', () => {
-  it('renders the title', () => {
-    render(<TabHeader title="Dashboard" />);
-    expect(screen.getByText('Dashboard')).toBeOnTheScreen();
+  describe('Title and subtitle', () => {
+    it('renders the title', () => {
+      render(<TabHeader title="Dashboard" />);
+      expect(screen.getByText('Dashboard')).toBeOnTheScreen();
+    });
+
+    it('renders subtitle when provided', () => {
+      render(<TabHeader title="Reports" subtitle="Charts and insights" />);
+      expect(screen.getByText('Charts and insights')).toBeOnTheScreen();
+    });
+
+    it('does not render subtitle when not provided', () => {
+      render(<TabHeader title="Home" />);
+      expect(screen.queryByText('Charts and insights')).toBeNull();
+    });
   });
 
-  it('renders subtitle when provided', () => {
-    render(<TabHeader title="Reports" subtitle="Charts and insights" />);
-    expect(screen.getByText('Charts and insights')).toBeOnTheScreen();
-  });
+  describe('Right content', () => {
+    it('renders rightContent when provided', () => {
+      render(
+        <TabHeader title="Transactions" rightContent={<>{/* custom button */}</>} />
+      );
+      expect(screen.getByText('Transactions')).toBeOnTheScreen();
+    });
 
-  it('does not render subtitle when not provided', () => {
-    render(<TabHeader title="Home" />);
-    expect(screen.queryByText('Charts and insights')).toBeNull();
-  });
-
-  it('renders rightContent when provided', () => {
-    render(
-      <TabHeader title="Transactions" rightContent={<>{/* custom button */}</>} />
-    );
-    expect(screen.getByText('Transactions')).toBeOnTheScreen();
-  });
-
-  it('renders with different titles', () => {
-    const { getByText } = render(<TabHeader title="Transactions" />);
-    expect(getByText('Transactions')).toBeOnTheScreen();
+    it('renders with different titles', () => {
+      const { getByText } = render(<TabHeader title="Transactions" />);
+      expect(getByText('Transactions')).toBeOnTheScreen();
+    });
   });
 });

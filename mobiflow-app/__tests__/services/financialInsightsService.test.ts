@@ -28,97 +28,109 @@ function minimalData(overrides: Partial<CreditReadinessData> = {}): CreditReadin
   return { ...base, ...overrides };
 }
 
-describe('assessCreditworthiness', () => {
-  it('returns insufficient_data when cashFlowByDay has fewer than 7 days', () => {
-    const data = minimalData({
-      cashFlowByDay: Array.from({ length: 5 }, (_, i) => ({
-        dateKey: `2025-01-${i + 1}`,
-        dateLabel: `Day ${i + 1}`,
-        income: 5000,
-        expense: 3000,
-        net: 2000,
-      })),
+describe('financialInsightsService', () => {
+  describe('assessCreditworthiness', () => {
+    describe('Insufficient data', () => {
+      it('returns insufficient_data when cashFlowByDay has fewer than 7 days', () => {
+        const data = minimalData({
+          cashFlowByDay: Array.from({ length: 5 }, (_, i) => ({
+            dateKey: `2025-01-${i + 1}`,
+            dateLabel: `Day ${i + 1}`,
+            income: 5000,
+            expense: 3000,
+            net: 2000,
+          })),
+        });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('insufficient_data');
+        expect(result.reasonKeys).toContain('creditworthinessReasonInsufficientData');
+      });
+
+      it('returns insufficient_data when avgMonthlyIncome is zero', () => {
+        const data = minimalData({ avgMonthlyIncome: 0 });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('insufficient_data');
+      });
     });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('insufficient_data');
-    expect(result.reasonKeys).toContain('creditworthinessReasonInsufficientData');
-  });
 
-  it('returns insufficient_data when avgMonthlyIncome is zero', () => {
-    const data = minimalData({ avgMonthlyIncome: 0 });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('insufficient_data');
-  });
+    describe('Not creditworthy', () => {
+      it('returns not_creditworthy when cash flow is bad and savings is negative', () => {
+        const data = minimalData({
+          cashFlowStability: 'Poor',
+          savingsRate: -5,
+        });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('not_creditworthy');
+        expect(result.reasonKeys).toEqual(
+          expect.arrayContaining(['creditworthinessReasonNegativeCashFlow', 'creditworthinessReasonNegativeSavings'])
+        );
+      });
 
-  it('returns not_creditworthy when cash flow is bad and savings is negative', () => {
-    const data = minimalData({
-      cashFlowStability: 'Poor',
-      savingsRate: -5,
+      it('returns not_creditworthy when cash flow is bad only', () => {
+        const data = minimalData({ cashFlowStability: 'Poor', savingsRate: 5 });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('not_creditworthy');
+        expect(result.reasonKeys).toContain('creditworthinessReasonNegativeCashFlow');
+      });
     });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('not_creditworthy');
-    expect(result.reasonKeys).toEqual(
-      expect.arrayContaining(['creditworthinessReasonNegativeCashFlow', 'creditworthinessReasonNegativeSavings'])
-    );
-  });
 
-  it('returns not_creditworthy when cash flow is bad only', () => {
-    const data = minimalData({ cashFlowStability: 'Poor', savingsRate: 5 });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('not_creditworthy');
-    expect(result.reasonKeys).toContain('creditworthinessReasonNegativeCashFlow');
-  });
+    describe('Needs improvement', () => {
+      it('returns needs_improvement when savings rate is zero', () => {
+        const data = minimalData({ savingsRate: 0 });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('needs_improvement');
+        expect(result.reasonKeys).toContain('creditworthinessReasonNoSavings');
+      });
 
-  it('returns needs_improvement when savings rate is zero', () => {
-    const data = minimalData({ savingsRate: 0 });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('needs_improvement');
-    expect(result.reasonKeys).toContain('creditworthinessReasonNoSavings');
-  });
-
-  it('returns needs_improvement when savings rate is positive but below 10%', () => {
-    const data = minimalData({ savingsRate: 5, transactionFrequency: 2 });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('needs_improvement');
-    expect(result.reasonKeys).toContain('creditworthinessReasonLowSavings');
-  });
-
-  it('returns creditworthy when data is strong (good flow, savings >= 10%, activity)', () => {
-    const data = minimalData({
-      cashFlowStability: 'Good',
-      savingsRate: 15,
-      transactionFrequency: 20,
+      it('returns needs_improvement when savings rate is positive but below 10%', () => {
+        const data = minimalData({ savingsRate: 5, transactionFrequency: 2 });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('needs_improvement');
+        expect(result.reasonKeys).toContain('creditworthinessReasonLowSavings');
+      });
     });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('creditworthy');
-    expect(result.reasonKeys).toEqual(
-      expect.arrayContaining(['creditworthinessReasonPositiveFlow', 'creditworthinessReasonSavingsRate'])
-    );
+
+    describe('Creditworthy', () => {
+      it('returns creditworthy when data is strong (good flow, savings >= 10%, activity)', () => {
+        const data = minimalData({
+          cashFlowStability: 'Good',
+          savingsRate: 15,
+          transactionFrequency: 20,
+        });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('creditworthy');
+        expect(result.reasonKeys).toEqual(
+          expect.arrayContaining(['creditworthinessReasonPositiveFlow', 'creditworthinessReasonSavingsRate'])
+        );
+      });
+
+      it('returns creditworthy with high savings and high activity', () => {
+        const data = minimalData({ savingsRate: 30, transactionFrequency: 50 });
+        const result = assessCreditworthiness(data);
+        expect(result.verdict).toBe('creditworthy');
+      });
+    });
   });
 
-  it('returns creditworthy with high savings and high activity', () => {
-    const data = minimalData({ savingsRate: 30, transactionFrequency: 50 });
-    const result = assessCreditworthiness(data);
-    expect(result.verdict).toBe('creditworthy');
-  });
-});
+  describe('getLastNMonthsRange', () => {
+    describe('Format and range', () => {
+      it('returns startYearMonth and endYearMonth in YYYY-MM format', () => {
+        const result = getLastNMonthsRange(6);
+        expect(result).toHaveProperty('startYearMonth');
+        expect(result).toHaveProperty('endYearMonth');
+        expect(result.startYearMonth).toMatch(/^\d{4}-\d{2}$/);
+        expect(result.endYearMonth).toMatch(/^\d{4}-\d{2}$/);
+      });
 
-describe('getLastNMonthsRange', () => {
-  it('returns startYearMonth and endYearMonth in YYYY-MM format', () => {
-    const result = getLastNMonthsRange(6);
-    expect(result).toHaveProperty('startYearMonth');
-    expect(result).toHaveProperty('endYearMonth');
-    expect(result.startYearMonth).toMatch(/^\d{4}-\d{2}$/);
-    expect(result.endYearMonth).toMatch(/^\d{4}-\d{2}$/);
-  });
+      it('returns same month for n=1', () => {
+        const result = getLastNMonthsRange(1);
+        expect(result.startYearMonth).toBe(result.endYearMonth);
+      });
 
-  it('returns same month for n=1', () => {
-    const result = getLastNMonthsRange(1);
-    expect(result.startYearMonth).toBe(result.endYearMonth);
-  });
-
-  it('returns different start and end for n=6', () => {
-    const result = getLastNMonthsRange(6);
-    expect(result.startYearMonth).not.toBe(result.endYearMonth);
+      it('returns different start and end for n=6', () => {
+        const result = getLastNMonthsRange(6);
+        expect(result.startYearMonth).not.toBe(result.endYearMonth);
+      });
+    });
   });
 });

@@ -1,4 +1,5 @@
 import { BookOpen, ReceiptText, UserCheck, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { AppColors } from '../constants/colors';
 import { CategoryDonutChart } from '../components/CategoryDonutChart';
@@ -174,24 +175,34 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(420px,480px)] xl:items-start">
-        <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-5 shadow-(--shadow-card)">
-          <div className="mb-4">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-(--text-soft)">Latest 50 records</p>
-            <h3 className="mt-1 text-lg font-semibold text-(--text-main)">Recent transactions</h3>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(420px,480px)] xl:items-stretch">
+        <section className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-5 shadow-(--shadow-card) xl:h-[560px]">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-(--text-soft)">Latest 10 records</p>
+              <h3 className="mt-1 text-lg font-semibold text-(--text-main)">Recent transactions</h3>
+            </div>
+            <Link
+              to="/transactions"
+              className="shrink-0 text-sm font-semibold text-[#B28704] hover:underline">
+              View all
+            </Link>
           </div>
-          <RecentActivityTable activity={overview.recentActivity} />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <RecentActivityTable activity={overview.recentActivity.slice(0, 10)} />
+          </div>
         </section>
 
-        <section className="flex min-w-0 flex-col gap-5 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-6 shadow-(--shadow-card)">
-          <div>
+        <section className="flex min-w-0 flex-col rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-6 shadow-(--shadow-card) xl:h-[560px]">
+          <div className="shrink-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-(--text-soft)">Breakdown</p>
             <h3 className="mt-1 text-lg font-semibold text-(--text-main)">Transaction categories</h3>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 shrink-0 pt-4">
             <CategoryDonutChart items={categoryBreakdown} />
           </div>
-          <div className="grid gap-4">
+          <div className="min-h-0 flex-1 overflow-y-auto pt-4 pr-1">
+            <div className="grid gap-4">
             <div className="rounded-xl border border-(--border-muted) bg-(--panel-soft) px-4 py-3.5">
               <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-(--text-soft)">Leading category</p>
               <p className="mt-2 text-base font-semibold text-(--text-main)">
@@ -275,6 +286,7 @@ export function DashboardPage() {
                 )}
               </div>
             </div>
+          </div>
           </div>
         </section>
       </div>
