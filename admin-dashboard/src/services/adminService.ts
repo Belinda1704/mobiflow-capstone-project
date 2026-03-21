@@ -29,6 +29,10 @@ export type AdminOverview = {
     newUsers: number;
     lessonCompletions?: number;
   }>;
+  categoryBreakdown: Array<{
+    label: string;
+    value: number;
+  }>;
   learning: {
     totalLessonCompletions: number;
     uniqueLearners: number;
@@ -42,20 +46,9 @@ export type AdminOverview = {
       id: string;
       lessonId: string;
       label: string;
-      phone: string;
       completedAt: string | null;
     }>;
   };
-  recentActivity: Array<{
-    id: string;
-    userId: string;
-    phone: string;
-    label: string;
-    amount: number;
-    type: string;
-    category: string;
-    createdAt: string | null;
-  }>;
   adminAccounts: Array<{
     uid: string;
     email: string;
@@ -82,6 +75,21 @@ export type AdminOverview = {
   adminUserId: string;
 };
 
+type CacheEntry = {
+  data: AdminOverview;
+  cachedAt: number;
+};
+
+const OVERVIEW_CACHE_TTL_MS = 60_000;
+const overviewCache = new Map<string, CacheEntry>();
+const inFlightRequests = new Map<string, Promise<AdminOverview>>();
+
+function getSelectionKey(selection: AdminDateRangeSelection): string {
+  const start = selection.startDate ?? '';
+  const end = selection.endDate ?? '';
+  return `${selection.dateRange}|${start}|${end}`;
+}
+
 export function getDashboardErrorMessage(error: unknown): string {
   const firebaseError = error as {
     message?: string;
@@ -107,7 +115,27 @@ export function getDashboardErrorMessage(error: unknown): string {
   return 'Could not load dashboard data.';
 }
 
-export async function fetchAdminOverview(selection: AdminDateRangeSelection): Promise<AdminOverview> {
+export async function fetchAdminOverview(
+  selection: AdminDateRangeSelection,
+  options?: { forceRefresh?: boolean }
+): Promise<AdminOverview> {
+  const key = getSelectionKey(selection);
+  const forceRefresh = options?.forceRefresh === true;
+  const now = Date.now();
+  const cached = overviewCache.get(key);
+
+  if (!forceRefresh && cached && now - cached.cachedAt < OVERVIEW_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  if (!forceRefresh) {
+    const pending = inFlightRequests.get(key);
+    if (pending) {
+      return pending;
+    }
+  }
+
+  const requestPromise = (async () => {
   try {
     const callable = httpsCallable<AdminDateRangeSelection, AdminOverview>(
       functionsClient,
@@ -119,8 +147,17 @@ export async function fetchAdminOverview(selection: AdminDateRangeSelection): Pr
       throw new Error('No overview data was returned.');
     }
 
+    overviewCache.set(key, { data: response.data, cachedAt: Date.now() });
     return response.data;
   } catch (error) {
     throw new Error(getDashboardErrorMessage(error));
+  }
+  })();
+
+  inFlightRequests.set(key, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    inFlightRequests.delete(key);
   }
 }

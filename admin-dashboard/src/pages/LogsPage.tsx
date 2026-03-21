@@ -89,7 +89,7 @@ export function LogsPage() {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-start gap-4 rounded-r-2xl border border-(--border-muted) border-l-4 bg-[var(--panel-soft)] pl-4 pr-4 py-4 ${border}`}>
+                  className={`flex items-start gap-4 rounded-r-2xl border border-(--border-muted) border-l-4 bg-(--panel-soft) px-4 py-4 ${border}`}>
                   <span
                     className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${badge}`}>
                     <Icon size={12} className="shrink-0" />

@@ -1,4 +1,4 @@
-/** MobiFlow app colors used across admin dashboard and login. */
+// Shared app colors
 export const AppColors = {
   accent: '#F5C518',
   accentHover: '#E6B800',

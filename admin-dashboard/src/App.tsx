@@ -10,8 +10,10 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LearningPage } from './pages/LearningPage';
 import { LoginPage } from './pages/LoginPage';
 import { LogsPage } from './pages/LogsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SupportRequestsPage } from './pages/SupportRequestsPage';
+import { TermsPage } from './pages/TermsPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { UsersPage } from './pages/UsersPage';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -23,6 +25,8 @@ export default function App() {
         <AdminAuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route
               element={
                 <AdminGuard>

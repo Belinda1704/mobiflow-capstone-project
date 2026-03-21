@@ -65,7 +65,7 @@ export function formatAdminLabel(email: string | null | undefined): string {
   return email;
 }
 
-/** Two-letter initials from admin label. For emails (no display name) uses first 2 chars of local part so each admin gets unique initials (e.g. user@… → US, weswesendy2@… → WE). */
+// Build admin initials from name/email
 export function getAdminInitials(label: string | null | undefined): string {
   if (!label || !label.trim()) return 'A';
   const t = label.trim();

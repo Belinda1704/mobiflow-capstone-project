@@ -39,8 +39,8 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     title: 'Overview',
     items: [
       { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-      { label: 'Insights', to: '/insights', icon: BarChart3 },
-      { label: 'Logs', to: '/logs', icon: List },
+      { label: 'Usage Insights', to: '/insights', icon: BarChart3 },
+      { label: 'Activity Logs', to: '/logs', icon: List },
     ],
   },
   {
@@ -65,11 +65,11 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
 ];
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': { title: 'Dashboard', subtitle: 'Main metrics and recent activity.' },
-  '/insights': { title: 'Insights', subtitle: 'Platform events and recent changes.' },
-  '/logs': { title: 'Logs', subtitle: 'Chronological platform event history.' },
-  '/users': { title: 'Users', subtitle: 'User activity overview.' },
-  '/transactions': { title: 'Transactions', subtitle: 'Transaction overview.' },
+  '/dashboard': { title: 'Dashboard', subtitle: 'Aggregated platform metrics and activity.' },
+  '/insights': { title: 'Usage Insights', subtitle: 'Platform events and behaviour trends.' },
+  '/logs': { title: 'Activity Logs', subtitle: 'Chronological platform event history.' },
+  '/users': { title: 'Users', subtitle: 'User adoption and activity overview.' },
+  '/transactions': { title: 'Transactions', subtitle: 'Aggregated transaction trends.' },
   '/support-requests': {
     title: 'Support Requests',
     subtitle: 'Password help requests from mobile users.',
@@ -91,8 +91,8 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
 const sidebarLinkBase =
   'flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-colors';
 const sidebarLinkActive =
-  'bg-[#F5C518]/15 text-[var(--text-main)] shadow-[inset_0_0_0_1px_rgba(245,197,24,0.2)]';
-const sidebarLinkIdle = 'text-[var(--sidebar-link)] hover:bg-[var(--sidebar-link-hover)]';
+  'bg-[#F5C518]/15 text-(--text-main) shadow-[inset_0_0_0_1px_rgba(245,197,24,0.2)]';
+const sidebarLinkIdle = 'text-(--sidebar-link) hover:bg-(--sidebar-link-hover)';
 const signOutButton =
   'w-full rounded-xl bg-[#F5C518] px-4 py-3 text-sm font-semibold text-neutral-900 transition hover:bg-[#E6B800]';
 const iconButton =
@@ -173,6 +173,8 @@ export function AdminShell() {
   }, [endDate, startDate]);
 
   useEffect(() => {
+    if (!isNotificationMenuOpen) return;
+
     let cancelled = false;
     async function loadNotifications() {
       setLoadingNotifications(true);
@@ -202,7 +204,7 @@ export function AdminShell() {
     return () => {
       cancelled = true;
     };
-  }, [dateRange, endDate, startDate]);
+  }, [dateRange, endDate, isNotificationMenuOpen, startDate]);
 
   function formatNotificationTime(value: string | null) {
     if (!value) return 'Unknown time';
@@ -213,14 +215,14 @@ export function AdminShell() {
 
   return (
     <div className="grid h-screen overflow-hidden bg-(--page-bg) lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-x-0">
-      <aside className="flex h-full flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] px-5 py-6 text-[var(--sidebar-link)]">
+      <aside className="flex h-full flex-col border-r border-(--sidebar-border) bg-(--sidebar-bg) px-5 py-6 text-(--sidebar-link)">
         <div className="flex min-h-0 flex-1 flex-col gap-8">
           <div className="px-2">
             <div className="flex items-center gap-3">
-              <img src={brandIcon} alt="MobiFlow" className="h-10 w-10 rounded-xl object-cover" />
+              <img src={brandIcon} alt="MobiFlow" className="h-11 w-11 rounded-xl object-cover ring-1 ring-[#F5C518]/30" />
               <div className="flex flex-col justify-center">
-                <h1 className="text-[15px] font-semibold leading-none text-[var(--text-main)]">MobiFlow</h1>
-                <p className="mt-1 text-[9px] uppercase tracking-[0.2em] text-[var(--sidebar-muted)]">Dashboard</p>
+                <h1 className="text-base font-semibold leading-none text-(--text-main)">MobiFlow</h1>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-(--sidebar-muted)">Admin Dashboard</p>
               </div>
             </div>
           </div>
@@ -229,7 +231,7 @@ export function AdminShell() {
             <div className="space-y-6">
               {navSections.map((section) => (
                 <div key={section.title}>
-                  <p className="mb-2 px-2 text-[11px] uppercase tracking-[0.18em] text-[var(--sidebar-muted)]">
+                  <p className="mb-2 px-2 text-[11px] uppercase tracking-[0.18em] text-(--sidebar-muted)">
                     {section.title}
                   </p>
                   <nav className="space-y-2">
@@ -244,7 +246,7 @@ export function AdminShell() {
                           }>
                           {({ isActive }) => (
                             <span className="flex items-center gap-3">
-                              <Icon size={17} className={isActive ? 'text-[#F5C518]' : 'text-[var(--sidebar-muted)]'} />
+                              <Icon size={17} className={isActive ? 'text-[#F5C518]' : 'text-(--sidebar-muted)'} />
                               <span>{item.label}</span>
                             </span>
                           )}
@@ -258,14 +260,14 @@ export function AdminShell() {
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[var(--sidebar-border)] pt-4">
-          <div className="flex w-full items-center gap-3 rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-link-hover)] px-4 py-3">
+        <div className="shrink-0 border-t border-(--sidebar-border) pt-4">
+          <div className="flex w-full items-center gap-3 rounded-xl border border-(--sidebar-border) bg-(--sidebar-link-hover) px-4 py-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5C518] text-sm font-semibold text-neutral-900">
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--sidebar-muted)]">Admin</p>
-              <p className="truncate text-sm font-medium text-[var(--text-main)]" title={adminName}>{adminName}</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-(--sidebar-muted)">Admin</p>
+              <p className="truncate text-sm font-medium text-(--text-main)" title={adminName}>{adminName}</p>
             </div>
           </div>
           <button
@@ -419,7 +421,7 @@ export function AdminShell() {
               </button>
 
               {isDateMenuOpen ? (
-                <div className="absolute right-0 z-20 mt-2 min-w-[240px] rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-2 shadow-(--shadow-soft)">
+                <div className="absolute right-0 z-20 mt-2 min-w-60 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-2 shadow-(--shadow-soft)">
                   <div className="space-y-1">
                     {dateRangeOptions.slice(0, 4).map((option) => (
                       <button

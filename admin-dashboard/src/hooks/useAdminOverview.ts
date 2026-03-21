@@ -40,5 +40,24 @@ export function useAdminOverview() {
     load();
   }, [load]);
 
-  return { overview, loading, error, refresh: load };
+  const refresh = useCallback(async () => {
+    if (!isAdmin) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchAdminOverview({ dateRange, startDate, endDate }, { forceRefresh: true });
+      setOverview(data);
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim() && error.message.toLowerCase() !== 'undefined'
+          ? error.message
+          : 'Could not load dashboard data.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange, endDate, isAdmin, startDate]);
+
+  return { overview, loading, error, refresh };
 }

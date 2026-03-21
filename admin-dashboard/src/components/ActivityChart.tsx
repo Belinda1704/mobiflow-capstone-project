@@ -1,7 +1,6 @@
 type ActivityPoint = {
   label: string;
   transactions: number;
-  newUsers: number;
 };
 
 function mapPoints(
@@ -20,7 +19,7 @@ function mapPoints(
   }));
 }
 
-// Monotone-style cubic Bezier for smooth, non-jagged lines (tension 0.4)
+// Smooth line path
 function buildSmoothPath(points: Array<{ x: number; y: number }>) {
   if (!points.length) return '';
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
@@ -63,8 +62,7 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const transactionValues = data.map((item) => item.transactions);
-  const userValues = data.map((item) => item.newUsers);
-  const maxValue = Math.max(1, ...transactionValues, ...userValues);
+  const maxValue = Math.max(1, ...transactionValues);
   const transactionPoints = mapPoints(
     transactionValues,
     plotHeight,
@@ -72,23 +70,23 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
     padding.left,
     padding.top
   );
-  const userPoints = mapPoints(userValues, plotHeight, plotWidth, padding.left, padding.top);
   const transactionPath = buildSmoothPath(transactionPoints);
-  const userPath = buildSmoothPath(userPoints);
   const areaPath = buildAreaPath(
     transactionPoints,
     padding.top + plotHeight,
     padding.left,
     padding.left + plotWidth
   );
-  const totalTransactions = transactionValues.reduce((sum, value) => sum + value, 0);
-  const totalNewUsers = userValues.reduce((sum, value) => sum + value, 0);
   const gridLevels = [1, 0.66, 0.33, 0];
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl border border-[color:var(--border-muted)] border-opacity-60 bg-[var(--panel-bg)] p-5">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-[290px] w-full" preserveAspectRatio="xMidYMid meet">
+    <div>
+      <div className="overflow-hidden rounded-2xl border border-(--border-muted) border-opacity-60 bg-(--panel-bg) p-5">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full"
+          style={{ height: 270 }}
+          preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="activityChartTransactionFill" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stopColor="#F5C518" stopOpacity="0.14" />
@@ -108,9 +106,9 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
                   y1={y}
                   y2={y}
                   stroke="var(--border-muted)"
-                  strokeOpacity="0.5"
+                  strokeOpacity="0.35"
                   strokeWidth="1"
-                  strokeDasharray="4 6"
+                  strokeDasharray="2 8"
                 />
                 <text
                   x={padding.left - 10}
@@ -130,18 +128,9 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
             fill="none"
             d={transactionPath}
             stroke="#F5C518"
-            strokeWidth="2"
+            strokeWidth="2.7"
             strokeLinecap="round"
             strokeLinejoin="round"
-          />
-          <path
-            fill="none"
-            d={userPath}
-            stroke="#22C55E"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="5 5"
           />
 
           {(() => {
@@ -175,31 +164,6 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
             });
           })()}
         </svg>
-      </div>
-
-      <div className="grid gap-3 rounded-2xl border border-[color:var(--border-muted)] bg-[var(--panel-bg)] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
-        <div className="rounded-xl bg-[var(--panel-soft)] px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-soft)]">Transactions</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--text-main)]">{totalTransactions}</p>
-        </div>
-        <div className="rounded-xl bg-[var(--panel-soft)] px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-soft)]">New users</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--text-main)]">{totalNewUsers}</p>
-        </div>
-        <div className="flex flex-wrap gap-5 px-2 text-sm text-[var(--text-muted)]">
-          <span className="inline-flex items-center gap-2">
-            <svg width="16" height="4" className="shrink-0" aria-hidden>
-              <line x1="0" y1="2" x2="16" y2="2" stroke="#F5C518" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <span>Transactions</span>
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <svg width="16" height="4" className="shrink-0" aria-hidden>
-              <line x1="0" y1="2" x2="16" y2="2" stroke="#22C55E" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" />
-            </svg>
-            <span>New users</span>
-          </span>
-        </div>
       </div>
     </div>
   );

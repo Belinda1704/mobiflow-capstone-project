@@ -4,9 +4,9 @@ type MetricCardProps = {
   label: string;
   value: string;
   note?: string;
-  /** Optional trend line data (e.g. daily values). */
+  // Daily values for sparkline
   trend?: number[];
-  /** Optional percentage change vs previous period (e.g. 12.5). Shown as "+12.5% vs last period" in green or "-X%" in red. */
+  // Change vs previous period
   trendPercent?: number | null;
   accent?: string;
   icon?: LucideIcon;
@@ -78,20 +78,19 @@ export function MetricCard({
   const hasTrendPercent = trendPercent != null && !Number.isNaN(trendPercent);
 
   return (
-    <article className="flex min-h-[140px] flex-col overflow-hidden rounded-2xl border border-(--border-muted) bg-[var(--panel-bg)] shadow-[var(--shadow-card)]">
+    <article className="flex min-h-39 flex-col overflow-hidden rounded-2xl border border-(--border-muted) bg-(--panel-bg) shadow-(--shadow-card)">
       <div className="flex flex-1 flex-col px-5 pt-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.08em] text-(--text-muted)">{label}</p>
-            <h3 className="mt-2 text-2xl font-semibold leading-tight text-(--text-main)">{value}</h3>
+            <h3 className="mt-2 text-3xl font-semibold leading-tight text-(--text-main)">{value}</h3>
             {hasTrendPercent ? (
               <p className={`mt-1.5 flex items-center gap-1 text-sm font-medium ${trendPercent >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
                 {trendPercent >= 0 ? <span aria-hidden>↑</span> : <span aria-hidden>↓</span>}
                 <span>{trendPercent >= 0 ? '+' : ''}{trendPercent.toFixed(1)}% vs last period</span>
               </p>
-            ) : note ? (
-              <p className="mt-2 text-sm text-(--text-muted)">{note}</p>
             ) : null}
+            {note ? <p className="mt-1 text-xs text-(--text-soft)">{note}</p> : null}
           </div>
           {Icon ? (
             <span
@@ -105,7 +104,7 @@ export function MetricCard({
       </div>
 
       {sparklinePath ? (
-        <div className="mt-auto border-t border-(--border-muted) bg-[var(--panel-soft)] px-3 pt-2">
+        <div className="mt-auto border-t border-(--border-muted) bg-(--panel-soft) px-3 pt-2">
           <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-12 w-full">
             <defs>
               <linearGradient id={`metric-fill-${label.replace(/\s+/g, '-').toLowerCase()}`} x1="0" x2="0" y1="0" y2="1">

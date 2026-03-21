@@ -1,6 +1,6 @@
 export const ui = {
   panel:
-    'rounded-2xl border border-(--border-muted) bg-[var(--panel-bg)] shadow-[var(--shadow-card)]',
+    'rounded-2xl border border-(--border-muted) bg-(--panel-bg) shadow-(--shadow-card)',
   sectionEyebrow:
     'text-[11px] font-semibold uppercase tracking-[0.12em] text-(--text-soft)',
   sectionTitle: 'mt-1.5 text-lg font-semibold text-(--text-main)',

@@ -31,15 +31,15 @@ export function CategoryDonutChart({ items }: CategoryDonutChartProps) {
 
   if (!items.length || total === 0) {
     return (
-      <div className="rounded-2xl border border-[color:var(--border-muted)] bg-[var(--panel-soft)] px-4 py-5">
-        <p className="text-sm text-[var(--text-muted)]">No category data yet.</p>
+      <div className="rounded-2xl border border-(--border-muted) bg-(--panel-soft) px-4 py-5">
+        <p className="text-sm text-(--text-muted)">No category data yet.</p>
       </div>
     );
   }
 
   return (
     <div className="grid gap-5 lg:grid-cols-[150px_minmax(0,1fr)] lg:items-center">
-      <div className="relative mx-auto h-[132px] w-[132px]">
+      <div className="relative mx-auto h-33 w-33">
         <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90">
           <circle
             cx={size / 2}
@@ -74,8 +74,8 @@ export function CategoryDonutChart({ items }: CategoryDonutChartProps) {
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-2xl font-semibold text-[var(--text-main)]">{total}</span>
-          <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
+          <span className="text-2xl font-semibold text-(--text-main)">{total}</span>
+          <span className="text-[11px] uppercase tracking-[0.16em] text-(--text-muted)">
             Records
           </span>
         </div>
@@ -88,8 +88,8 @@ export function CategoryDonutChart({ items }: CategoryDonutChartProps) {
           return (
             <div
               key={item.label}
-              className="flex items-center justify-between gap-3 rounded-xl border border-[color:var(--border-muted)] bg-[var(--panel-soft)] px-3 py-2.5 text-sm">
-              <span className="inline-flex items-center gap-2 text-[var(--text-muted)]">
+              className="flex items-center justify-between gap-3 rounded-xl border border-(--border-muted) bg-(--panel-soft) px-3 py-2.5 text-sm">
+              <span className="inline-flex items-center gap-2 text-(--text-muted)">
                 <i
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: SEGMENT_COLORS[index % SEGMENT_COLORS.length] }}
@@ -97,8 +97,8 @@ export function CategoryDonutChart({ items }: CategoryDonutChartProps) {
                 {item.label}
               </span>
               <span className="text-right">
-                <strong className="block font-semibold text-[var(--text-main)]">{percentage}%</strong>
-                <span className="text-xs text-[var(--text-soft)]">{item.value} items</span>
+                <strong className="block font-semibold text-(--text-main)">{percentage}%</strong>
+                <span className="text-xs text-(--text-soft)">{item.value} items</span>
               </span>
             </div>
           );

@@ -13,7 +13,7 @@ function formatNumber(value: number): string {
   return value.toLocaleString('en-US');
 }
 
-// Percentages that sum to 100% (largest-remainder)
+// Keep total at 100%
 function normalizePercentages(values: number[], total: number): number[] {
   if (total === 0) return values.map(() => 0);
   const raw = values.map((v) => (v / total) * 100);

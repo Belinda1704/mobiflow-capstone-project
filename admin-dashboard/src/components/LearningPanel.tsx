@@ -33,7 +33,7 @@ export function LearningPanel({
           <h3 className={ui.sectionTitle}>Video engagement</h3>
           <p className="mt-2 text-sm text-(--text-muted)">Data source: Lesson completions in the app.</p>
         </div>
-        <div className="min-w-[88px] rounded-xl bg-(--panel-soft) px-3 py-2 text-right">
+        <div className="min-w-22 rounded-xl bg-(--panel-soft) px-3 py-2 text-right">
           <p className="text-[10px] uppercase tracking-[0.16em] text-(--text-soft)">Top Lesson</p>
           <p className="mt-1 truncate text-sm font-semibold text-(--text-main)">
             {topLessonLabel}
@@ -73,9 +73,9 @@ export function LearningPanel({
                       {lesson.count} {lesson.count === 1 ? 'completion' : 'completions'}
                     </span>
                   </div>
-                  <div className="mt-3 h-4 w-full overflow-hidden rounded-full bg-[var(--panel-bg)]">
+                  <div className="mt-3 h-4 w-full overflow-hidden rounded-full bg-(--panel-bg)">
                     <div
-                      className="h-full min-w-[6px] rounded-full transition-[width] duration-300"
+                      className="h-full min-w-1.5 rounded-full transition-[width] duration-300"
                       style={{ width: `${barWidth}%`, backgroundColor: AppColors.accent }}
                     />
                   </div>
