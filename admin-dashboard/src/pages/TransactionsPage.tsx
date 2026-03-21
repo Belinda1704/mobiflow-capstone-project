@@ -1,6 +1,5 @@
 import { ActivityChart } from '../components/ActivityChart';
 import { MetricCard } from '../components/MetricCard';
-import { RecentActivityTable } from '../components/RecentActivityTable';
 import { useAdminDateRange } from '../filters/AdminDateRangeContext';
 import { useAdminOverview } from '../hooks/useAdminOverview';
 import { ui } from '../styles/ui';
@@ -38,21 +37,16 @@ export function TransactionsPage() {
   }
 
   const selectedPeriodLabel = getAdminDateRangeLabel(dateRange, startDate, endDate);
-  const incomeCount = overview.recentActivity.filter((item) => item.amount >= 0).length;
-  const expenseCount = overview.recentActivity.filter((item) => item.amount < 0).length;
-  const period = overview.period || {
-    label: selectedPeriodLabel,
-    transactions: overview.transactionsLast7Days,
-  };
-  const displayedTransactionCount = dateRange === 'all' ? overview.totalTransactions : period.transactions;
+  const periodTransactions = dateRange === 'all' ? overview.totalTransactions : overview.period.transactions;
+  const openRequests = overview.period.openSupportRequests ?? 0;
 
   return (
     <section className="space-y-5">
       <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total transactions" value={formatNumber(overview.totalTransactions)} />
-        <MetricCard label="In period" value={formatNumber(displayedTransactionCount)} note={selectedPeriodLabel} />
-        <MetricCard label="Income entries" value={formatNumber(incomeCount)} />
-        <MetricCard label="Expense entries" value={formatNumber(expenseCount)} />
+        <MetricCard label="In period" value={formatNumber(periodTransactions)} note={selectedPeriodLabel} />
+        <MetricCard label="Active users" value={formatNumber(overview.period.activeUsers)} note={selectedPeriodLabel} />
+        <MetricCard label="Open support requests" value={formatNumber(openRequests)} note={selectedPeriodLabel} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.9fr)_minmax(280px,0.8fr)]">
@@ -66,29 +60,25 @@ export function TransactionsPage() {
 
         <section className={`${ui.panel} space-y-4 p-5`}>
           <div className="border-b border-(--border-muted) pb-4">
-            <span className={ui.sectionEyebrow}>Recent records</span>
+            <span className={ui.sectionEyebrow}>Transactions</span>
             <strong className="mt-2 block text-3xl font-semibold text-(--text-main)">
-              {overview.recentActivity.length}
+              {formatNumber(periodTransactions)}
             </strong>
           </div>
           <div className="border-b border-(--border-muted) pb-4">
-            <span className={ui.sectionEyebrow}>Income entries</span>
-            <strong className="mt-2 block text-2xl font-semibold text-emerald-600">{incomeCount}</strong>
+            <span className={ui.sectionEyebrow}>Lesson completions</span>
+            <strong className="mt-2 block text-2xl font-semibold text-[#B28704]">
+              {formatNumber(overview.period.lessonCompletions)}
+            </strong>
           </div>
           <div>
-            <span className={ui.sectionEyebrow}>Expense entries</span>
-            <strong className="mt-2 block text-2xl font-semibold text-rose-600">{expenseCount}</strong>
+            <span className={ui.sectionEyebrow}>Daily activity</span>
+            <strong className="mt-2 block text-lg font-semibold text-(--text-main)">
+              {overview.dailyActivity.length} days
+            </strong>
           </div>
         </section>
       </div>
-
-      <section className={`${ui.panel} p-5`}>
-        <p className={ui.sectionEyebrow}>Latest 10 records</p>
-        <h3 className={ui.sectionTitle}>Recent transactions</h3>
-        <div className="mt-5">
-          <RecentActivityTable activity={overview.recentActivity} />
-        </div>
-      </section>
     </section>
   );
 }

@@ -154,7 +154,6 @@ async function buildAdminOverview(adminUserId, filters = {}) {
     : rangeMeta.startMs || nowMs - rangeMeta.days * dayMs;
   const rangeEndMs = rangeMeta.endMs || nowMs;
   const chartCutoffMs = rangeMeta.startMs || nowMs - (rangeMeta.days - 1) * dayMs;
-  const userPhoneById = {};
   const dailyTransactionsMap = {};
   const dailyUsersMap = {};
   const dailyLessonCompletionsMap = {};
@@ -170,7 +169,6 @@ async function buildAdminOverview(adminUserId, filters = {}) {
 
   usersSnap.forEach((doc) => {
     const data = doc.data() || {};
-    userPhoneById[doc.id] = data.phone || 'Unknown user';
     if (data.isAdmin === true) {
       adminAccountCandidates.push({
         uid: doc.id,
@@ -183,7 +181,7 @@ async function buildAdminOverview(adminUserId, filters = {}) {
         id: `user-${doc.id}`,
         type: 'user',
         title: 'New user',
-        detail: data.phone || 'Unknown user',
+        detail: 'New user account was created',
         createdAt: createdAt.toISOString(),
       });
     }
@@ -220,7 +218,7 @@ async function buildAdminOverview(adminUserId, filters = {}) {
 
   let transactionsInRange = 0;
   const activeUsersInRange = new Set();
-  const transactionsInRangeList = [];
+  const categoryCounts = {};
   transactionsSnap.forEach((doc) => {
     const data = doc.data() || {};
     const created = data.createdAt;
@@ -229,18 +227,9 @@ async function buildAdminOverview(adminUserId, filters = {}) {
     else if (created?.seconds) createdMs = created.seconds * 1000;
     if (isWithinMetricRange(createdMs)) {
       transactionsInRange += 1;
-      const createdDate = new Date(createdMs);
       if (data.userId) activeUsersInRange.add(data.userId);
-      transactionsInRangeList.push({
-        id: doc.id,
-        userId: data.userId || '',
-        phone: userPhoneById[data.userId] || 'Unknown user',
-        label: data.label || '',
-        amount: typeof data.amount === 'number' ? data.amount : 0,
-        type: data.type || '',
-        category: data.category || '',
-        createdAt: new Date(createdMs).toISOString(),
-      });
+      const cat = typeof data.category === 'string' && data.category.trim() ? data.category : 'Other';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     }
     if (isWithinChartRange(createdMs)) {
       const createdDate = new Date(createdMs);
@@ -270,17 +259,16 @@ async function buildAdminOverview(adminUserId, filters = {}) {
       if (userId) uniqueLessonLearners.add(userId);
       lessonCounts[lessonId] = (lessonCounts[lessonId] || 0) + 1;
       recentLessonCompletions.push({
-        id: `${userId || 'unknown'}-${lessonId}-${doc.id}`,
+        id: `${lessonId}-${doc.id}`,
         lessonId,
         label: lessonLabel,
-        phone: userPhoneById[userId] || 'Unknown user',
         completedAt: completedAtIso,
       });
       lessonEvents.push({
-        id: `lesson-${userId || 'unknown'}-${lessonId}-${doc.id}`,
+        id: `lesson-${lessonId}-${doc.id}`,
         type: 'lesson',
         title: lessonLabel,
-        detail: userPhoneById[userId] || 'Unknown user',
+        detail: 'A lesson was completed in the app',
         createdAt: completedAtIso,
       });
     }
@@ -334,7 +322,7 @@ async function buildAdminOverview(adminUserId, filters = {}) {
       id: `support-${doc.id}`,
       type: 'support',
       title: 'Password help request',
-      detail: `${phone} · ${status}`,
+      detail: 'A support request was submitted',
       createdAt,
     });
   });
@@ -348,17 +336,13 @@ async function buildAdminOverview(adminUserId, filters = {}) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 4);
   const latestLessonCompletions = sortByNewest(recentLessonCompletions, 'completedAt').slice(0, 5);
-  const recentActivity = sortByNewest(transactionsInRangeList, 'createdAt').slice(0, RECENT_ACTIVITY_LIMIT);
   const recentSupportRequests = sortByNewest(supportRequests, 'createdAt').slice(0, 20);
-  const transactionEvents = recentActivity.map((item) => ({
-    id: `transaction-${item.id}`,
-    type: 'transaction',
-    title: item.label || 'Transaction',
-    detail: `${item.phone} · ${item.category || 'Other'}`,
-    createdAt: item.createdAt,
-  }));
+  const categoryBreakdown = Object.entries(categoryCounts)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
   const activityFeed = sortByNewest(
-    [...transactionEvents, ...lessonEvents, ...recentUserEvents, ...supportEvents].filter(
+    [...lessonEvents, ...recentUserEvents, ...supportEvents].filter(
       (item) => item.createdAt
     ),
     'createdAt'
@@ -392,12 +376,12 @@ async function buildAdminOverview(adminUserId, filters = {}) {
       topLessons,
       recentCompletions: latestLessonCompletions,
     },
-    recentActivity,
     adminAccounts,
     supportRequests: recentSupportRequests,
     activityFeed,
     generatedAt: new Date().toISOString(),
     adminUserId,
+    categoryBreakdown,
   };
 }
 

@@ -4,6 +4,12 @@ export type Transaction = {
   id: string;
   userId: string;
   label: string;
+  /**
+   * Device-only display label.
+   * Used to show parsed sender name/phone inside the user app,
+   * without saving those details to the external database.
+   */
+  displayLabel?: string;
   amount: number;
   type: 'income' | 'expense';
   category: string;
@@ -11,7 +17,6 @@ export type Transaction = {
   notes?: string;
   createdAt?: FirestoreTimestamp | null;
   smsId?: string | null;
-  smsBodySig?: string | null;
 };
 
 export type FirestoreTimestamp = {
@@ -28,7 +33,6 @@ export type CreateTransactionInput = {
   notes?: string;
   createdAt?: Date;
   smsId?: string | null;
-  smsBodySig?: string | null;
 };
 
 export type FilterTab = 'all' | 'income' | 'expense';

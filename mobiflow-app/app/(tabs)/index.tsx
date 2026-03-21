@@ -345,7 +345,7 @@ export default function HomeScreen() {
                     <Text
                       style={[styles.transactionLabel, { color: colors.textPrimary }]}
                       numberOfLines={1}>
-                      {tx.label}
+                      {tx.displayLabel ?? tx.label}
                     </Text>
                     <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>{formatTransactionDate(tx.createdAt)}</Text>
                   </View>

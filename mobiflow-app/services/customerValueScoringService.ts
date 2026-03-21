@@ -70,7 +70,8 @@ export function computeCustomerValueScore(
 }
 
 function extractPhone(tx: Transaction): string | null {
-  const label = tx.label || '';
+  // Parentheses required when mixing `??` and `||` in TS/JS parsing.
+  const label = (tx.displayLabel ?? tx.label) || '';
   const match = label.match(/(?:from|to)\s+(\d{9,10})/i);
   return match ? match[1] : null;
 }

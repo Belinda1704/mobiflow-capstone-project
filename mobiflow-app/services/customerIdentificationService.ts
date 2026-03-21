@@ -79,6 +79,13 @@ export function getDisplayPhoneFromLabel(label: string): string | null {
 const EXCLUDED_LABELS = new Set([
   'shop sales', 'pos', 'cash', 'walk-in', 'walk in', 'sales', 'general', 'other',
   'misc', 'miscellaneous', 'in-store', 'instore', 'retail', 'counter',
+  // Provider-only sanitized labels (avoid showing them as "top customers")
+  'mtn received',
+  'mtn sent',
+  'airtel received',
+  'airtel sent',
+  'mobile money received',
+  'mobile money sent',
 ]);
 
 function isExcludedLabel(label: string): boolean {
@@ -89,9 +96,10 @@ function isExcludedLabel(label: string): boolean {
 
 // Key: phone if in label, else normalized label so income without phone still shows (e.g. SMS that only had name).
 function customerKey(t: Transaction): string {
-  const phone = extractPhoneFromLabel(t.label);
+  const sourceLabel = t.displayLabel ?? t.label;
+  const phone = extractPhoneFromLabel(sourceLabel);
   if (phone) return phone;
-  const trimmed = (t.label || '').trim();
+  const trimmed = (sourceLabel || '').trim();
   if (trimmed) return `label:${trimmed}`;
   return '';
 }
@@ -115,7 +123,7 @@ export function computeTopCustomers(
 
     const amt = Math.abs(t.amount);
     const date = getTransactionDate(t);
-    const name = extractNameFromLabel(t.label);
+    const name = extractNameFromLabel(t.displayLabel ?? t.label);
     const isPhone = !key.startsWith('label:');
     const displayLabel = isPhone ? '' : key.slice(6);
 

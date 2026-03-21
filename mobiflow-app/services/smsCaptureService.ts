@@ -15,6 +15,7 @@ import { recordTransactionCompleted } from './notificationTriggerService';
 import { suggestCategory } from './categorySuggestionService';
 import { learnSmsPattern } from './smsPatternService';
 import type { Transaction } from '../types/transaction';
+import { saveDisplayLabel } from './localDisplayLabelsService';
 
 let isListenerActive = false;
 let cachedTransactions: Transaction[] = []; // Used when suggesting a category for new SMS
@@ -106,6 +107,13 @@ function computeSmsBodySig(body: string, address: string): string {
     h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
   }
   return 'b_' + Math.abs(h).toString(36);
+}
+
+function sanitizeSmsTransactionLabel(type: 'income' | 'expense', provider: 'MTN' | 'Airtel' | 'unknown'): string {
+  const prov = provider === 'unknown' ? 'Mobile money' : provider;
+  // Keep words that help your categorization rules ("received" / "sent"),
+  // but remove sender names and phone details.
+  return type === 'income' ? `${prov} received` : `${prov} sent`;
 }
 
 // Payload from native can be string "[address, body]" or object { address, body }
@@ -260,11 +268,20 @@ async function processSmsMessage(
     console.warn('Failed to learn SMS pattern:', error);
   }
 
-  const bodySig = computeSmsBodySig(smsBody, smsAddress);
-  console.log('[SMS Capture] Adding transaction:', { label: tx.label, amount: tx.amount, type: tx.type, category: suggestedCategory });
+  const sanitizedLabel = sanitizeSmsTransactionLabel(tx.type, tx.provider);
+  console.log('[SMS Capture] Adding transaction:', {
+    label: sanitizedLabel,
+    amount: tx.amount,
+    type: tx.type,
+    category: suggestedCategory,
+  });
   try {
+    // Persist sender identity only on the phone (device-only).
+    const stableTransactionId = `${userId}_${smsId}`;
+    await saveDisplayLabel(userId, stableTransactionId, tx.label);
+
     await addTransaction(userId, {
-      label: tx.label,
+      label: sanitizedLabel,
       amount: tx.amount,
       type: tx.type,
       category: suggestedCategory,
@@ -272,20 +289,19 @@ async function processSmsMessage(
       notes: `SMS: ${tx.provider}`,
       createdAt: new Date(smsTimestamp),
       smsId,
-      smsBodySig: bodySig,
     });
-    console.log('[SMS Capture] Transaction added successfully:', tx.label);
+    console.log('[SMS Capture] Transaction added successfully:', sanitizedLabel);
     // Past scan: track just-added ids in same batch
     if (existingSmsIds) {
       existingSmsIds.add(smsId);
     }
-    recordSmsTransactionAdded(tx.label, tx.amount, tx.type);
-    recordTransactionCompleted(userId, tx.label, Math.abs(tx.amount)).catch(() => {});
+    recordSmsTransactionAdded(sanitizedLabel, tx.amount, tx.type);
+    recordTransactionCompleted(userId, sanitizedLabel, Math.abs(tx.amount)).catch(() => {});
     cachedTransactions = [
       {
         id: 'temp',
         userId,
-        label: tx.label,
+        label: sanitizedLabel,
         amount: tx.amount,
         type: tx.type,
         category: suggestedCategory,
@@ -293,7 +309,6 @@ async function processSmsMessage(
         notes: `SMS: ${tx.provider}`,
         createdAt: null,
         smsId,
-        smsBodySig: bodySig,
       },
       ...cachedTransactions,
     ];
@@ -344,12 +359,10 @@ export async function scanPastSmsMessages(
     cachedTransactions = existingTransactions;
 
     const existingSmsIds = new Set<string>();
-    const existingSmsBodySigs = new Set<string>();
     for (const tx of existingTransactions) {
       if (tx.smsId) existingSmsIds.add(tx.smsId);
-      if (tx.smsBodySig) existingSmsBodySigs.add(tx.smsBodySig);
     }
-    console.log(`[SMS Capture] Dedupe against ${existingSmsIds.size} smsIds and ${existingSmsBodySigs.size} body sigs`);
+    console.log(`[SMS Capture] Dedupe against ${existingSmsIds.size} smsIds`);
 
     // Read inbox + sent
     let pastSms: Array<{ body: string; address: string; timestamp: number }> = [];
@@ -394,9 +407,8 @@ export async function scanPastSmsMessages(
     for (const sms of pastSms) {
       if (!isMobileMoneySms(sms.body)) continue;
       const smsIdForPast = computeSmsId(sms.body, sms.address, sms.timestamp);
-      const bodySig = computeSmsBodySig(sms.body, sms.address);
-      // Skip if already have (by smsId or by body sig – live listener uses different timestamp so body sig catches those)
-      if (existingSmsIds.has(smsIdForPast) || existingSmsBodySigs.has(bodySig) || batchSmsIds.has(smsIdForPast)) continue;
+      // Skip if already have (by smsId). This keeps the dedupe logic strictly on local signatures.
+      if (existingSmsIds.has(smsIdForPast) || batchSmsIds.has(smsIdForPast)) continue;
       batchSmsIds.add(smsIdForPast);
       pastSmsToProcess.push(sms);
     }

@@ -28,16 +28,6 @@ export type AdminOverviewResponse = {
   totalTransactions: number;
   transactionsLast7Days: number;
   activeUsersLast7Days: number;
-  recentActivity: {
-    id: string;
-    userId: string;
-    phone: string;
-    label: string;
-    amount: number;
-    type: string;
-    category: string;
-    createdAt: string | null;
-  }[];
   generatedAt: string;
   adminUserId: string;
 };

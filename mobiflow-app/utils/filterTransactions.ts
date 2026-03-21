@@ -73,7 +73,8 @@ export function filterTransactions(
 
     let matchesSearch = true;
     if (searchTerm) {
-      const labelMatch = t.label.toLowerCase().includes(searchTerm);
+      const displayLabel = (t.displayLabel ?? t.label).toLowerCase();
+      const labelMatch = displayLabel.includes(searchTerm);
       const categoryMatch = t.category.toLowerCase().includes(searchTerm);
       const digitsOnly = searchTerm.replace(/\D/g, '');
       const amountMatch = digitsOnly

@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subscribeToTransactions } from '../services/transactionsService';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import type { Transaction } from '../types/transaction';
+import { hydrateDisplayLabels, applyDisplayLabels } from '../services/localDisplayLabelsService';
 
 type TransactionsContextType = {
   transactions: Transaction[];
@@ -34,11 +35,12 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
     //    immediately see their last known transactions while Firestore syncs.
     (async () => {
       try {
+        await hydrateDisplayLabels(userId);
         const raw = await AsyncStorage.getItem(cacheKey);
         if (raw) {
           const cached: Transaction[] = JSON.parse(raw);
           if (Array.isArray(cached) && cached.length > 0) {
-            setTransactions(cached);
+            setTransactions(applyDisplayLabels(userId, cached));
           }
         }
       } catch {
@@ -49,7 +51,7 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
     hasReceivedDataRef.current = false;
     setLoading(true); // avoid showing empty list then suddenly filling
     const unsubscribe = subscribeToTransactions(userId, (list) => {
-      setTransactions(list);
+      setTransactions(applyDisplayLabels(userId, list));
       // Keep a fresh copy in local storage for next cold start.
       AsyncStorage.setItem(cacheKey, JSON.stringify(list)).catch(() => {});
       if (!hasReceivedDataRef.current) {

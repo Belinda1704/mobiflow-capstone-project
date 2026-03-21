@@ -43,7 +43,6 @@ export async function addTransaction(
       notes: input.notes?.trim() ?? '',
       createdAt,
       ...(input.smsId != null && input.smsId !== '' && { smsId: input.smsId }),
-      ...(input.smsBodySig != null && input.smsBodySig !== '' && { smsBodySig: input.smsBodySig }),
     };
 
     // SMS transactions use a fixed id (userId + smsId) so the same SMS doesn’t create duplicate docs.
@@ -218,7 +217,6 @@ function snapshotToList(snap: QuerySnapshot): Transaction[] {
       notes: data.notes ?? '',
       createdAt: data.createdAt ?? null,
       smsId: data.smsId ?? null,
-      smsBodySig: data.smsBodySig ?? null,
     };
   });
   const toMs = (v: Transaction['createdAt']) => {

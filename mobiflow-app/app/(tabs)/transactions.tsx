@@ -535,7 +535,9 @@ export default function TransactionsScreen() {
                       </View>
                       <View style={styles.transactionCardBody}>
                         <View style={styles.transactionLabelRow}>
-                          <Text style={[styles.transactionLabel, { color: colors.textPrimary }]} numberOfLines={1}>{tx.label}</Text>
+                          <Text style={[styles.transactionLabel, { color: colors.textPrimary }]} numberOfLines={1}>
+                            {tx.displayLabel ?? tx.label}
+                          </Text>
                           {anomalousIds.has(tx.id) && (
                             <View style={[styles.unusualBadge, { backgroundColor: colors.warningBg }]}>
                               <Text style={[styles.unusualBadgeText, { color: colors.warningText }]}>{t('unusualTransaction')}</Text>

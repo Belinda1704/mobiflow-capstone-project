@@ -74,7 +74,7 @@ export default function TransactionDetailScreen() {
     if (!tx) return;
     Alert.alert(
       t('deleteTransaction'),
-      t('deleteTransactionConfirm', { label: tx.label }),
+      t('deleteTransactionConfirm', { label: tx.displayLabel ?? tx.label }),
       [
         { text: t('cancel'), style: 'cancel' },
         {
@@ -124,7 +124,9 @@ export default function TransactionDetailScreen() {
           <Text style={[styles.amount, { color: tx.type === 'income' ? colors.success : colors.error }]}>
             {formatRWFWithSign(tx.amount)}
           </Text>
-          <Text style={[styles.description, { color: colors.textPrimary }]}>{tx.label}</Text>
+          <Text style={[styles.description, { color: colors.textPrimary }]}>
+            {tx.displayLabel ?? tx.label}
+          </Text>
           <View style={styles.detailRow}>
             <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
             <Text style={[styles.detailText, { color: colors.textSecondary }]}>{formatTransactionDate(tx.createdAt)}</Text>
@@ -135,11 +137,16 @@ export default function TransactionDetailScreen() {
           </View>
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('phoneNumber')}</Text>
-            <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{getDisplayPhoneFromLabel(tx.label) || '—'}</Text>
+            <Text
+              style={[styles.detailValue, { color: colors.textPrimary }]}>
+              {getDisplayPhoneFromLabel(tx.displayLabel ?? tx.label) || '—'}
+            </Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{tx.type === 'income' ? t('from') : t('to')}</Text>
-            <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{tx.label}</Text>
+            <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
+              {tx.displayLabel ?? tx.label}
+            </Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('reference')}</Text>

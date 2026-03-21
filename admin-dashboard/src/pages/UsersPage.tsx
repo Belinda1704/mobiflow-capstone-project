@@ -37,11 +37,12 @@ export function UsersPage() {
   }
 
   const selectedPeriodLabel = getAdminDateRangeLabel(dateRange, startDate, endDate);
-  const activePhones = Array.from(new Set(overview.recentActivity.map((item) => item.phone))).slice(0, 6);
   const period = overview.period || {
     label: selectedPeriodLabel,
     activeUsers: overview.activeUsersLast7Days,
     newUsers: overview.dailyActivity.reduce((sum, item) => sum + item.newUsers, 0),
+    transactions: overview.transactionsLast7Days,
+    lessonCompletions: overview.learning.lessonCompletionsLast30Days,
   };
 
   return (
@@ -59,36 +60,18 @@ export function UsersPage() {
           note={selectedPeriodLabel}
         />
         <MetricCard
-          label="Recent users"
-          value={formatNumber(activePhones.length)}
+          label="Transactions captured"
+          value={formatNumber(period.transactions)}
           note={selectedPeriodLabel}
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]">
+      <div className="grid gap-4 xl:grid-cols-1">
         <section className={`${ui.panel} p-5`}>
           <p className={ui.sectionEyebrow}>{selectedPeriodLabel}</p>
           <h3 className={ui.sectionTitle}>User activity</h3>
           <div className="mt-5">
             <ActivityChart data={overview.dailyActivity} />
-          </div>
-        </section>
-
-        <section className={`${ui.panel} p-5`}>
-          <p className={ui.sectionEyebrow}>Recent users</p>
-          <h3 className={ui.sectionTitle}>Latest activity list</h3>
-          <div className="mt-5 space-y-3">
-            {activePhones.length ? (
-              activePhones.map((phone) => (
-                <div
-                  key={phone}
-                  className="rounded-xl border border-(--border-muted) bg-(--panel-soft) px-4 py-3">
-                  <p className="text-sm font-medium text-(--text-main)">{phone}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-(--text-muted)">No recent user activity found.</p>
-            )}
           </div>
         </section>
       </div>
