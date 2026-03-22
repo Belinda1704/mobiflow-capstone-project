@@ -2,6 +2,7 @@ import { BookOpen, ReceiptText, UserCheck, UserPlus } from 'lucide-react';
 
 import { AppColors } from '../constants/colors';
 import { CategoryDonutChart } from '../components/CategoryDonutChart';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { ActivityChart } from '../components/ActivityChart';
 import { LearningPanel } from '../components/LearningPanel';
 import { MetricCard } from '../components/MetricCard';
@@ -11,6 +12,8 @@ import { useAdminOverview } from '../hooks/useAdminOverview';
 import { ui } from '../styles/ui';
 import { getAdminDateRangeLabel } from '../utils/adminDateRange';
 import { formatAdminLabel, getAdminInitials } from '../utils/phone';
+import { formatSupportSource } from '../utils/supportDisplay';
+import { SMALLER_CATEGORIES_LABEL, topCategoriesWithOther } from '../utils/categoryBreakdown';
 
 function formatNumber(value: number): string {
   return value.toLocaleString('en-US');
@@ -45,27 +48,20 @@ function getSupportStatusAccent(status: string): string {
 
 export function DashboardPage() {
   const { user } = useAdminAuth();
-  const { overview, loading, error, refresh } = useAdminOverview();
+  const { overview, loading, isRefreshing, error, refresh } = useAdminOverview();
   const { dateRange, startDate, endDate } = useAdminDateRange();
   const adminName = formatAdminLabel(user?.email);
   const welcomeLabel = adminName?.includes('@') ? getAdminInitials(adminName) : adminName;
 
   if (loading) {
-    return (
-      <div className="grid min-h-[60vh] place-items-center">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className={ui.spinner} />
-          <p className="text-sm text-neutral-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !overview) {
     return (
       <section className={`${ui.panel} p-6`}>
-        <h3 className="text-xl font-semibold text-neutral-950">Could not load dashboard</h3>
-        <p className="mt-2 text-sm text-neutral-600">{error || 'No overview data was returned.'}</p>
+        <h3 className="text-xl font-semibold text-(--text-main)">Could not load dashboard</h3>
+        <p className="mt-2 text-sm text-(--text-muted)">{error || 'No overview data was returned.'}</p>
         <button
           type="button"
           className={`${ui.primaryButton} mt-4`}
@@ -92,22 +88,17 @@ export function DashboardPage() {
   const lessonCompletionTrend = overview.dailyActivity.map((item) => item.lessonCompletions ?? 0);
   const supportRequests = overview.supportRequests || [];
   const rawCategoryBreakdown = overview.categoryBreakdown || [];
-  const categoryBreakdown = (() => {
-    if (rawCategoryBreakdown.length <= 4) return rawCategoryBreakdown;
-    const topThree = rawCategoryBreakdown.slice(0, 3);
-    const othersTotal = rawCategoryBreakdown
-      .slice(3)
-      .reduce((sum, item) => sum + item.value, 0);
-    return [...topThree, { label: 'Others', value: othersTotal }];
-  })();
+  const categoryBreakdown = topCategoriesWithOther(rawCategoryBreakdown, 4);
   const transactionTrend = overview.dailyActivity.map((item) => item.transactions);
-  const activityTrend = overview.dailyActivity.map((item) => item.transactions + item.newUsers);
+  const activeUsersTrend = overview.dailyActivity.map((item) => item.activeUsers ?? 0);
   const topCategory = categoryBreakdown[0];
   const displayedTransactionCount = dateRange === 'all' ? overview.totalTransactions : period.transactions;
-  const newUserTrendPct = trendPercentFromDaily(newUserTrend);
-  const transactionTrendPct = trendPercentFromDaily(transactionTrend);
-  const lessonTrendPct = trendPercentFromDaily(lessonCompletionTrend);
-  const activeTrendPct = trendPercentFromDaily(activityTrend);
+  // All activity: big numbers are all-time but chart is ~30 days — hide % trend (would be confusing).
+  const suppressTrendPercent = dateRange === 'all';
+  const newUserTrendPct = suppressTrendPercent ? null : trendPercentFromDaily(newUserTrend);
+  const transactionTrendPct = suppressTrendPercent ? null : trendPercentFromDaily(transactionTrend);
+  const lessonTrendPct = suppressTrendPercent ? null : trendPercentFromDaily(lessonCompletionTrend);
+  const activeTrendPct = suppressTrendPercent ? null : trendPercentFromDaily(activeUsersTrend);
 
   return (
     <section className="space-y-6">
@@ -117,15 +108,21 @@ export function DashboardPage() {
             Welcome back, {welcomeLabel}. Here’s what’s happening with your platform today.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-(--text-muted)">
             Updated {formatDateTime(overview.generatedAt)}
           </p>
+          {isRefreshing ? (
+            <span className="rounded-full border border-[#F5C518]/35 bg-[#F5C518]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B45309] dark:text-[#FDE68A]">
+              Syncing…
+            </span>
+          ) : null}
           <button
             type="button"
             className={ui.primaryButton}
+            disabled={isRefreshing}
             onClick={() => void refresh()}>
-            Refresh
+            {isRefreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -141,7 +138,7 @@ export function DashboardPage() {
           icon={UserPlus}
         />
         <MetricCard
-          label="Transactions"
+          label="Transaction volume"
           value={formatNumber(displayedTransactionCount)}
           note={selectedPeriodLabel}
           trend={transactionTrend}
@@ -162,12 +159,19 @@ export function DashboardPage() {
           label="Active users"
           value={formatNumber(period.activeUsers)}
           note={selectedPeriodLabel}
-          trend={activityTrend}
+          trend={activeUsersTrend}
           trendPercent={activeTrendPct}
           accent={AppColors.lessonTint}
           icon={UserCheck}
         />
       </div>
+
+      {dateRange === 'all' ? (
+        <p className="text-xs text-(--text-muted)">
+          <strong className="font-medium text-(--text-main)">All activity</strong>: card totals = all time. Chart/sparklines = last{' '}
+          {overview.dailyActivity.length} days. Percent change is hidden on purpose.
+        </p>
+      ) : null}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(420px,480px)] xl:items-stretch">
         <section className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-5 shadow-(--shadow-card) xl:h-140">
@@ -180,11 +184,13 @@ export function DashboardPage() {
                 <svg width="14" height="4" className="shrink-0" aria-hidden>
                   <line x1="0" y1="2" x2="14" y2="2" stroke="#F5C518" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                Transactions
+                Daily volume
               </span>
             </div>
-            <h3 className="text-lg font-semibold text-(--text-main)">Overview</h3>
-            <p className="mt-2 text-sm text-(--text-muted)">Daily transaction counts are shown without per-person transaction details.</p>
+            <h3 className="text-lg font-semibold text-(--text-main)">Traffic overview</h3>
+            <p className="mt-2 text-sm text-(--text-muted)">
+              Daily counts only (aggregated). No per-user transaction text is shown here.
+            </p>
           </div>
 
           <div className="min-h-0 flex-1">
@@ -196,7 +202,10 @@ export function DashboardPage() {
           <div className="shrink-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-(--text-soft)">Breakdown</p>
             <h3 className="mt-1 text-lg font-semibold text-(--text-main)">Transaction categories</h3>
-            <p className="mt-1 text-xs text-(--text-soft)">Top categories are shown directly; smaller groups are merged under Others.</p>
+            <p className="mt-1 text-xs text-(--text-soft)">
+              “Other” and “Others” are merged into one row. Remaining small buckets are grouped under{' '}
+              <span className="font-medium text-(--text-muted)">{SMALLER_CATEGORIES_LABEL}</span>.
+            </p>
           </div>
           <div className="min-w-0 shrink-0 pt-4">
             <CategoryDonutChart items={categoryBreakdown} />
@@ -239,7 +248,7 @@ export function DashboardPage() {
                     <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
                       <div className="min-w-0">
                         <p className="truncate font-medium text-(--text-main)">{item.phone}</p>
-                        <p className="truncate text-(--text-muted)">{item.source}</p>
+                        <p className="truncate text-(--text-muted)">{formatSupportSource(item.source)}</p>
                       </div>
                       <div className="shrink-0 text-right">
                         <span

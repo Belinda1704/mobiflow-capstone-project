@@ -2,6 +2,7 @@ import { Activity, BookOpen, ReceiptText, UserPlus } from 'lucide-react';
 
 import { AppColors } from '../constants/colors';
 import { ActivityChart } from '../components/ActivityChart';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { CategoryDonutChart, SEGMENT_COLORS } from '../components/CategoryDonutChart';
 import { MetricCard } from '../components/MetricCard';
 import { useAdminDateRange } from '../filters/AdminDateRangeContext';
@@ -33,21 +34,14 @@ export function ActivityPage() {
   const { dateRange, startDate, endDate } = useAdminDateRange();
 
   if (loading) {
-    return (
-      <div className="grid min-h-[60vh] place-items-center">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className={ui.spinner} />
-          <p className="text-sm text-neutral-600">Loading activity...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !overview) {
     return (
       <section className={`${ui.panel} p-6`}>
-        <h3 className="text-xl font-semibold text-neutral-950">Could not load activity</h3>
-        <p className="mt-2 text-sm text-neutral-600">{error || 'No data was returned.'}</p>
+        <h3 className="text-xl font-semibold text-(--text-main)">Could not load insights</h3>
+        <p className="mt-2 text-sm text-(--text-muted)">{error || 'No data was returned.'}</p>
         <button type="button" className={`${ui.primaryButton} mt-4`} onClick={() => void refresh()}>
           Try again
         </button>
@@ -63,15 +57,15 @@ export function ActivityPage() {
   const userCount = activityFeed.filter((item) => item.type === 'user').length;
   const totalCount = Math.max(1, activityFeed.length);
   const categoryBreakdown = [
-    { label: 'Transactions', value: transactionCount },
-    { label: 'Users', value: userCount },
-    { label: 'Lessons', value: lessonCount },
-    { label: 'Support', value: supportCount },
+    { label: 'Tx events', value: transactionCount, color: SEGMENT_COLORS[0] },
+    { label: 'Users', value: userCount, color: SEGMENT_COLORS[1] },
+    { label: 'Lessons', value: lessonCount, color: SEGMENT_COLORS[2] },
+    { label: 'Support', value: supportCount, color: SEGMENT_COLORS[3] },
   ].filter((item) => item.value > 0);
   const eventCounts = [transactionCount, userCount, lessonCount, supportCount];
   const eventPcts = normalizePercentages(eventCounts, totalCount);
   const analyticsRows = [
-    { label: 'Transactions', value: transactionCount, pct: eventPcts[0], color: SEGMENT_COLORS[0] },
+    { label: 'Tx events', value: transactionCount, pct: eventPcts[0], color: SEGMENT_COLORS[0] },
     { label: 'Users', value: userCount, pct: eventPcts[1], color: SEGMENT_COLORS[1] },
     { label: 'Lessons', value: lessonCount, pct: eventPcts[2], color: SEGMENT_COLORS[2] },
     { label: 'Support', value: supportCount, pct: eventPcts[3], color: SEGMENT_COLORS[3] },
@@ -95,7 +89,7 @@ export function ActivityPage() {
           icon={Activity}
         />
         <MetricCard
-          label="Transactions"
+          label="Tx events (feed)"
           value={formatNumber(transactionCount)}
           note={selectedPeriodLabel}
           trend={transactionTrend}
@@ -120,7 +114,7 @@ export function ActivityPage() {
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_360px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,28rem)]">
         <section className={`${ui.panel} p-5`}>
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
@@ -132,11 +126,11 @@ export function ActivityPage() {
           <ActivityChart data={overview.dailyActivity} />
         </section>
 
-        <section className={`${ui.panel} p-5`}>
+        <section className={`${ui.panel} min-w-0 overflow-x-clip p-5`}>
           <p className={ui.sectionEyebrow}>{selectedPeriodLabel}</p>
           <h3 className={ui.sectionTitle}>Event mix</h3>
           <p className="mt-1 text-xs text-(--text-soft)">Data source: platform activity (transactions, users, app lesson completions, support).</p>
-          <div className="mt-5">
+          <div className="mt-5 min-w-0">
             <CategoryDonutChart items={categoryBreakdown} />
           </div>
           <div className="mt-5 space-y-4">
@@ -164,7 +158,7 @@ export function ActivityPage() {
           <h3 className={ui.sectionTitle}>Current totals</h3>
           <div className="mt-5 grid gap-3">
             <div className="rounded-2xl border border-(--border-muted) bg-(--panel-soft) p-4">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-(--text-soft)">Transactions</p>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-(--text-soft)">Recorded transactions</p>
               <p className="mt-2 text-2xl font-semibold text-(--text-main)">
                 {formatNumber(dateRange === 'all' ? overview.totalTransactions : overview.period.transactions)}
               </p>
