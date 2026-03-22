@@ -64,9 +64,10 @@ export default function DataStorageScreen() {
   }, [userId]);
 
   useEffect(() => {
-    getLastAutomatedBackupAt().then(setLastBackupAt);
+    if (!userId) return;
+    getLastAutomatedBackupAt(userId).then(setLastBackupAt);
     getAutomatedBackupEnabled().then(setAutomatedBackupEnabledState);
-  }, []);
+  }, [userId]);
 
   async function handleExport() {
     if (!userId) return;
@@ -194,16 +195,23 @@ export default function DataStorageScreen() {
         businessName,
         businessType,
       });
-      const json = JSON.stringify(backup, null, 2);
+      const json = JSON.stringify(backup);
       await uploadBackupToCloud(userId, json);
       const nowIso = new Date().toISOString();
-      await setLastAutomatedBackupAt(nowIso);
+      await setLastAutomatedBackupAt(nowIso, userId);
       setLastBackupAt(nowIso);
-      const list = await listCloudBackups(userId);
-      setCloudBackupCount(list.length);
       Alert.alert(t('backupToCloudSuccess'), '');
+      void listCloudBackups(userId)
+        .then((list) => setCloudBackupCount(list.length))
+        .catch(() => {});
     } catch (err) {
-      showError(t('error'), t('cloudBackupFailed'));
+      const detail =
+        err && typeof err === 'object' && 'code' in err
+          ? `${t('cloudBackupFailed')} (${String((err as { code?: string }).code)})`
+          : err instanceof Error
+            ? err.message
+            : t('cloudBackupFailed');
+      showError(t('error'), detail);
     } finally {
       setBackingUpToCloud(false);
     }
@@ -268,7 +276,7 @@ export default function DataStorageScreen() {
   }
 
   const backupCount = cloudBackups !== null ? cloudBackups.length : cloudBackupCount;
-  const total = transactions.length + (backupCount ?? 0) * 10 || 1;
+  const total = Math.max(1, transactions.length + (backupCount ?? 0) * 10);
   const transactionsShare = transactions.length / total;
   const backupsShare = ((backupCount ?? 0) * 10) / total;
   const ringSize = 120;
@@ -280,7 +288,7 @@ export default function DataStorageScreen() {
   const ringCenter = ringSize / 2;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('dataStorage')} subtitle={t('dataStorageSubtitle')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <View style={[styles.ringCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -354,7 +362,7 @@ export default function DataStorageScreen() {
 
         <View style={[styles.automatedBackupCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <View style={[styles.listRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.listIconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name="cloud-upload-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
@@ -385,7 +393,7 @@ export default function DataStorageScreen() {
 
         <View style={[styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <TouchableOpacity style={[styles.listRow, { borderBottomColor: colors.border }]} onPress={handleExport} disabled={exporting}>
-            <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.listIconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name="download-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
@@ -395,7 +403,7 @@ export default function DataStorageScreen() {
             {exporting ? <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
           </TouchableOpacity>
           <TouchableOpacity style={[styles.listRow, { borderBottomColor: colors.border }]} onPress={handleImport} disabled={importing}>
-            <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.listIconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name="document-attach-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
@@ -408,7 +416,7 @@ export default function DataStorageScreen() {
             style={[styles.listRow, { borderBottomColor: colors.border }]}
             onPress={cloudBackups === null ? loadCloudBackups : undefined}
             disabled={cloudBackups !== null && cloudBackups.length === 0}>
-            <View style={[styles.listIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.listIconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name="cloud-download-outline" size={20} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.listRowText}>
@@ -424,7 +432,7 @@ export default function DataStorageScreen() {
               {cloudBackups.map((item) => (
                 <TouchableOpacity
                   key={item.fullPath}
-                  style={[styles.backupItem, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+                  style={[styles.backupItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => handleRestoreFromCloud(item)}
                   disabled={restoringFromCloud}>
                   {restoringFromCloud ? <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} /> : <Text style={[styles.backupItemText, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>}
@@ -445,7 +453,7 @@ export default function DataStorageScreen() {
         </View>
 
         <View style={[styles.tipCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <View style={[styles.tipIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+          <View style={[styles.tipIconWrap, { backgroundColor: colors.surface }]}>
             <Ionicons name="shield-checkmark" size={22} color={colors.listIcon ?? colors.primary} />
           </View>
           <View style={styles.tipTextWrap}>

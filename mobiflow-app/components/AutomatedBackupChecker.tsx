@@ -1,5 +1,5 @@
 // Runs automated cloud backup when app is opened or returns to foreground, if last backup was > 24h ago.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTransactions } from '../hooks/useTransactions';
@@ -13,36 +13,38 @@ import {
 export function AutomatedBackupChecker() {
   const { userId } = useCurrentUser();
   const { transactions } = useTransactions(userId ?? '');
+  const txsRef = useRef(transactions);
+  txsRef.current = transactions;
   const appState = useRef<AppStateStatus>(AppState.currentState);
 
-  const runCheck = async () => {
-    if (!userId || transactions.length === 0) return;
+  const runCheck = useCallback(async () => {
+    if (!userId) return;
     const [displayName, businessName, businessType] = await Promise.all([
       getDisplayName(),
       getBusinessName(),
       getBusinessType(),
     ]);
-    await runAutomatedBackupIfDue(userId, transactions, {
+    await runAutomatedBackupIfDue(userId, txsRef.current, {
       displayName,
       businessName,
       businessType,
     });
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
-    runCheck();
-  }, [userId, transactions.length]);
+    void runCheck();
+  }, [userId, runCheck]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => {
       if (appState.current === 'background' && nextState === 'active') {
-        runCheck();
+        void runCheck();
       }
       appState.current = nextState;
     });
     return () => sub.remove();
-  }, [userId, transactions]);
+  }, [userId, runCheck]);
 
   return null;
 }

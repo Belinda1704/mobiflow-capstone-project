@@ -20,7 +20,7 @@ export async function runAutomatedBackupIfDue(
   const enabled = await getAutomatedBackupEnabled();
   if (!enabled) return false;
 
-  const lastAt = await getLastAutomatedBackupAt();
+  const lastAt = await getLastAutomatedBackupAt(userId);
   const now = Date.now();
   if (lastAt) {
     const lastMs = new Date(lastAt).getTime();
@@ -29,9 +29,9 @@ export async function runAutomatedBackupIfDue(
 
   try {
     const backup = buildBackupData(transactions, settings);
-    const json = JSON.stringify(backup, null, 2);
+    const json = JSON.stringify(backup);
     await uploadBackupToCloud(userId, json);
-    await setLastAutomatedBackupAt(new Date().toISOString());
+    await setLastAutomatedBackupAt(new Date().toISOString(), userId);
     return true;
   } catch {
     return false;

@@ -1,5 +1,6 @@
 // User prefs (theme, language) in AsyncStorage.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resolveStatementBusinessLabel } from '../utils/statementBusinessLabel';
 
 const KEYS = {
   theme: '@mobiflow/theme',
@@ -16,6 +17,13 @@ const KEYS = {
 
 export type ThemeOption = 'light' | 'dark' | 'system';
 export type LanguageOption = 'en' | 'rw';
+
+/** In-memory cache so Credit Readiness resolves the label without repeated AsyncStorage reads. */
+let cachedStatementBusinessLabel: string | null = null;
+
+export function invalidateStatementBusinessLabelCache(): void {
+  cachedStatementBusinessLabel = null;
+}
 
 export async function getTheme(): Promise<ThemeOption> {
   const val = await AsyncStorage.getItem(KEYS.theme);
@@ -43,14 +51,30 @@ export async function getDisplayName(): Promise<string> {
 
 export async function setDisplayName(name: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.displayName, name.trim());
+  invalidateStatementBusinessLabelCache();
 }
 
 export async function getBusinessName(): Promise<string> {
   return (await AsyncStorage.getItem(KEYS.businessName)) ?? 'My Business';
 }
 
+export async function getStatementBusinessLabel(): Promise<string> {
+  if (cachedStatementBusinessLabel !== null) {
+    return cachedStatementBusinessLabel;
+  }
+  const [bn, dn] = await Promise.all([getBusinessName(), getDisplayName()]);
+  cachedStatementBusinessLabel = resolveStatementBusinessLabel(bn, dn);
+  return cachedStatementBusinessLabel;
+}
+
+/** Call after login so the first Credit Readiness open resolves the label instantly from cache. */
+export async function warmStatementBusinessLabelCache(): Promise<void> {
+  await getStatementBusinessLabel();
+}
+
 export async function setBusinessName(name: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.businessName, name.trim() || 'My Business');
+  invalidateStatementBusinessLabelCache();
 }
 
 export type BusinessType = 'retail' | 'services' | 'agriculture' | 'other';
@@ -67,6 +91,7 @@ export async function setBusinessType(type: BusinessType): Promise<void> {
 
 export async function getSmsCaptureEnabled(): Promise<boolean> {
   const val = await AsyncStorage.getItem(KEYS.smsCaptureEnabled);
+  if (val === null) return true;
   return val === 'true';
 }
 
@@ -74,12 +99,19 @@ export async function setSmsCaptureEnabled(enabled: boolean): Promise<void> {
   await AsyncStorage.setItem(KEYS.smsCaptureEnabled, enabled ? 'true' : 'false');
 }
 
-/** Last backup time (ISO). For "backup if > 24h" check. */
-export async function getLastAutomatedBackupAt(): Promise<string | null> {
+/** Last backup time (ISO). Per userId so two accounts on one phone do not share the same “last backup”. */
+export async function getLastAutomatedBackupAt(userId?: string | null): Promise<string | null> {
+  if (userId) {
+    const scoped = await AsyncStorage.getItem(`${KEYS.lastAutomatedBackupAt}_${userId}`);
+    if (scoped) return scoped;
+  }
   return await AsyncStorage.getItem(KEYS.lastAutomatedBackupAt);
 }
 
-export async function setLastAutomatedBackupAt(isoString: string): Promise<void> {
+export async function setLastAutomatedBackupAt(isoString: string, userId?: string | null): Promise<void> {
+  if (userId) {
+    await AsyncStorage.setItem(`${KEYS.lastAutomatedBackupAt}_${userId}`, isoString);
+  }
   await AsyncStorage.setItem(KEYS.lastAutomatedBackupAt, isoString);
 }
 
@@ -94,7 +126,7 @@ export async function setAutomatedBackupEnabled(enabled: boolean): Promise<void>
   await AsyncStorage.setItem(KEYS.automatedBackupEnabled, enabled ? 'true' : 'false');
 }
 
-/** Last month we generated a monthly report (YYYY-MM). */
+/** YYYY-MM of last auto monthly report (stored in AsyncStorage). */
 export async function getLastMonthlyReportMonth(): Promise<string | null> {
   return await AsyncStorage.getItem(KEYS.lastMonthlyReportMonth);
 }
