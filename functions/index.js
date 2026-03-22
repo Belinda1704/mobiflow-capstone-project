@@ -129,6 +129,64 @@ function getAdminRangeMeta(dateRange, startDate, endDate) {
   return { key: '30d', label: 'Last 30 days', days: 30 };
 }
 
+/** Users needed for admin list + signups in the active window (avoids full-table scan when date range is bounded). */
+async function fetchAdminUsersDocs(db, rangeCutoffMs, chartCutoffMs, rangeEndMs) {
+  const Timestamp = admin.firestore.Timestamp;
+  if (rangeCutoffMs === null) {
+    const snap = await db.collection(USERS_COLLECTION).get();
+    return snap.docs;
+  }
+  const queryStartMs = Math.min(rangeCutoffMs, chartCutoffMs);
+  const tsStart = Timestamp.fromMillis(queryStartMs);
+  const tsEnd = Timestamp.fromMillis(rangeEndMs);
+  const [adminSnap, windowSnap] = await Promise.all([
+    db.collection(USERS_COLLECTION).where('isAdmin', '==', true).get(),
+    db
+      .collection(USERS_COLLECTION)
+      .where('createdAt', '>=', tsStart)
+      .where('createdAt', '<=', tsEnd)
+      .get(),
+  ]);
+  const map = new Map();
+  adminSnap.forEach((d) => map.set(d.id, d));
+  windowSnap.forEach((d) => map.set(d.id, d));
+  return Array.from(map.values());
+}
+
+async function fetchAdminTransactionsSnap(db, rangeCutoffMs, chartCutoffMs, rangeEndMs) {
+  const Timestamp = admin.firestore.Timestamp;
+  if (rangeCutoffMs === null) {
+    return db.collection(COLLECTION).get();
+  }
+  const queryStartMs = Math.min(rangeCutoffMs, chartCutoffMs);
+  return db
+    .collection(COLLECTION)
+    .where('createdAt', '>=', Timestamp.fromMillis(queryStartMs))
+    .where('createdAt', '<=', Timestamp.fromMillis(rangeEndMs))
+    .get();
+}
+
+async function fetchAdminLessonCompletionsSnap(db, rangeCutoffMs, chartCutoffMs, rangeEndMs) {
+  const Timestamp = admin.firestore.Timestamp;
+  if (rangeCutoffMs === null) {
+    return db.collectionGroup('lessonCompletions').get();
+  }
+  const queryStartMs = Math.min(rangeCutoffMs, chartCutoffMs);
+  try {
+    return await db
+      .collectionGroup('lessonCompletions')
+      .where('completedAt', '>=', Timestamp.fromMillis(queryStartMs))
+      .where('completedAt', '<=', Timestamp.fromMillis(rangeEndMs))
+      .get();
+  } catch (e) {
+    console.warn(
+      'lessonCompletions bounded query failed (deploy firestore indexes if missing); falling back to full scan',
+      e?.message || e
+    );
+    return db.collectionGroup('lessonCompletions').get();
+  }
+}
+
 function getChartLabel(date, totalDays) {
   if (totalDays <= 7) {
     return date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -138,13 +196,6 @@ function getChartLabel(date, totalDays) {
 
 async function buildAdminOverview(adminUserId, filters = {}) {
   const db = admin.firestore();
-  const [usersSnap, transactionsSnap, lessonCompletionsSnap, supportRequestsSnap] = await Promise.all([
-    db.collection(USERS_COLLECTION).get(),
-    db.collection(COLLECTION).get(),
-    db.collectionGroup('lessonCompletions').get(),
-    db.collection(SUPPORT_REQUESTS_COLLECTION).get(),
-  ]);
-
   const rangeMeta = getAdminRangeMeta(filters.dateRange, filters.startDate, filters.endDate);
   const now = new Date();
   const nowMs = now.getTime();
@@ -154,8 +205,29 @@ async function buildAdminOverview(adminUserId, filters = {}) {
     : rangeMeta.startMs || nowMs - rangeMeta.days * dayMs;
   const rangeEndMs = rangeMeta.endMs || nowMs;
   const chartCutoffMs = rangeMeta.startMs || nowMs - (rangeMeta.days - 1) * dayMs;
+
+  const [
+    userCountSnap,
+    txCountSnap,
+    userDocs,
+    transactionsSnap,
+    lessonCompletionsSnap,
+    supportRequestsSnap,
+  ] = await Promise.all([
+    db.collection(USERS_COLLECTION).count().get(),
+    db.collection(COLLECTION).count().get(),
+    fetchAdminUsersDocs(db, rangeCutoffMs, chartCutoffMs, rangeEndMs),
+    fetchAdminTransactionsSnap(db, rangeCutoffMs, chartCutoffMs, rangeEndMs),
+    fetchAdminLessonCompletionsSnap(db, rangeCutoffMs, chartCutoffMs, rangeEndMs),
+    db.collection(SUPPORT_REQUESTS_COLLECTION).orderBy('createdAt', 'desc').limit(100).get(),
+  ]);
+
+  const totalUsers = userCountSnap.data().count;
+  const totalTransactions = txCountSnap.data().count;
+
   const dailyTransactionsMap = {};
   const dailyUsersMap = {};
+  const dailyActiveUsersMap = {};
   const dailyLessonCompletionsMap = {};
   const recentUserEvents = [];
   const adminAccountCandidates = [];
@@ -167,7 +239,7 @@ async function buildAdminOverview(adminUserId, filters = {}) {
   const isWithinChartRange = (timestampMs) =>
     timestampMs != null && timestampMs >= chartCutoffMs && timestampMs <= rangeEndMs;
 
-  usersSnap.forEach((doc) => {
+  userDocs.forEach((doc) => {
     const data = doc.data() || {};
     if (data.isAdmin === true) {
       adminAccountCandidates.push({
@@ -175,8 +247,10 @@ async function buildAdminOverview(adminUserId, filters = {}) {
         phone: data.phone || '',
       });
     }
+    // Don’t count admin docs in "new users" metric.
+    const isEndUser = data.isAdmin !== true;
     const createdAt = getUserCreatedDate(data);
-    if (createdAt && isWithinMetricRange(createdAt.getTime())) {
+    if (isEndUser && createdAt && isWithinMetricRange(createdAt.getTime())) {
       recentUserEvents.push({
         id: `user-${doc.id}`,
         type: 'user',
@@ -184,12 +258,11 @@ async function buildAdminOverview(adminUserId, filters = {}) {
         detail: 'New user account was created',
         createdAt: createdAt.toISOString(),
       });
-    }
-    if (createdAt && isWithinMetricRange(createdAt.getTime())) {
       newUsersInRange += 1;
     }
-    if (createdAt && isWithinChartRange(createdAt.getTime())) {
-      dailyUsersMap[getDayKey(createdAt)] = (dailyUsersMap[getDayKey(createdAt)] || 0) + 1;
+    if (isEndUser && createdAt && isWithinChartRange(createdAt.getTime())) {
+      const dayKey = getDayKey(createdAt);
+      dailyUsersMap[dayKey] = (dailyUsersMap[dayKey] || 0) + 1;
     }
   });
 
@@ -235,6 +308,12 @@ async function buildAdminOverview(adminUserId, filters = {}) {
       const createdDate = new Date(createdMs);
       const dayKey = getDayKey(createdDate);
       dailyTransactionsMap[dayKey] = (dailyTransactionsMap[dayKey] || 0) + 1;
+      if (data.userId) {
+        if (!dailyActiveUsersMap[dayKey]) {
+          dailyActiveUsersMap[dayKey] = new Set();
+        }
+        dailyActiveUsersMap[dayKey].add(data.userId);
+      }
     }
   });
 
@@ -284,6 +363,7 @@ async function buildAdminOverview(adminUserId, filters = {}) {
       transactions: dailyTransactionsMap[dayKey] || 0,
       newUsers: dailyUsersMap[dayKey] || 0,
       lessonCompletions: dailyLessonCompletionsMap[dayKey] || 0,
+      activeUsers: dailyActiveUsersMap[dayKey] ? dailyActiveUsersMap[dayKey].size : 0,
     };
   });
 
@@ -349,8 +429,8 @@ async function buildAdminOverview(adminUserId, filters = {}) {
   ).slice(0, 20);
 
   return {
-    totalUsers: usersSnap.size,
-    totalTransactions: transactionsSnap.size,
+    totalUsers,
+    totalTransactions,
     transactionsLast7Days: transactionsInRange,
     activeUsersLast7Days: activeUsersInRange.size,
     financials: {
@@ -459,6 +539,12 @@ exports.getHealthScore = fn.https.onRequest(async (req, res) => {
       if (count >= 10) ruleScore += 5;
 
       score = Math.min(100, Math.max(0, Math.round(ruleScore)));
+      // Cap score unless enough tx + volume (same idea as app health score).
+      const totalVolume = totalIncome + totalExpense;
+      const activityStrong = count >= 10 && totalVolume >= 25000;
+      if (!activityStrong) {
+        score = Math.min(score, 79);
+      }
       if (score >= 80) {
         label = 'Excellent';
         message = 'Your business is thriving!';
@@ -561,6 +647,31 @@ exports.getAdminOverview = fn.https.onRequest(async (req, res) => {
   } catch (e) {
     console.error('getAdminOverview error', e);
     res.status(500).json({ error: 'Server error', code: 500 });
+  }
+});
+
+exports.resolveSupportRequestCallable = fn.https.onCall(async (data, context) => {
+  const adminUserId = context.auth?.uid;
+  if (!adminUserId) {
+    throw new functions.https.HttpsError('unauthenticated', 'Unauthorized');
+  }
+  const userSnap = await admin.firestore().collection(USERS_COLLECTION).doc(adminUserId).get();
+  if (!userSnap.exists || userSnap.data()?.isAdmin !== true) {
+    throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+  }
+  const requestId = data && typeof data.requestId === 'string' ? data.requestId.trim() : '';
+  if (!requestId) {
+    throw new functions.https.HttpsError('invalid-argument', 'requestId is required');
+  }
+  try {
+    await admin.firestore().collection(SUPPORT_REQUESTS_COLLECTION).doc(requestId).update({
+      status: 'resolved',
+      resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    console.error('resolveSupportRequestCallable', e);
+    throw new functions.https.HttpsError('internal', 'Could not update support request');
   }
 });
 

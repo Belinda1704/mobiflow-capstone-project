@@ -53,9 +53,9 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
 
+    // Forgot password: user can be signed out or signed in when creating a row.
     match /supportRequests/{requestId} {
-      allow create: if request.auth == null
-        && request.resource.data.keys().hasOnly([
+      allow create: if request.resource.data.keys().hasOnly([
           'type',
           'status',
           'source',
