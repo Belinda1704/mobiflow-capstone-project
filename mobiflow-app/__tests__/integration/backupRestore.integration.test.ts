@@ -27,7 +27,7 @@ describe('Backup/Restore integration', () => {
         version: 1,
         exportedAt: new Date().toISOString(),
         transactions: [
-          { label: 'Income', amount: 10000, type: 'income', category: 'Sales', createdAt: '2026-02-01T10:00:00Z' },
+          { label: 'Income', amount: 10000, type: 'income', category: 'Other', createdAt: '2026-02-01T10:00:00Z' },
           { label: 'Rent', amount: 50000, type: 'expense', category: 'Rent', createdAt: '2026-02-02T09:00:00Z' },
         ],
       });

@@ -4,12 +4,15 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 
 jest.mock('../../contexts/ThemeContext', () => ({
   useThemeColors: () => ({
+    isDark: false,
     colors: {
       accent: '#F5C518',
+      onAccent: '#0F172A',
       tabBarBg: '#1A1A1A',
       surface: '#F8FAFC',
       white: '#FFFFFF',
       black: '#0F172A',
+      textPrimary: '#0F172A',
     },
   }),
 }));
