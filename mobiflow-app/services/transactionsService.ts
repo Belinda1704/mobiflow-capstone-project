@@ -19,7 +19,21 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '../config/firebase';
+import { withTimeout } from '../utils/withTimeout';
 import type { Transaction, CreateTransactionInput, PaymentMethod } from '../types/transaction';
+import { cloudLabelForSmsTransaction } from '../utils/smsTransactionPrivacy';
+import {
+  clearDisplayLabelsForUser,
+  hydrateDisplayLabels,
+  applyDisplayLabels,
+  saveDisplayLabel,
+} from './localDisplayLabelsService';
+import {
+  clearDisplayNotesForUser,
+  hydrateDisplayNotes,
+  applyDisplayNotes,
+  saveDisplayNote,
+} from './localDisplayNotesService';
 
 const COLLECTION = 'transactions';
 
@@ -31,32 +45,46 @@ export async function addTransaction(
   const createdAt = input.createdAt
     ? Timestamp.fromDate(input.createdAt)
     : serverTimestamp();
-  
+
+  const isSms = input.smsId != null && input.smsId !== '';
+  const pm = input.paymentMethod ?? 'mobile_money';
+  // Every transaction: placeholder label + empty notes in Firestore; real text on device only.
+  const userFacingLabel = input.label.trim();
+  const cloudLabel = cloudLabelForSmsTransaction(input.type);
+  const cloudNotes = '';
+
   try {
     const baseData = {
       userId,
-      label: input.label.trim(),
+      label: cloudLabel,
       amount,
       type: input.type,
       category: input.category,
-      paymentMethod: input.paymentMethod ?? 'mobile_money',
-      notes: input.notes?.trim() ?? '',
+      paymentMethod: pm,
+      notes: cloudNotes,
       createdAt,
-      ...(input.smsId != null && input.smsId !== '' && { smsId: input.smsId }),
+      ...(isSms && { smsId: input.smsId }),
     };
 
     // SMS transactions use a fixed id (userId + smsId) so the same SMS doesn’t create duplicate docs.
-    if (input.smsId != null && input.smsId !== '') {
+    if (isSms) {
       const stableId = `${userId}_${input.smsId}`;
       const ref = doc(db, COLLECTION, stableId);
       await setDoc(ref, baseData, { merge: false });
-      console.log('Transaction added/updated from SMS with stable id:', stableId, input.label);
+      console.log('Transaction added/updated from SMS with stable id:', stableId, cloudLabel);
       return;
     }
 
     // Manual: new doc id.
     const docRef = await addDoc(collection(db, COLLECTION), baseData);
-    console.log('Transaction added (manual or no smsId):', docRef.id, input.label);
+    if (userFacingLabel) {
+      await saveDisplayLabel(userId, docRef.id, userFacingLabel);
+    }
+    const noteLocal = (input.notes ?? '').trim();
+    if (noteLocal) {
+      await saveDisplayNote(userId, docRef.id, noteLocal);
+    }
+    console.log('Transaction added (manual or no smsId):', docRef.id, cloudLabel);
   } catch (error: any) {
     // Offline = queued; else rethrow
     if (error?.code !== 'unavailable' && !error?.message?.includes('offline')) {
@@ -64,7 +92,7 @@ export async function addTransaction(
       throw error;
     }
     // Queued; listener gets from cache when back online
-    console.log('Transaction queued for sync when online:', input.label);
+    console.log('Transaction queued for sync when online:', cloudLabel);
   }
 }
 
@@ -87,18 +115,9 @@ export async function updateTransaction(
   await updateDoc(ref, updates);
 }
 
-// Timeout for slow network
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('Operation timed out. Please check your internet connection.')), timeoutMs)
-    ),
-  ]);
-}
-
+// One delete: longer timeout than bulk (slow network).
 export async function deleteTransaction(transactionId: string): Promise<void> {
-  await withTimeout(deleteDoc(doc(db, COLLECTION, transactionId)), 10000);
+  await withTimeout(deleteDoc(doc(db, COLLECTION, transactionId)), 30000);
 }
 
 const FIRESTORE_BATCH_SIZE = 500;
@@ -128,6 +147,8 @@ export async function deleteAllTransactionsForUser(
     deleted += chunk.length;
     onProgress?.(deleted, total);
   }
+  await clearDisplayLabelsForUser(userId);
+  await clearDisplayNotesForUser(userId);
   return deleted;
 }
 
@@ -146,7 +167,7 @@ export async function deleteTransactions(
   for (let i = 0; i < ids.length; i += BULK_DELETE_BATCH_SIZE) {
     const batch = ids.slice(i, i + BULK_DELETE_BATCH_SIZE);
     const results = await Promise.allSettled(
-      batch.map((id) => withTimeout(deleteDoc(doc(db, COLLECTION, id)), 15000))
+      batch.map((id) => withTimeout(deleteDoc(doc(db, COLLECTION, id)), 15000, 'Operation timed out. Please check your internet connection.'))
     );
     results.forEach((r, idx) => {
       if (r.status === 'rejected') failures.push({ id: batch[idx], reason: r.reason });
@@ -178,19 +199,29 @@ export async function updateTransactionsCategory(
 // Get transactions: cache first, then network. [] when offline.
 export async function getTransactionsSnapshot(userId: string): Promise<Transaction[]> {
   if (!userId) return [];
+  await hydrateDisplayLabels(userId);
+  await hydrateDisplayNotes(userId);
   const q = query(
     collection(db, COLLECTION),
     where('userId', '==', userId)
   );
   try {
     const cacheSnap = await getDocsFromCache(q);
-    if (!cacheSnap.empty) return snapshotToList(cacheSnap);
+    if (!cacheSnap.empty) {
+      return applyDisplayNotes(
+        userId,
+        applyDisplayLabels(userId, filterTransactionsForUser(userId, snapshotToList(cacheSnap)))
+      );
+    }
   } catch {
     // No cache: fetch
   }
   try {
     const snap = await getDocs(q);
-    return snapshotToList(snap);
+    return applyDisplayNotes(
+      userId,
+      applyDisplayLabels(userId, filterTransactionsForUser(userId, snapshotToList(snap)))
+    );
   } catch (error: any) {
     if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
       console.warn('Offline: Cannot fetch transactions for category suggestion');
@@ -199,6 +230,11 @@ export async function getTransactionsSnapshot(userId: string): Promise<Transacti
     console.error('Error fetching transactions snapshot:', error);
     return [];
   }
+}
+
+/** Ignore rows if userId does not match (wrong account or bad cache). */
+function filterTransactionsForUser(userId: string, list: Transaction[]): Transaction[] {
+  return list.filter((t) => t.userId === userId);
 }
 
 // Snapshot to list, newest first
@@ -248,18 +284,18 @@ export function subscribeToTransactions(
   // Cache first so list not empty while loading
   getDocsFromCache(q)
     .then((snap) => {
-      if (!snap.empty) onUpdate(snapshotToList(snap));
+      if (!snap.empty) onUpdate(filterTransactionsForUser(userId, snapshotToList(snap)));
     })
     .catch(() => {});
 
   // Live
   return onSnapshot(q, (snap) => {
-    onUpdate(snapshotToList(snap));
+    onUpdate(filterTransactionsForUser(userId, snapshotToList(snap)));
   },
     (err) => {
       if (err.code === 'unavailable' || err.message?.includes('offline')) {
         getDocsFromCache(q)
-          .then((snap) => onUpdate(snapshotToList(snap)))
+          .then((snap) => onUpdate(filterTransactionsForUser(userId, snapshotToList(snap))))
           .catch(() => onUpdate([]));
       } else {
         onError?.(err);
