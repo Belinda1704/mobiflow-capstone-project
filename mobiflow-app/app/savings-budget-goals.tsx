@@ -103,7 +103,6 @@ export default function SavingsBudgetGoalsScreen() {
         durationMonths,
       });
       if (saved) {
-        setAddGoalSaving(false);
         setAddGoalSaved(true);
         setGoalName('');
         setGoalTarget('');
@@ -112,10 +111,8 @@ export default function SavingsBudgetGoalsScreen() {
           setShowAddGoal(false);
           setAddGoalSaved(false);
         }, 1200);
-      } else {
-        setAddGoalSaving(false);
       }
-    } catch {
+    } finally {
       setAddGoalSaving(false);
     }
   }
@@ -142,29 +139,26 @@ export default function SavingsBudgetGoalsScreen() {
         durationMonths: editingGoal.durationMonths,
       });
       if (saved) {
-        setContributionSaving(false);
         setContributionSaved(true);
         setContributionAmount('');
         setTimeout(() => {
           setEditingGoal(null);
           setContributionSaved(false);
         }, 1200);
-      } else {
-        setContributionSaving(false);
       }
-    } catch {
+    } finally {
       setContributionSaving(false);
     }
   }
 
   // Render straight away
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title={t('savingsBudgetGoals')}
         rightContent={
           <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => setShowAddGoal(true)}>
-            <Text style={[styles.addBtnText, { color: colors.black }]}>+ {t('add')}</Text>
+            <Text style={[styles.addBtnText, { color: colors.onAccent }]}>+ {t('add')}</Text>
           </TouchableOpacity>
         }
       />
@@ -251,7 +245,7 @@ export default function SavingsBudgetGoalsScreen() {
                 style={[styles.applyBtn, { backgroundColor: colors.accent }]}
                 onPress={handleApplySuggestions}
                 disabled={applyingSuggestions}>
-                <Text style={[styles.applyBtnText, { color: colors.black }]}>
+                <Text style={[styles.applyBtnText, { color: colors.onAccent }]}>
                   {applyingSuggestions ? t('loading') : t('applySuggestedBudgets')}
                 </Text>
               </TouchableOpacity>
@@ -280,7 +274,7 @@ export default function SavingsBudgetGoalsScreen() {
       </ScrollView>
 
       <Modal visible={!!showCelebrationForGoal} transparent animationType="fade">
-        <View style={styles.celebrationOverlay}>
+        <View style={[styles.celebrationOverlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.celebrationCard, { backgroundColor: colors.background }]}>
             <Text style={styles.celebrationEmoji}>🎉</Text>
             <Text style={[styles.celebrationTitle, { color: colors.textPrimary }]}>{t('goalReachedCongratulations')}</Text>
@@ -290,7 +284,7 @@ export default function SavingsBudgetGoalsScreen() {
             <TouchableOpacity
               style={[styles.celebrationBtn, { backgroundColor: colors.accent }]}
               onPress={() => setShowCelebrationForGoal(null)}>
-              <Text style={[styles.celebrationBtnText, { color: colors.black }]}>{t('ok')}</Text>
+              <Text style={[styles.celebrationBtnText, { color: colors.onAccent }]}>{t('ok')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -298,7 +292,7 @@ export default function SavingsBudgetGoalsScreen() {
 
       <Modal visible={showAddGoal} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
           activeOpacity={1}
           onPress={() => setShowAddGoal(false)}>
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
@@ -313,7 +307,7 @@ export default function SavingsBudgetGoalsScreen() {
               />
               {suggestedSavingsGoal && (
                 <TouchableOpacity
-                  style={[styles.suggestionChip, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+                  style={[styles.suggestionChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => setGoalTarget(String(suggestedSavingsGoal.amount))}>
                   <Text style={[styles.suggestionChipLabel, { color: colors.textSecondary }]}>{t('savingsSuggestion')}</Text>
                   <Text style={[styles.suggestionChipAmount, { color: colors.textPrimary }]}>{formatRWF(suggestedSavingsGoal.amount)}</Text>
@@ -342,7 +336,7 @@ export default function SavingsBudgetGoalsScreen() {
                   <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddGoal} disabled={addGoalSaving}>
-                  <Text style={[styles.saveBtnText, { color: colors.black }]}>
+                  <Text style={[styles.saveBtnText, { color: colors.onAccent }]}>
                     {addGoalSaved ? t('saved') : addGoalSaving ? t('saving') : t('save')}
                   </Text>
                 </TouchableOpacity>
@@ -354,7 +348,7 @@ export default function SavingsBudgetGoalsScreen() {
 
       <Modal visible={!!editingGoal} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
           activeOpacity={1}
           onPress={() => {
             setEditingGoal(null);
@@ -389,7 +383,7 @@ export default function SavingsBudgetGoalsScreen() {
                   <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={handleAddContribution} disabled={contributionSaving}>
-                  <Text style={[styles.saveBtnText, { color: colors.black }]}>
+                  <Text style={[styles.saveBtnText, { color: colors.onAccent }]}>
                     {contributionSaved ? t('saved') : contributionSaving ? t('saving') : t('save')}
                   </Text>
                 </TouchableOpacity>
@@ -525,7 +519,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     padding: 24,
   },
@@ -633,7 +626,6 @@ const styles = StyleSheet.create({
   },
   celebrationOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,

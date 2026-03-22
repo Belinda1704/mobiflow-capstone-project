@@ -94,8 +94,9 @@ export function useSavingsGoals(userId: string | null, transactions: Transaction
           return next;
         });
         return saved;
-      } catch {
-        showError('Error', 'Could not save goal.');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not save goal.';
+        showError('Error', msg);
         return null;
       }
     },
@@ -112,8 +113,9 @@ export function useSavingsGoals(userId: string | null, transactions: Transaction
           AsyncStorage.setItem(cacheKeyGoals(userId), JSON.stringify(next)).catch(() => {});
           return next;
         });
-      } catch {
-        showError('Error', 'Could not delete goal.');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not delete goal.';
+        showError('Error', msg);
       }
     },
     [userId]
@@ -130,8 +132,9 @@ export function useSavingsGoals(userId: string | null, transactions: Transaction
           return next;
         });
         return saved;
-      } catch {
-        showError('Error', 'Could not save budget.');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not save budget.';
+        showError('Error', msg);
         return null;
       }
     },

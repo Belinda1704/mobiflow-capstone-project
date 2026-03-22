@@ -2,6 +2,10 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { db } from '../config/firebase';
+import { withTimeout } from '../utils/withTimeout';
+
+// Max wait for each Firestore call (slow networks).
+const FS_MS = 28000;
 
 export type SavingsGoal = {
   id: string;
@@ -23,18 +27,14 @@ async function getSettingsRef(userId: string) {
   return doc(db, SETTINGS_COLLECTION, userId);
 }
 
-// Get savings goals.
+// Get savings goals (errors propagate — callers must not treat failures as “no goals”).
 export async function getSavingsGoals(userId: string): Promise<SavingsGoal[]> {
   if (!userId) return [];
-  try {
-    const ref = await getSettingsRef(userId);
-    const snap = await getDoc(ref);
-    const data = snap.data();
-    const list = data?.savingsGoals ?? [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
+  const ref = await getSettingsRef(userId);
+  const snap = await withTimeout(getDoc(ref), FS_MS);
+  const data = snap.data();
+  const list = data?.savingsGoals ?? [];
+  return Array.isArray(list) ? list : [];
 }
 
 // Add or update goal.
@@ -59,7 +59,7 @@ export async function saveSavingsGoal(
   const others = goals.filter((g) => g.id !== id);
   const updated = [...others, full];
   const ref = await getSettingsRef(userId);
-  await setDoc(ref, { savingsGoals: updated }, { merge: true });
+  await withTimeout(setDoc(ref, { savingsGoals: updated }, { merge: true }), FS_MS);
   return full;
 }
 
@@ -68,21 +68,17 @@ export async function deleteSavingsGoal(userId: string, goalId: string): Promise
   const goals = await getSavingsGoals(userId);
   const updated = goals.filter((g) => g.id !== goalId);
   const ref = await getSettingsRef(userId);
-  await setDoc(ref, { savingsGoals: updated }, { merge: true });
+  await withTimeout(setDoc(ref, { savingsGoals: updated }, { merge: true }), FS_MS);
 }
 
 // Get category budgets.
 export async function getCategoryBudgets(userId: string): Promise<CategoryBudget[]> {
   if (!userId) return [];
-  try {
-    const ref = await getSettingsRef(userId);
-    const snap = await getDoc(ref);
-    const data = snap.data();
-    const list = data?.categoryBudgets ?? [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
+  const ref = await getSettingsRef(userId);
+  const snap = await withTimeout(getDoc(ref), FS_MS);
+  const data = snap.data();
+  const list = data?.categoryBudgets ?? [];
+  return Array.isArray(list) ? list : [];
 }
 
 // Save category budget.
@@ -95,6 +91,6 @@ export async function saveCategoryBudget(
   const others = budgets.filter((b) => b.category !== category);
   const updated = [...others, { category: category.trim(), budget: Math.max(0, budget) }];
   const ref = await getSettingsRef(userId);
-  await setDoc(ref, { categoryBudgets: updated }, { merge: true });
+  await withTimeout(setDoc(ref, { categoryBudgets: updated }, { merge: true }), FS_MS);
   return { category: category.trim(), budget: Math.max(0, budget) };
 }
