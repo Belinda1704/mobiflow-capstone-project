@@ -48,7 +48,7 @@ function getSupportStatusAccent(status: string): string {
 
 export function DashboardPage() {
   const { user } = useAdminAuth();
-  const { overview, loading, isRefreshing, error, refresh } = useAdminOverview();
+  const { overview, loading, error, refresh } = useAdminOverview();
   const { dateRange, startDate, endDate } = useAdminDateRange();
   const adminName = formatAdminLabel(user?.email);
   const welcomeLabel = adminName?.includes('@') ? getAdminInitials(adminName) : adminName;
@@ -102,30 +102,9 @@ export function DashboardPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm text-(--text-muted)">
-            Welcome back, {welcomeLabel}. Here’s what’s happening with your platform today.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-(--text-muted)">
-            Updated {formatDateTime(overview.generatedAt)}
-          </p>
-          {isRefreshing ? (
-            <span className="rounded-full border border-[#F5C518]/35 bg-[#F5C518]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B45309] dark:text-[#FDE68A]">
-              Syncing…
-            </span>
-          ) : null}
-          <button
-            type="button"
-            className={ui.primaryButton}
-            disabled={isRefreshing}
-            onClick={() => void refresh()}>
-            {isRefreshing ? 'Refreshing…' : 'Refresh'}
-          </button>
-        </div>
-      </div>
+      <p className="text-sm text-(--text-muted)">
+        Welcome back, {welcomeLabel}. Here’s what’s happening with your platform today.
+      </p>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

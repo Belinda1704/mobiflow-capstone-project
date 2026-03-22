@@ -109,9 +109,16 @@ const dateRangeOptions: Array<{ value: AdminDateRange; label: string }> = [
   { value: 'custom', label: 'Custom range' },
 ];
 
+function formatOverviewGeneratedAt(value: string | undefined): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown time';
+  return date.toLocaleString();
+}
+
 export function AdminShell() {
   const { user, signOutAdmin } = useAdminAuth();
-  const { isRefreshing } = useAdminOverview();
+  const { isRefreshing, refresh, overview } = useAdminOverview();
   const { theme, toggleTheme } = useTheme();
   const { dateRange, startDate, endDate, setDateRange, applyCustomRange } = useAdminDateRange();
   const navigate = useNavigate();
@@ -413,96 +420,117 @@ export function AdminShell() {
               </div>
             </div>
           </div>
-        </header>
 
-        <div className="w-full">
-          <div className="mb-6 flex items-center justify-between gap-4">
+          <div className="mt-4 flex flex-col gap-4 border-t border-(--border-muted) pt-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className={ui.sectionEyebrow}>Overview</p>
               <h2 className="mt-2 text-3xl font-semibold text-(--text-main)">{currentMeta.title}</h2>
               <p className="mt-2 text-sm text-(--text-muted)">{currentMeta.subtitle}</p>
             </div>
-            <div ref={dateMenuRef} className="relative">
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-xl border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm font-medium text-(--text-main) shadow-(--shadow-soft) transition hover:bg-(--panel-soft)"
-                onClick={() => setIsDateMenuOpen((open) => !open)}
-                aria-label="Open date filter">
-                <CalendarRange size={16} className="text-(--text-soft)" />
-                <span>{currentDateLabel}</span>
-                <ChevronDown size={16} className="text-(--text-soft)" />
-              </button>
-
-              {isDateMenuOpen ? (
-                <div className="absolute right-0 z-20 mt-2 min-w-60 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-2 shadow-(--shadow-soft)">
-                  <div className="space-y-1">
-                    {dateRangeOptions.slice(0, 4).map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
-                          dateRange === option.value
-                            ? 'bg-(--panel-soft) font-medium text-(--text-main)'
-                            : 'text-(--text-muted) hover:bg-(--panel-soft)'
-                        }`}
-                        onClick={() => {
-                          setDateRange(option.value);
-                          setIsDateMenuOpen(false);
-                        }}>
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-2 rounded-xl border border-(--border-muted) bg-(--panel-soft) p-3">
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-(--text-soft)">Custom range</p>
-                    <div className="mt-3 grid gap-3">
-                      <label className="grid gap-1 text-xs font-medium text-(--text-muted)">
-                        <span>Start date</span>
-                        <input
-                          type="date"
-                          value={draftStartDate}
-                          onChange={(event) => setDraftStartDate(event.target.value)}
-                          className="rounded-lg border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm text-(--text-main) outline-none"
-                        />
-                      </label>
-                      <label className="grid gap-1 text-xs font-medium text-(--text-muted)">
-                        <span>End date</span>
-                        <input
-                          type="date"
-                          value={draftEndDate}
-                          onChange={(event) => setDraftEndDate(event.target.value)}
-                          className="rounded-lg border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm text-(--text-main) outline-none"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="rounded-lg bg-[#f5c518] px-3 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}
-                        onClick={() => {
-                          applyCustomRange(draftStartDate, draftEndDate);
-                          setIsDateMenuOpen(false);
-                        }}>
-                        Apply range
-                      </button>
-                      {dateRange === 'custom' ? (
-                        <button
-                          type="button"
-                          className="rounded-lg border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm font-medium text-(--text-muted) transition hover:bg-(--panel-bg)"
-                          onClick={() => {
-                            setDateRange('all');
-                            setIsDateMenuOpen(false);
-                          }}>
-                          Clear custom range
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              {location.pathname === '/dashboard' ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-(--text-muted)">
+                    Updated {formatOverviewGeneratedAt(overview?.generatedAt)}
+                  </p>
+                  {isRefreshing ? (
+                    <span className="rounded-full border border-[#F5C518]/35 bg-[#F5C518]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B45309] dark:text-[#FDE68A]">
+                      Syncing…
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={ui.primaryButton}
+                    disabled={isRefreshing || !overview}
+                    onClick={() => void refresh()}>
+                    {isRefreshing ? 'Refreshing…' : 'Refresh'}
+                  </button>
                 </div>
               ) : null}
+              <div ref={dateMenuRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-xl border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm font-medium text-(--text-main) shadow-(--shadow-soft) transition hover:bg-(--panel-soft)"
+                  onClick={() => setIsDateMenuOpen((open) => !open)}
+                  aria-label="Open date filter">
+                  <CalendarRange size={16} className="text-(--text-soft)" />
+                  <span>{currentDateLabel}</span>
+                  <ChevronDown size={16} className="text-(--text-soft)" />
+                </button>
+
+                {isDateMenuOpen ? (
+                  <div className="absolute right-0 z-30 mt-2 min-w-60 rounded-2xl border border-(--border-muted) bg-(--panel-bg) p-2 shadow-(--shadow-soft)">
+                    <div className="space-y-1">
+                      {dateRangeOptions.slice(0, 4).map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                            dateRange === option.value
+                              ? 'bg-(--panel-soft) font-medium text-(--text-main)'
+                              : 'text-(--text-muted) hover:bg-(--panel-soft)'
+                          }`}
+                          onClick={() => {
+                            setDateRange(option.value);
+                            setIsDateMenuOpen(false);
+                          }}>
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-2 rounded-xl border border-(--border-muted) bg-(--panel-soft) p-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-(--text-soft)">Custom range</p>
+                      <div className="mt-3 grid gap-3">
+                        <label className="grid gap-1 text-xs font-medium text-(--text-muted)">
+                          <span>Start date</span>
+                          <input
+                            type="date"
+                            value={draftStartDate}
+                            onChange={(event) => setDraftStartDate(event.target.value)}
+                            className="rounded-lg border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm text-(--text-main) outline-none"
+                          />
+                        </label>
+                        <label className="grid gap-1 text-xs font-medium text-(--text-muted)">
+                          <span>End date</span>
+                          <input
+                            type="date"
+                            value={draftEndDate}
+                            onChange={(event) => setDraftEndDate(event.target.value)}
+                            className="rounded-lg border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm text-(--text-main) outline-none"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="rounded-lg bg-[#f5c518] px-3 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}
+                          onClick={() => {
+                            applyCustomRange(draftStartDate, draftEndDate);
+                            setIsDateMenuOpen(false);
+                          }}>
+                          Apply range
+                        </button>
+                        {dateRange === 'custom' ? (
+                          <button
+                            type="button"
+                            className="rounded-lg border border-(--border-muted) bg-(--panel-bg) px-3 py-2 text-sm font-medium text-(--text-muted) transition hover:bg-(--panel-bg)"
+                            onClick={() => {
+                              setDateRange('all');
+                              setIsDateMenuOpen(false);
+                            }}>
+                            Clear custom range
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
+        </header>
 
+        <div className="w-full">
           <Outlet />
         </div>
       </main>
