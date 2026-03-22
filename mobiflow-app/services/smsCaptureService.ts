@@ -18,6 +18,8 @@ import type { Transaction } from '../types/transaction';
 import { saveDisplayLabel } from './localDisplayLabelsService';
 
 let isListenerActive = false;
+// Tracks which userId the SMS listener was started for (restart if account changes).
+let activeListenerUserId: string | null = null;
 let cachedTransactions: Transaction[] = []; // Used when suggesting a category for new SMS
 
 const DEDUPE_WINDOW_MS = 2 * 60 * 1000; // 2 min – don’t add the same transaction twice
@@ -302,6 +304,7 @@ async function processSmsMessage(
         id: 'temp',
         userId,
         label: sanitizedLabel,
+        displayLabel: tx.label,
         amount: tx.amount,
         type: tx.type,
         category: suggestedCategory,
@@ -450,10 +453,16 @@ export function startSmsListener(
     console.log('[SMS Capture] Cannot start - not Android or no userId:', { platform: Platform.OS, userId });
     return;
   }
-  if (isListenerActive) {
-    console.log('[SMS Capture] Listener already active, skipping');
+  // If the user signs in as someone else, the old listener still had the old userId; stop and restart.
+  if (isListenerActive && activeListenerUserId === userId) {
+    console.log('[SMS Capture] Listener already active for this userId, skipping');
     return;
   }
+  if (isListenerActive) {
+    console.log('[SMS Capture] Stopping listener for previous account; restarting for userId:', userId);
+    stopSmsListener();
+  }
+  cachedTransactions = [];
   console.log('[SMS Capture] Starting SMS listener for userId:', userId);
 
   // Load transactions so past scan can dedupe
@@ -575,11 +584,13 @@ export function startSmsListener(
       }
     });
     isListenerActive = true;
+    activeListenerUserId = userId;
     console.log('[SMS Capture] Listener started successfully');
   } catch (error) {
     console.error('[SMS Capture] Failed to start listener:', error);
     onError?.(String(error));
     isListenerActive = false;
+    activeListenerUserId = null;
   }
 }
 
@@ -589,6 +600,8 @@ export function stopSmsListener(): void {
     console.log('[SMS Capture] Stopping listener');
     stopReadSMS();
     isListenerActive = false;
+    activeListenerUserId = null;
+    cachedTransactions = [];
   }
 }
 

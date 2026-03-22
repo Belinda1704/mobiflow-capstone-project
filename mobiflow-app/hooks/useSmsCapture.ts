@@ -80,7 +80,8 @@ export function useSmsCapture(userId: string | null) {
       startSmsForegroundService('MobiFlow', 'Capturing mobile money SMS in the background').catch((e) => {
         console.warn('[useSmsCapture] Foreground service start failed:', e);
       });
-    } else if (!enabled) {
+    } else {
+      // Logout or SMS off: stop listener so new SMS are not saved under the wrong account.
       stopSmsListener();
       stopSmsForegroundService();
     }
