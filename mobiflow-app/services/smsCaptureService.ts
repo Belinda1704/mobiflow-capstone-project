@@ -9,7 +9,8 @@ import {
   readPastSMS,
   readPastSentSMS,
 } from '@maniac-tech/react-native-expo-read-sms';
-import { parseSmsTransaction } from './smsParserService';
+import { parseSmsTransaction, type ParsedSmsTransaction } from './smsParserService';
+import { getTransactionDate } from '../utils/transactionDate';
 import { addTransaction, getTransactionsSnapshot } from './transactionsService';
 import { recordTransactionCompleted } from './notificationTriggerService';
 import { suggestCategory } from './categorySuggestionService';
@@ -91,17 +92,7 @@ function recordSmsBodyProcessed(body: string, address: string): void {
   }
 }
 
-// Stable id so same SMS not added twice (includes timestamp so live vs past can differ)
-function computeSmsId(body: string, address: string, timestamp: number): string {
-  const raw = `${(body || '').trim()}|${(address || '').trim()}|${timestamp}`;
-  let h = 0;
-  for (let i = 0; i < raw.length; i++) {
-    h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
-  }
-  return 'sms_' + Math.abs(h).toString(36) + '_' + raw.length;
-}
-
-// Same for same body+address (no timestamp). Used so past scan skips SMS already added by live listener.
+// Same body+address → same hash (no timestamp). Past scan + live capture must agree.
 function computeSmsBodySig(body: string, address: string): string {
   const raw = `${(body || '').trim().toLowerCase()}|${(address || '').trim().toLowerCase()}`;
   let h = 0;
@@ -109,6 +100,54 @@ function computeSmsBodySig(body: string, address: string): string {
     h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
   }
   return 'b_' + Math.abs(h).toString(36);
+}
+
+/** Firestore smsId / stable doc key — must match live and past scan for the same SMS text. */
+function computeSmsId(body: string, address: string): string {
+  return computeSmsBodySig(body, address);
+}
+
+/** Legacy rows used timestamp-based smsIds; skip re-import when amount/type/time match an existing SMS tx. */
+const FUZZY_SMS_DEDUPE_MS = 12 * 60 * 1000;
+
+function fuzzyDuplicateOfExistingSmsTx(
+  existing: Transaction[],
+  parsed: ParsedSmsTransaction,
+  smsTimestamp: number
+): boolean {
+  const want = Math.abs(parsed.amount);
+  for (const t of existing) {
+    if (!t.smsId) continue;
+    if (t.type !== parsed.type) continue;
+    if (Math.abs(Math.abs(t.amount) - want) > 1) continue;
+    const d = getTransactionDate(t);
+    if (!d) continue;
+    if (Math.abs(d.getTime() - smsTimestamp) <= FUZZY_SMS_DEDUPE_MS) return true;
+  }
+  return false;
+}
+
+/** Prefer inbox timestamp so createdAt matches the SMS (and fuzzy dedupe works vs live capture). */
+async function resolveSmsTimestampForLive(body: string, address: string): Promise<number> {
+  try {
+    const inbox = await readPastSMS(40);
+    const norm = (s: string) => s.trim().toLowerCase();
+    const b = norm(body);
+    const a = norm(address);
+    for (const row of inbox || []) {
+      if (norm(row.body) === b && norm(row.address || 'M-Money') === a) {
+        return row.timestamp || Date.now();
+      }
+    }
+    for (const row of inbox || []) {
+      if (norm(row.body) === b) {
+        return row.timestamp || Date.now();
+      }
+    }
+  } catch {
+    // inbox not ready yet or module error
+  }
+  return Date.now();
 }
 
 function sanitizeSmsTransactionLabel(type: 'income' | 'expense', provider: 'MTN' | 'Airtel' | 'unknown'): string {
@@ -217,7 +256,7 @@ async function processSmsMessage(
   onTransactionAdded?: () => void,
   existingSmsIds?: Set<string> // Past scan: caller’s ids; live: from cache.
 ): Promise<ProcessSmsResult> {
-  const smsId = computeSmsId(smsBody, smsAddress, smsTimestamp);
+  const smsId = computeSmsId(smsBody, smsAddress);
   console.log('[SMS Capture] Processing SMS:', { address: smsAddress, smsId: smsId.substring(0, 20) });
 
   // Past scan: dedupe by smsId. Live: dedupe by recent body only so new messages are not skipped.
@@ -409,9 +448,14 @@ export async function scanPastSmsMessages(
     const batchSmsIds = new Set<string>();
     for (const sms of pastSms) {
       if (!isMobileMoneySms(sms.body)) continue;
-      const smsIdForPast = computeSmsId(sms.body, sms.address, sms.timestamp);
-      // Skip if already have (by smsId). This keeps the dedupe logic strictly on local signatures.
+      const parsed = parseSmsTransaction(sms.body, { senderAddress: sms.address });
+      if (!parsed) continue;
+      const smsIdForPast = computeSmsId(sms.body, sms.address);
       if (existingSmsIds.has(smsIdForPast) || batchSmsIds.has(smsIdForPast)) continue;
+      if (fuzzyDuplicateOfExistingSmsTx(existingTransactions, parsed, sms.timestamp)) {
+        console.log('[SMS Capture] Skipping past SMS — matches existing SMS tx (legacy id or same payment)');
+        continue;
+      }
       batchSmsIds.add(smsIdForPast);
       pastSmsToProcess.push(sms);
     }
@@ -531,8 +575,8 @@ export function startSmsListener(
             return;
           }
 
-          // Record body only after add so new messages are not marked duplicate
-          await processSmsMessage(direct.body, address, Date.now(), userId, onTransactionAdded);
+          const liveTs = await resolveSmsTimestampForLive(direct.body, address);
+          await processSmsMessage(direct.body, address, liveTs, userId, onTransactionAdded);
           return;
         }
 
