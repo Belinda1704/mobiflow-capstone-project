@@ -4,8 +4,13 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  const appEnvDir = path.resolve(__dirname, '../mobiflow-app');
-  const env = loadEnv(mode, appEnvDir, '');
+  // Merge env: shared keys from mobiflow-app/.env, optional overrides from admin-dashboard/.env
+  const mobiflowEnvDir = path.resolve(__dirname, '../mobiflow-app');
+  const adminEnvDir = __dirname;
+  const env = {
+    ...loadEnv(mode, mobiflowEnvDir, ''),
+    ...loadEnv(mode, adminEnvDir, ''),
+  };
 
   return {
     plugins: [react()],

@@ -17,6 +17,7 @@ import { TermsPage } from './pages/TermsPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { UsersPage } from './pages/UsersPage';
 import { ThemeProvider } from './theme/ThemeContext';
+import { AdminOverviewProvider } from './context/AdminOverviewContext';
 
 export default function App() {
   return (
@@ -31,7 +32,9 @@ export default function App() {
               element={
                 <AdminGuard>
                   <AdminDateRangeProvider>
-                    <AdminShell />
+                    <AdminOverviewProvider>
+                      <AdminShell />
+                    </AdminOverviewProvider>
                   </AdminDateRangeProvider>
                 </AdminGuard>
               }>

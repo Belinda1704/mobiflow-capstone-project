@@ -13,9 +13,9 @@
     --text-muted: #4b5563;
     --text-soft: #6b7280;
     --chart-secondary: #111315;
-    --shadow-soft: 0 1px 3px rgba(17, 24, 39, 0.04);
-    --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06);
-    --sidebar-bg: #ffffff;
+    --shadow-soft: 0 2px 8px rgba(17, 24, 39, 0.06);
+    --shadow-card: 0 4px 24px rgba(17, 24, 39, 0.08);
+    --sidebar-bg: #f6f7f9;
     --sidebar-border: rgba(17, 24, 39, 0.08);
     --sidebar-muted: #6b7280;
     --sidebar-link: #1f2937;
@@ -23,20 +23,21 @@
   }
 
   html[data-theme='dark'] {
-    --page-bg: #0f1112;
-    --page-accent: #181b1e;
-    --panel-bg: #16191b;
-    --panel-soft: #1d2124;
-    --input-bg: #1a1d20;
+    /* Unified shell: sidebar + main share one base; cards lift slightly lighter */
+    --page-bg: #141518;
+    --page-accent: #1a1d22;
+    --panel-bg: #1c1f24;
+    --panel-soft: #23262c;
+    --input-bg: #1f2228;
     --border-muted: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.14);
     --text-main: #f4f4f5;
     --text-muted: #c6c7ca;
     --text-soft: #8f9499;
     --chart-secondary: #d7dadd;
-    --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.12);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.15);
-    --sidebar-bg: #1a1a1a;
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.28);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --sidebar-bg: #141518;
     --sidebar-border: rgba(255, 255, 255, 0.08);
     --sidebar-muted: rgba(255, 255, 255, 0.36);
     --sidebar-link: rgba(255, 255, 255, 0.84);

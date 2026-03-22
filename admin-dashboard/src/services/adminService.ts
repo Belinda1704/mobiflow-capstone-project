@@ -1,7 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 
 import type { AdminDateRange, AdminDateRangeSelection } from '../filters/AdminDateRangeContext';
-import { functionsClient } from '../firebase/config';
+import { auth, functionsClient } from '../firebase/config';
 
 export type AdminOverview = {
   totalUsers: number;
@@ -28,6 +28,8 @@ export type AdminOverview = {
     transactions: number;
     newUsers: number;
     lessonCompletions?: number;
+    /** Unique users with a tx that day (chart range). */
+    activeUsers?: number;
   }>;
   categoryBreakdown: Array<{
     label: string;
@@ -80,14 +82,25 @@ type CacheEntry = {
   cachedAt: number;
 };
 
-const OVERVIEW_CACHE_TTL_MS = 60_000;
+// Cache overview 5 min so switching admin pages does not refetch every time.
+const OVERVIEW_CACHE_TTL_MS = 300_000;
 const overviewCache = new Map<string, CacheEntry>();
 const inFlightRequests = new Map<string, Promise<AdminOverview>>();
 
-function getSelectionKey(selection: AdminDateRangeSelection): string {
+export function getOverviewSelectionKey(selection: AdminDateRangeSelection): string {
   const start = selection.startDate ?? '';
   const end = selection.endDate ?? '';
   return `${selection.dateRange}|${start}|${end}`;
+}
+
+// Return cached overview for the same date range if still fresh.
+export function peekCachedAdminOverview(selection: AdminDateRangeSelection): AdminOverview | null {
+  const key = getOverviewSelectionKey(selection);
+  const cached = overviewCache.get(key);
+  if (cached && Date.now() - cached.cachedAt < OVERVIEW_CACHE_TTL_MS) {
+    return cached.data;
+  }
+  return null;
 }
 
 export function getDashboardErrorMessage(error: unknown): string {
@@ -119,7 +132,7 @@ export async function fetchAdminOverview(
   selection: AdminDateRangeSelection,
   options?: { forceRefresh?: boolean }
 ): Promise<AdminOverview> {
-  const key = getSelectionKey(selection);
+  const key = getOverviewSelectionKey(selection);
   const forceRefresh = options?.forceRefresh === true;
   const now = Date.now();
   const cached = overviewCache.get(key);
@@ -137,6 +150,12 @@ export async function fetchAdminOverview(
 
   const requestPromise = (async () => {
   try {
+    if (!auth.currentUser) {
+      throw new Error('Not signed in. Please sign in again.');
+    }
+    // Avoid getIdToken(true): it forces a network round-trip every time and adds seconds of delay.
+    await auth.currentUser.getIdToken();
+
     const callable = httpsCallable<AdminDateRangeSelection, AdminOverview>(
       functionsClient,
       'getAdminOverviewCallable'
@@ -160,4 +179,16 @@ export async function fetchAdminOverview(
   } finally {
     inFlightRequests.delete(key);
   }
+}
+
+export async function resolveSupportRequest(requestId: string): Promise<void> {
+  if (!auth.currentUser) {
+    throw new Error('Not signed in. Please sign in again.');
+  }
+  await auth.currentUser.getIdToken();
+  const callable = httpsCallable<{ requestId: string }, { ok: boolean }>(
+    functionsClient,
+    'resolveSupportRequestCallable'
+  );
+  await callable({ requestId });
 }

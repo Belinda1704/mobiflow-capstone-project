@@ -21,6 +21,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAdminAuth } from '../auth/AdminAuthContext';
+import { useAdminOverview } from '../hooks/useAdminOverview';
 import { useAdminDateRange, type AdminDateRange } from '../filters/AdminDateRangeContext';
 import { fetchAdminOverview, type AdminOverview } from '../services/adminService';
 import { ui } from '../styles/ui';
@@ -47,7 +48,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     title: 'Management',
     items: [
       { label: 'Users', to: '/users', icon: Users },
-      { label: 'Transactions', to: '/transactions', icon: ReceiptText },
+      { label: 'Tx analytics', to: '/transactions', icon: ReceiptText },
       { label: 'Support Requests', to: '/support-requests', icon: LifeBuoy },
     ],
   },
@@ -65,11 +66,14 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
 ];
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': { title: 'Dashboard', subtitle: 'Aggregated platform metrics and activity.' },
+  '/dashboard': { title: 'Dashboard', subtitle: 'High-level metrics, trends, and category mix.' },
   '/insights': { title: 'Usage Insights', subtitle: 'Platform events and behaviour trends.' },
   '/logs': { title: 'Activity Logs', subtitle: 'Chronological platform event history.' },
   '/users': { title: 'Users', subtitle: 'User adoption and activity overview.' },
-  '/transactions': { title: 'Transactions', subtitle: 'Aggregated transaction trends.' },
+  '/transactions': {
+    title: 'Transaction analytics',
+    subtitle: 'Volume, daily trend, and period summary (same metrics as Dashboard).',
+  },
   '/support-requests': {
     title: 'Support Requests',
     subtitle: 'Password help requests from mobile users.',
@@ -107,6 +111,7 @@ const dateRangeOptions: Array<{ value: AdminDateRange; label: string }> = [
 
 export function AdminShell() {
   const { user, signOutAdmin } = useAdminAuth();
+  const { isRefreshing } = useAdminOverview();
   const { theme, toggleTheme } = useTheme();
   const { dateRange, startDate, endDate, setDateRange, applyCustomRange } = useAdminDateRange();
   const navigate = useNavigate();
@@ -215,6 +220,14 @@ export function AdminShell() {
 
   return (
     <div className="grid h-screen overflow-hidden bg-(--page-bg) lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-x-0">
+      {isRefreshing ? (
+        <div
+          className="pointer-events-none fixed top-0 right-0 left-0 z-70 h-1"
+          role="status"
+          aria-label="Updating data">
+          <div className="h-full w-full animate-pulse bg-linear-to-r from-transparent via-[#F5C518] to-transparent shadow-[0_0_16px_rgba(245,197,24,0.35)]" />
+        </div>
+      ) : null}
       <aside className="flex h-full flex-col border-r border-(--sidebar-border) bg-(--sidebar-bg) px-5 py-6 text-(--sidebar-link)">
         <div className="flex min-h-0 flex-1 flex-col gap-8">
           <div className="px-2">
