@@ -38,7 +38,7 @@ export type ApiResult<T> =
 
 async function callFunction<T>(
   name: string,
-  options: { method?: 'GET' | 'POST'; body?: object } = {}
+  options: { method?: 'GET' | 'POST'; body?: object; timeoutMs?: number } = {}
 ): Promise<ApiResult<T>> {
   const user = auth.currentUser;
   if (!user) {
@@ -54,12 +54,16 @@ async function callFunction<T>(
     return { ok: false, status: 401, error: 'No token. Sign out and sign in again.' };
   }
   const url = `${BASE_URL}/${name}`;
+  const timeoutMs = options.timeoutMs ?? 20000;
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
   const init: RequestInit = {
     method: options.method || 'GET',
     headers: {
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json',
     },
+    signal: controller.signal,
   };
   if (options.body && options.method === 'POST') {
     init.body = JSON.stringify(options.body);
@@ -81,13 +85,18 @@ async function callFunction<T>(
     }
     return { ok: true, data: data as T, status: res.status };
   } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      return { ok: false, status: 0, error: 'Request timed out' };
+    }
     const message = e instanceof Error ? e.message : 'Network error';
     return { ok: false, status: 0, error: message };
+  } finally {
+    clearTimeout(tid);
   }
 }
 
 export async function fetchHealthScoreFromServer(): Promise<ApiResult<HealthScoreResponse>> {
-  return callFunction<HealthScoreResponse>('getHealthScore', { method: 'GET' });
+  return callFunction<HealthScoreResponse>('getHealthScore', { method: 'GET', timeoutMs: 18000 });
 }
 
 export async function fetchReportSummaryFromServer(

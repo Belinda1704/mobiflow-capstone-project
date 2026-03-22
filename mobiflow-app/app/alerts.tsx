@@ -71,7 +71,7 @@ export default function AlertsScreen() {
   const hasActiveAlerts = incomeDrop || budgetBreaches.length > 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('alerts')} subtitle={t('alertsSubtitle')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         {hasActiveAlerts && (
@@ -117,7 +117,7 @@ export default function AlertsScreen() {
           style={[styles.saveBtn, { backgroundColor: colors.accent }, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={saving}>
-          <Text style={[styles.saveBtnText, { color: colors.black }]}>
+          <Text style={[styles.saveBtnText, { color: colors.onAccent }]}>
             {saved ? t('saved') : saving ? t('saving') : t('save')}
           </Text>
         </TouchableOpacity>

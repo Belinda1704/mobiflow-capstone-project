@@ -16,7 +16,7 @@ export default function HelpSupportScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('helpSupport')} subtitle={t('helpSupportSubtitle')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('faqTitle')}</Text>

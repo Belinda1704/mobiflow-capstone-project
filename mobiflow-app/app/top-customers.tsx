@@ -28,7 +28,7 @@ export default function TopCustomersScreen() {
     .sort((a, b) => b.valueScore - a.valueScore);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('topCustomers')} subtitle={t('topCustomersSubtitle')} />
       <ScrollView
         style={styles.scroll}
@@ -44,7 +44,7 @@ export default function TopCustomersScreen() {
           <View
             key={c.phone}
             style={[styles.customerRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={[styles.rankBadge, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+            <View style={[styles.rankBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.rankText, { color: colors.textPrimary }]}>{i + 1}</Text>
             </View>
             <View style={styles.customerInfo}>
@@ -58,8 +58,8 @@ export default function TopCustomersScreen() {
                   </View>
                 )}
                 {c.valueTier === 'medium' && (
-                  <View style={[styles.tierBadge, { backgroundColor: (colors.accent || '#6366f1') + '25', borderColor: colors.accent || '#6366f1' }]}>
-                    <Text style={[styles.tierText, { color: colors.accent || '#6366f1' }]}>Medium</Text>
+                  <View style={[styles.tierBadge, { backgroundColor: colors.accent + '25', borderColor: colors.accent }]}>
+                    <Text style={[styles.tierText, { color: colors.accent }]}>Medium</Text>
                   </View>
                 )}
               </View>

@@ -69,15 +69,15 @@ export default function BusinessHealthTipsScreen() {
   const { t } = useTranslations();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('businessHealthTips')} subtitle={t('improveFinancialHealth')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.intro, { color: colors.textSecondary }]}>
           {t('businessHealthTipsIntro')}
         </Text>
         {TIP_KEYS.map((tip, i) => (
-          <View key={i} style={[styles.tipCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+          <View key={i} style={[styles.tipCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
               <Ionicons name={tip.icon} size={22} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.tipBody}>
@@ -97,8 +97,8 @@ export default function BusinessHealthTipsScreen() {
                       tip.action.onPress();
                     }
                   }}>
-                  <Text style={[styles.actionButtonText, { color: colors.black }]}>{t(tip.action.labelKey)}</Text>
-                  <Ionicons name="arrow-forward" size={16} color={colors.black} />
+                  <Text style={[styles.actionButtonText, { color: colors.onAccent }]}>{t(tip.action.labelKey)}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.onAccent} />
                 </TouchableOpacity>
               )}
             </View>

@@ -2,7 +2,10 @@
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 import { db } from '../config/firebase';
+import { DEFAULT_CATEGORY_NAMES } from '../constants/categories';
 import type { CustomCategory } from '../types/category';
+
+export const DUPLICATE_CATEGORY_ERROR = 'DUPLICATE_CATEGORY';
 
 const SETTINGS_COLLECTION = 'userSettings';
 
@@ -37,6 +40,14 @@ export async function addCustomCategory(
 ): Promise<CustomCategory> {
   const trimmed = name.trim();
   if (!trimmed) throw new Error('Category name is required');
+  const lower = trimmed.toLowerCase();
+  if (DEFAULT_CATEGORY_NAMES.some((n) => n.toLowerCase() === lower)) {
+    throw new Error(DUPLICATE_CATEGORY_ERROR);
+  }
+  const existing = await getCustomCategories(userId);
+  if (existing.some((c) => c.name.trim().toLowerCase() === lower)) {
+    throw new Error(DUPLICATE_CATEGORY_ERROR);
+  }
   const id = `cat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const category: CustomCategory = { id, name: trimmed };
   const ref = await getSettingsRef(userId);

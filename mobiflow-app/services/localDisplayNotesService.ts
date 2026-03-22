@@ -1,11 +1,11 @@
+// Full note text on device only (Firestore `notes` stays empty for privacy).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type DisplayLabelsMap = Record<string, string>;
+type DisplayNotesMap = Record<string, string>;
 
-const KEY_PREFIX = '@mobiflow/displayLabels_';
+const KEY_PREFIX = '@mobiflow/displayNotes_';
 
-// In-memory cache so UI updates immediately after SMS capture.
-const inMemoryCache: Record<string, DisplayLabelsMap> = {};
+const inMemoryCache: Record<string, DisplayNotesMap> = {};
 
 async function ensureLoaded(userId: string): Promise<void> {
   if (!userId) return;
@@ -13,38 +13,34 @@ async function ensureLoaded(userId: string): Promise<void> {
 
   try {
     const raw = await AsyncStorage.getItem(`${KEY_PREFIX}${userId}`);
-    const parsed = raw ? (JSON.parse(raw) as DisplayLabelsMap) : {};
+    const parsed = raw ? (JSON.parse(raw) as DisplayNotesMap) : {};
     inMemoryCache[userId] = parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
     inMemoryCache[userId] = {};
   }
 }
 
-export async function saveDisplayLabel(
+export async function saveDisplayNote(
   userId: string,
   transactionId: string,
-  displayLabel: string
+  displayNote: string
 ): Promise<void> {
   if (!userId || !transactionId) return;
-  if (!displayLabel) return;
-
   await ensureLoaded(userId);
-  inMemoryCache[userId][transactionId] = displayLabel;
-
-  // Persist so the user still sees names after app restart.
+  const trimmed = displayNote.trim();
+  if (!trimmed) {
+    delete inMemoryCache[userId][transactionId];
+  } else {
+    inMemoryCache[userId][transactionId] = trimmed;
+  }
   await AsyncStorage.setItem(`${KEY_PREFIX}${userId}`, JSON.stringify(inMemoryCache[userId])).catch(() => {});
 }
 
-export function getDisplayLabel(userId: string, transactionId: string): string | undefined {
-  const map = inMemoryCache[userId];
-  return map ? map[transactionId] : undefined;
-}
-
-export async function hydrateDisplayLabels(userId: string): Promise<void> {
+export async function hydrateDisplayNotes(userId: string): Promise<void> {
   await ensureLoaded(userId);
 }
 
-export async function removeDisplayLabel(userId: string, transactionId: string): Promise<void> {
+export async function removeDisplayNote(userId: string, transactionId: string): Promise<void> {
   if (!userId || !transactionId) return;
   await ensureLoaded(userId);
   const map = inMemoryCache[userId];
@@ -54,7 +50,7 @@ export async function removeDisplayLabel(userId: string, transactionId: string):
   }
 }
 
-export async function removeDisplayLabelsForIds(userId: string, transactionIds: string[]): Promise<void> {
+export async function removeDisplayNotesForIds(userId: string, transactionIds: string[]): Promise<void> {
   if (!userId || transactionIds.length === 0) return;
   await ensureLoaded(userId);
   const map = inMemoryCache[userId];
@@ -71,21 +67,20 @@ export async function removeDisplayLabelsForIds(userId: string, transactionIds: 
   }
 }
 
-export async function clearDisplayLabelsForUser(userId: string): Promise<void> {
+export async function clearDisplayNotesForUser(userId: string): Promise<void> {
   if (!userId) return;
   delete inMemoryCache[userId];
   await AsyncStorage.removeItem(`${KEY_PREFIX}${userId}`).catch(() => {});
 }
 
-export function applyDisplayLabels<T extends { id: string }>(
+export function applyDisplayNotes<T extends { id: string }>(
   userId: string,
   transactions: T[]
-): Array<T & { displayLabel?: string }> {
+): Array<T & { displayNotes?: string }> {
   const map = inMemoryCache[userId] || {};
   return transactions.map((tx) => {
-    const displayLabel = map[tx.id];
-    if (!displayLabel) return tx as T & { displayLabel?: string };
-    return { ...(tx as T), displayLabel };
+    const displayNotes = map[tx.id];
+    if (!displayNotes) return tx as T & { displayNotes?: string };
+    return { ...(tx as T), displayNotes };
   });
 }
-

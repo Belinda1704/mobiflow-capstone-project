@@ -1,25 +1,26 @@
 // Bar and line chart config – yellow bars, theme colours for labels/background.
 import type { ThemeColors } from '../contexts/ThemeContext';
 
-const YELLOW = '#F5C518';
+const LIGHT_BAR = '#F5C518';
 
 // Base bar config; pass theme colours so labels/background match the app.
 export function getBarChartConfig(colors: ThemeColors) {
+  const bar = colors.accent;
   return {
     backgroundColor: colors.surface,
     backgroundGradientFrom: colors.surface,
     backgroundGradientTo: colors.surface,
     backgroundGradientToOpacity: 1,
     decimalPlaces: 0,
-    color: () => YELLOW,
+    color: () => bar,
     labelColor: () => colors.textSecondary,
     barPercentage: 0.6,
     barRadius: 8,
-    fillShadowGradient: YELLOW,
+    fillShadowGradient: bar,
     fillShadowGradientOpacity: 1,
-    fillShadowGradientFrom: YELLOW,
+    fillShadowGradientFrom: bar,
     fillShadowGradientFromOpacity: 1,
-    fillShadowGradientTo: YELLOW,
+    fillShadowGradientTo: bar,
     fillShadowGradientToOpacity: 1,
     propsForLabels: { fontSize: 11 },
     propsForBackgroundLines: {
@@ -45,15 +46,15 @@ export const BAR_CHART_CONFIG = {
   backgroundGradientTo: '#FFFFFF',
   backgroundGradientToOpacity: 1,
   decimalPlaces: 0,
-  color: () => YELLOW,
+  color: () => LIGHT_BAR,
   labelColor: () => '#64748B',
   barPercentage: 0.6,
   barRadius: 8,
-  fillShadowGradient: YELLOW,
+  fillShadowGradient: LIGHT_BAR,
   fillShadowGradientOpacity: 1,
-  fillShadowGradientFrom: YELLOW,
+  fillShadowGradientFrom: LIGHT_BAR,
   fillShadowGradientFromOpacity: 1,
-  fillShadowGradientTo: YELLOW,
+  fillShadowGradientTo: LIGHT_BAR,
   fillShadowGradientToOpacity: 1,
   propsForLabels: { fontSize: 11 },
   propsForBackgroundLines: {

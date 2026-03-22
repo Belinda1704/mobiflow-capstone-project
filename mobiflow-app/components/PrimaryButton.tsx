@@ -11,9 +11,16 @@ type PrimaryButtonProps = {
 };
 
 export function PrimaryButton({ title, onPress, variant = 'yellow', disabled = false, testID }: PrimaryButtonProps) {
-  const { colors } = useThemeColors();
+  const { colors, isDark } = useThemeColors();
   const bgColor = variant === 'dark' ? colors.tabBarBg : variant === 'light' ? colors.surface : colors.accent;
-  const textColor = variant === 'dark' ? colors.white : colors.black;
+  const textColor =
+    variant === 'dark'
+      ? isDark
+        ? colors.textPrimary
+        : colors.white
+      : variant === 'light'
+        ? colors.textPrimary
+        : colors.onAccent;
   return (
     <TouchableOpacity 
       style={[styles.button, { backgroundColor: bgColor, opacity: disabled ? 0.5 : 1 }]} 

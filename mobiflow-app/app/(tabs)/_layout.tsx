@@ -1,5 +1,5 @@
 // Tabs: Home, Transactions, Reports, More. SMS listener when permission given. CoreDataGate waits for data.
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,11 +15,12 @@ import { AutomatedBackupChecker } from '../../components/AutomatedBackupChecker'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSmsCaptureEnabled } from '../../services/preferencesService';
 import { checkSmsPermissions, isSmsCaptureSupported, startSmsListener, scanPastSmsMessages } from '../../services/smsCaptureService';
+import { startSmsForegroundService } from '../../services/smsForegroundService';
 
 const { Navigator: MaterialTopTabNavigator } = createMaterialTopTabNavigator();
 const SwipeableTabs = withLayoutContext(MaterialTopTabNavigator);
 
-function TabIcon({
+const TabIcon = memo(function TabIcon({
   focused,
   color,
   active,
@@ -32,15 +33,25 @@ function TabIcon({
 }) {
   const iconName = focused ? active : inactive;
   return <Ionicons name={iconName} size={22} color={color} />;
-}
+});
 
-function TabLabel({ focused, label, activeColor, inactiveColor }: { focused: boolean; label: string; activeColor: string; inactiveColor: string }) {
+const TabLabel = memo(function TabLabel({
+  focused,
+  label,
+  activeColor,
+  inactiveColor,
+}: {
+  focused: boolean;
+  label: string;
+  activeColor: string;
+  inactiveColor: string;
+}) {
   return (
     <Text style={{ fontSize: 11, fontFamily: FontFamily.medium, color: focused ? activeColor : inactiveColor }}>
       {label}
     </Text>
   );
-}
+});
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -60,6 +71,7 @@ export default function TabLayout() {
       if (!mounted || !hasBoth) return;
       if (enabled) {
         startSmsListener(userId); // also runs past message scan inside
+        startSmsForegroundService('MobiFlow', 'Capturing mobile money SMS in the background').catch(() => {});
       } else {
         const pastScanKey = `@mobiflow/pastScanDone/${userId}`;
         const alreadyDone = (await AsyncStorage.getItem(pastScanKey)) === 'true';
@@ -81,6 +93,11 @@ export default function TabLayout() {
     <SwipeableTabs
       tabBarPosition="bottom"
       screenOptions={{
+        // lazy: mount a tab screen the first time it is opened
+        lazy: true,
+        lazyPreloadDistance: 0,
+        // No tab icon cross-fade (swipe still animates)
+        animationEnabled: false,
         swipeEnabled: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: tabInactiveColor,

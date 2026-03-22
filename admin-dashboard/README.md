@@ -1,4 +1,19 @@
-# React + TypeScript + Vite
+# MobiFlow Admin Dashboard
+
+## Environment variables (secrets are **not** in Git)
+
+Create **`.env`** files only on your machine (gitignored). **Variable names and steps** are in the main **[`../README.md`](../README.md#environment-variables)** (Environment Variables) and **[`../docs/LOCAL_ENV_SETUP.md`](../docs/LOCAL_ENV_SETUP.md)**.
+
+Quick start:
+
+1. Add **`../mobiflow-app/.env`** with `EXPO_PUBLIC_FIREBASE_*` values from Firebase (Web app `firebaseConfig`). Optionally **`admin-dashboard/.env`** here for admin-only overrides.
+2. **Restart** `npm run dev` after any env change.
+
+Vite loads **`admin-dashboard/`** first, then **`mobiflow-app/`** (same `EXPO_PUBLIC_FIREBASE_*` names).
+
+---
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

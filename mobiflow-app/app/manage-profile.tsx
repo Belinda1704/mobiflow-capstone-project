@@ -74,7 +74,7 @@ export default function ManageProfileScreen() {
 
   // Data from cache
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('manageProfile')} subtitle={t('editYourProfile')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Display name</Text>
@@ -86,6 +86,7 @@ export default function ManageProfileScreen() {
           onChangeText={setName}
         />
         <Text style={[styles.label, { marginTop: 20, color: colors.textSecondary }]}>Business name</Text>
+        <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>{t('statementNameHint')}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
           placeholder={t('myBusiness')}
@@ -108,7 +109,7 @@ export default function ManageProfileScreen() {
           style={[styles.saveBtn, { backgroundColor: colors.accent }, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={saving}>
-          <Text style={[styles.saveBtnText, { color: colors.black }]}>
+          <Text style={[styles.saveBtnText, { color: colors.onAccent }]}>
             {saved ? t('saved') : saving ? t('saving') : t('save')}
           </Text>
         </TouchableOpacity>
@@ -116,7 +117,7 @@ export default function ManageProfileScreen() {
 
       {/* Business Type Dropdown - compact panel below trigger */}
       <Modal visible={showBusinessTypeModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowBusinessTypeModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowBusinessTypeModal(false)}>
           {dropdownLayout && (
             <View
               style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]}
@@ -160,6 +161,13 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   padding: { padding: 24, paddingBottom: 40 },
   label: { fontSize: 14, fontFamily: FontFamily.medium, marginBottom: 8 },
+  fieldHint: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    lineHeight: 17,
+    marginBottom: 10,
+    marginTop: -2,
+  },
   input: {
     borderRadius: 10,
     paddingHorizontal: 16,
@@ -183,7 +191,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
   },
   compactDropdownWrap: {
     position: 'absolute',

@@ -114,8 +114,7 @@ export function buildCreditReadinessHtml(
   <p class="subtitle">${labels.creditSummaryForBanks}</p>
 
   <div class="card">
-    <div style="font-size: 18px; font-weight: 700;">${escapeHtml(data.userName)}</div>
-    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">${escapeHtml(data.businessName)}</div>
+    <div style="font-size: 18px; font-weight: 700;">${escapeHtml(data.businessName || 'My Business')}</div>
   </div>
   ${cashFlowTable}
 

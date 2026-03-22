@@ -95,8 +95,9 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 ```text
 mobiflow-capstone-project/
 ├── README.md
-├── firebase.json               # Firebase config (Firestore, functions)
+├── firebase.json               # Firebase config (Firestore, Storage, functions)
 ├── firestore.rules
+├── storage.rules               # Firebase Storage (cloud backups; deploy with Firebase CLI)
 │
 ├── mobiflow-app/               # Mobile app (React Native / Expo)
 │   ├── app/                    # Screens (Expo Router)
@@ -140,22 +141,22 @@ Authentication is via Firebase Auth; the function checks the user’s admin clai
 
 ## Environment Variables
 
-**Mobile app (`mobiflow-app/.env`):**
+- **On your machine:** create **`mobiflow-app/.env`** (and optionally **`admin-dashboard/.env`**) with your Firebase keys. **Never commit `.env`** — it is gitignored.
+- **Variable names and setup:** see the table below and **[`docs/LOCAL_ENV_SETUP.md`](docs/LOCAL_ENV_SETUP.md)**.
 
-```env
-EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
-```
+**Names you need** (values from **Firebase Console → Project settings → Web app → `firebaseConfig`**):
 
-Get these from **Firebase Console → Project settings → Your apps → Web app.**
+| Variable | Purpose |
+|----------|---------|
+| `EXPO_PUBLIC_FIREBASE_API_KEY` | Web API key |
+| `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | e.g. `project.firebaseapp.com` |
+| `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | Project ID |
+| `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage bucket |
+| `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Sender ID |
+| `EXPO_PUBLIC_FIREBASE_APP_ID` | Web app ID |
+| `EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION` | Optional; default `us-central1` |
 
-**Admin dashboard:** Same Firebase project; ensure the admin user can sign in (e.g. created in Firebase Auth and allowed in your admin logic). Optional: `.env` in `admin-dashboard/` with same vars if you use them at build time.
-
-**Never commit real keys.** Use `.env` and add `.env` to `.gitignore` (already done).
+**Admin dashboard** uses the same names; Vite reads `admin-dashboard/.env` then `mobiflow-app/.env`. Ensure admin users exist in Firebase Auth and pass your admin checks.
 
 ## Testing
 
@@ -181,7 +182,7 @@ Releases and version history are maintained on GitHub:
 ## Deployment
 
 - **Mobile app (APK):** Build locally (e.g. with the project’s Android build script and short-path setup). Output: signed or debug APK; distribute via [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) or direct install.
-- **Firebase (Firestore, Functions):** `firebase deploy` (or `firebase deploy --only firestore:rules` / `--only functions`). Requires Firebase CLI and project selected.
+- **Firebase (Firestore, Storage, Functions):** `firebase deploy` (or `firebase deploy --only firestore:rules`, `--only storage`, `--only functions`). **Cloud backup** needs Storage rules deployed (`storage.rules`); without them uploads fail with permission errors.
 - **Admin dashboard:** Deployed on [Render](https://render.com). Build with `cd admin-dashboard && npm run build`; the `dist/` output is deployed as a static site on Render.
 
 ## Contributing

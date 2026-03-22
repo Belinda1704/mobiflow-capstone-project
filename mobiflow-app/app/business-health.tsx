@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTransactions } from '../hooks/useTransactions';
@@ -23,10 +24,6 @@ import type { HealthScoreResponse } from '../services/cloudFunctionsService';
 function getScoreLabelKey(label: string): string {
   return label === 'Excellent' ? 'scoreExcellent' : label === 'Good' ? 'scoreGood' : label === 'Fair' ? 'scoreFair' : label === 'No data' ? 'scoreNoData' : 'scoreNeedsAttention';
 }
-function getScoreMessageKey(label: string): string {
-  return label === 'Excellent' ? 'scoreMessageThriving' : label === 'Good' ? 'scoreMessageOnTrack' : label === 'Fair' ? 'scoreMessageConsider' : label === 'No data' ? 'scoreMessageNoData' : 'scoreMessageFocus';
-}
-
 export default function BusinessHealthScreen() {
   const router = useRouter();
   const { colors } = useThemeColors();
@@ -35,18 +32,60 @@ export default function BusinessHealthScreen() {
   const { transactions, loading } = useTransactions(userId || null);
   const data = useBusinessHealth(transactions);
   const [serverScore, setServerScore] = useState<HealthScoreResponse | null>(null);
+  const [cachedScore, setCachedScore] = useState<HealthScoreResponse | null>(null);
+  const [serverScoreLoading, setServerScoreLoading] = useState(true);
+  const SCORE_CACHE_KEY = `@mobiflow/healthScoreCache/${userId || 'guest'}`;
 
   useEffect(() => {
     let cancelled = false;
-    fetchHealthScoreFromServer().then((result) => {
-      if (!cancelled && result.ok && result.status === 200) setServerScore(result.data);
+    AsyncStorage.getItem(SCORE_CACHE_KEY).then((raw) => {
+      if (cancelled || !raw) return;
+      try {
+        const parsed = JSON.parse(raw) as HealthScoreResponse;
+        if (
+          typeof parsed?.score === 'number' &&
+          typeof parsed?.label === 'string' &&
+          typeof parsed?.message === 'string'
+        ) {
+          setCachedScore(parsed);
+        }
+      } catch {
+        // Ignore invalid cache
+      }
     });
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [SCORE_CACHE_KEY]);
 
-  const effectiveScore = serverScore ? { score: serverScore.score, label: serverScore.label, message: serverScore.message } : data.score;
+  useEffect(() => {
+    if (!userId) {
+      setServerScoreLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setServerScoreLoading(true);
+    fetchHealthScoreFromServer().then((result) => {
+      if (cancelled) return;
+      if (result.ok && result.status === 200) {
+        setServerScore(result.data);
+        AsyncStorage.setItem(SCORE_CACHE_KEY, JSON.stringify(result.data)).catch(() => {});
+      } else {
+        setServerScore(null);
+      }
+      setServerScoreLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const effectiveScore = serverScore
+    ? { score: serverScore.score, label: serverScore.label, message: serverScore.message }
+    : cachedScore
+      ? { score: cachedScore.score, label: cachedScore.label, message: cachedScore.message }
+      : data.score;
   const scoreLabelKey = getScoreLabelKey(effectiveScore.label);
-  const scoreMessageKey = getScoreMessageKey(effectiveScore.label);
   const scoreMessage = effectiveScore.message;
   const gaugeColor =
     effectiveScore.label === 'Excellent' || effectiveScore.label === 'Good'
@@ -64,7 +103,7 @@ export default function BusinessHealthScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('businessHealth')} />
       <ScrollView
         style={styles.scroll}
@@ -79,9 +118,17 @@ export default function BusinessHealthScreen() {
           <Text style={[styles.scoreMessage, { color: effectiveScore.label === 'No data' ? colors.textSecondary : colors.textPrimary }]}>
             {scoreMessage}
           </Text>
+          {serverScoreLoading && !serverScore && !cachedScore ? (
+            <View style={styles.scoreSyncRow}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={[styles.scoreLoadingText, { color: colors.textSecondary }]}>
+                {t('updatingHealthScore')}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('topSpending')}</Text>
           {data.topSpending.map((s) => (
             <View key={s.name} style={[styles.categoryRow, { borderBottomColor: colors.border }]}>
@@ -94,7 +141,7 @@ export default function BusinessHealthScreen() {
           ))}
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('income6Months')}</Text>
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
@@ -125,7 +172,7 @@ export default function BusinessHealthScreen() {
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('financialSummary')}</Text>
           {data.summary.map((row) => (
             <View key={row.label} style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
@@ -135,8 +182,10 @@ export default function BusinessHealthScreen() {
               <Text
                 style={[
                   styles.summaryValue,
-                  row.good === true && { color: colors.success },
-                  row.good === false && { color: colors.error },
+                  {
+                    color:
+                      row.good === true ? colors.success : row.good === false ? colors.error : colors.textPrimary,
+                  },
                 ]}>
                 {row.value === 'Good' ? t('scoreGood') : row.value === 'Negative' ? t('negative') : row.value}
               </Text>
@@ -174,6 +223,17 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     marginTop: 12,
     textAlign: 'center',
+  },
+  scoreSyncRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  scoreLoadingText: {
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
   },
   card: {
     padding: 20,

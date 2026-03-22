@@ -1,8 +1,8 @@
 // Root layout: fonts, language, app.
-import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useLayoutEffect, useState } from 'react';
+import { Platform, StatusBar as RNStatusBar } from 'react-native';
 import { Stack } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useThemeColors } from '../contexts/ThemeContext';
 import {
@@ -74,8 +74,25 @@ setupAuthErrorHandler();
 SplashScreen.preventAutoHideAsync();
 
 function ThemeAwareStatusBar() {
-  const { isDark } = useThemeColors();
-  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+  const { isDark, colors } = useThemeColors();
+
+  // Android: set native status bar so time/battery show (StatusBar API + expo-status-bar).
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'android') return;
+    RNStatusBar.setHidden(false);
+    RNStatusBar.setTranslucent(false);
+    RNStatusBar.setBackgroundColor(colors.background);
+    RNStatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+  }, [isDark, colors.background]);
+
+  return (
+    <StatusBar
+      style={isDark ? 'light' : 'dark'}
+      hidden={false}
+      translucent={false}
+      backgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+    />
+  );
 }
 
 export const unstable_settings = {
@@ -102,13 +119,22 @@ export default function RootLayout() {
   }, [fontsLoaded, i18nReady]);
 
   if (!fontsLoaded || !i18nReady) {
-    return null;
+    return (
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <StatusBar style="light" hidden={false} translucent={false} />
+      </SafeAreaProvider>
+    );
   }
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <AppProviders>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            // freezeOnBlur: pause hidden stack screens (saves work when closing modals)
+            freezeOnBlur: true,
+          }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />

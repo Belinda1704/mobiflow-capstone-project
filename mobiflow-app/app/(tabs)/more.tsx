@@ -25,7 +25,7 @@ export default function MoreScreen() {
   const { t } = useTranslations();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TabHeader title={t('more')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {MORE_ITEMS.map((item) => (
@@ -34,7 +34,7 @@ export default function MoreScreen() {
             style={[styles.row, { borderBottomColor: colors.border }]}
             activeOpacity={0.7}
             onPress={() => router.push(item.route as any)}>
-            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.iconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name={item.icon} size={22} color={colors.textPrimary} />
             </View>
             <View style={styles.rowText}>
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     gap: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   iconWrap: {
     width: 40,

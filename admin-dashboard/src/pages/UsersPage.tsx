@@ -1,4 +1,5 @@
 import { MetricCard } from '../components/MetricCard';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { ActivityChart } from '../components/ActivityChart';
 import { useAdminDateRange } from '../filters/AdminDateRangeContext';
 import { useAdminOverview } from '../hooks/useAdminOverview';
@@ -14,21 +15,14 @@ export function UsersPage() {
   const { dateRange, startDate, endDate } = useAdminDateRange();
 
   if (loading) {
-    return (
-      <div className="grid min-h-[60vh] place-items-center">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className={ui.spinner} />
-          <p className="text-sm text-neutral-600">Loading users...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !overview) {
     return (
       <section className={`${ui.panel} p-6`}>
-        <h3 className="text-xl font-semibold text-neutral-950">Could not load users</h3>
-        <p className="mt-2 text-sm text-neutral-600">{error || 'No data was returned.'}</p>
+        <h3 className="text-xl font-semibold text-(--text-main)">Could not load users</h3>
+        <p className="mt-2 text-sm text-(--text-muted)">{error || 'No data was returned.'}</p>
         <button type="button" className={`${ui.primaryButton} mt-4`} onClick={() => void refresh()}>
           Try again
         </button>

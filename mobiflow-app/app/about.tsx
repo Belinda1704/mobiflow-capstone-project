@@ -29,7 +29,7 @@ export default function AboutScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('aboutMobiFlow')} subtitle={t('versionTerms')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <View style={[styles.versionCard, { backgroundColor: colors.background, borderColor: colors.border }]}>

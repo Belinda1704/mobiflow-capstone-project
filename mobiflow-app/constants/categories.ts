@@ -16,9 +16,8 @@ export type DefaultCategoryConfig = {
   icon: CategoryIcon;
 };
 
-/** Built-in categories (user can’t delete). */
+/** Built-in categories (user can’t delete). No preset “Sales” — users choose their own labels via custom categories. */
 export const DEFAULT_SME_CATEGORIES: DefaultCategoryConfig[] = [
-  { name: 'Sales', color: '#22C55E', icon: 'briefcase-outline' },
   { name: 'Supplies', color: MobiFlowColors.primary, icon: 'cart-outline' },
   { name: 'Transport', color: MobiFlowColors.accent, icon: 'car-outline' },
   { name: 'Utilities', color: MobiFlowColors.link, icon: 'flash-outline' },

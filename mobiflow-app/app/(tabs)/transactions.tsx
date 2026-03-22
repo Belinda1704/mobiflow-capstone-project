@@ -1,5 +1,5 @@
 // Transactions: list with filters, add, multi-select (change category / export transaction/ delete).
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { BulkChangeCategoryModal } from '../../components/BulkActionsModal';
 import { deleteTransactions, updateTransactionsCategory } from '../../services/transactionsService';
+import { removeDisplayLabelsForIds } from '../../services/localDisplayLabelsService';
+import { removeDisplayNotesForIds } from '../../services/localDisplayNotesService';
 import { buildTransactionsCsv } from '../../utils/csvExport';
 import { showConfirm } from '../../services/errorPresenter';
 import { FontFamily } from '../../constants/colors';
@@ -94,17 +96,22 @@ export default function TransactionsScreen() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkDeleteProgress, setBulkDeleteProgress] = useState<{ deleted: number; total: number } | null>(null);
 
-  const filters = {
-    type: filter,
-    dateRange,
-    customStartDate: dateRange === 'custom' ? customStartDate : undefined,
-    customEndDate: dateRange === 'custom' ? customEndDate : undefined,
-    category,
-    paymentMethod,
-    search,
-  };
-  const filtered = filterTransactions(transactions, filters);
-  const dateGroups = groupTransactionsByDate(filtered, t);
+  const filters = useMemo(
+    () => ({
+      type: filter,
+      dateRange,
+      customStartDate: dateRange === 'custom' ? customStartDate : undefined,
+      customEndDate: dateRange === 'custom' ? customEndDate : undefined,
+      category,
+      paymentMethod,
+      search,
+    }),
+    [filter, dateRange, customStartDate, customEndDate, category, paymentMethod, search]
+  );
+
+  const filtered = useMemo(() => filterTransactions(transactions, filters), [transactions, filters]);
+
+  const dateGroups = useMemo(() => groupTransactionsByDate(filtered, t), [filtered, t]);
 
   const hasActiveFilters =
     filter !== 'all' || dateRange !== 'all' || category !== '' || paymentMethod !== 'all' || search.trim() !== '';
@@ -174,6 +181,10 @@ export default function TransactionsScreen() {
             await deleteTransactions(ids, (deleted, total) => {
               setBulkDeleteProgress({ deleted, total });
             });
+            if (userId) {
+              await removeDisplayLabelsForIds(userId, ids);
+              await removeDisplayNotesForIds(userId, ids);
+            }
             setSelectedIds(new Set());
             setSelectMode(false);
           } catch (error) {
@@ -228,7 +239,7 @@ export default function TransactionsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TabHeader
         title={t('transactions')}
         subtitle={selectMode ? t('selectedCount', { count: selectedIds.size }) : t('transactionsSubtitle')}
@@ -253,8 +264,8 @@ export default function TransactionsScreen() {
           </View>
         }
       />
-      <View style={[styles.searchRow, { backgroundColor: colors.surfaceElevated }]}>
-        <View style={[styles.searchWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={[styles.searchRow, { backgroundColor: colors.background }]}>
+        <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: colors.textPrimary }]}
@@ -273,7 +284,7 @@ export default function TransactionsScreen() {
             { backgroundColor: filter === 'all' ? colors.accent : colors.background, borderColor: filter === 'all' ? colors.accent : colors.border },
           ]}
           onPress={() => setFilter('all')}>
-          <Text style={[styles.filterPillText, { color: filter === 'all' ? colors.black : colors.textSecondary }]}>
+          <Text style={[styles.filterPillText, { color: filter === 'all' ? colors.onAccent : colors.textSecondary }]}>
             {t('filterAll')}
           </Text>
         </TouchableOpacity>
@@ -303,7 +314,7 @@ export default function TransactionsScreen() {
             { backgroundColor: dateRange === 'month' ? colors.accent : colors.background, borderColor: dateRange === 'month' ? colors.accent : colors.border },
           ]}
           onPress={() => setDateRange(dateRange === 'month' ? 'all' : 'month')}>
-          <Text style={[styles.filterPillText, { color: dateRange === 'month' ? colors.black : colors.textSecondary }]}>
+          <Text style={[styles.filterPillText, { color: dateRange === 'month' ? colors.onAccent : colors.textSecondary }]}>
             {t('filterThisMonth')}
           </Text>
         </TouchableOpacity>
@@ -311,7 +322,7 @@ export default function TransactionsScreen() {
 
       <Modal visible={filterModalVisible} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
           activeOpacity={1}
           onPress={() => setFilterModalVisible(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.surface }]} onPress={(e) => e.stopPropagation()}>
@@ -432,7 +443,10 @@ export default function TransactionsScreen() {
       {datePickerMode && (
         Platform.OS === 'ios' ? (
           <Modal transparent visible animationType="slide">
-            <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={() => setDatePickerMode(null)}>
+            <TouchableOpacity
+              style={[styles.datePickerOverlay, { backgroundColor: colors.overlay }]}
+              activeOpacity={1}
+              onPress={() => setDatePickerMode(null)}>
               <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]}>
                 <View style={styles.datePickerHeader}>
                   <TouchableOpacity onPress={() => setDatePickerMode(null)}>
@@ -509,7 +523,7 @@ export default function TransactionsScreen() {
                       key={tx.id}
                       style={[
                         styles.transactionCard,
-                        { backgroundColor: colors.background, borderColor: colors.border },
+                        { backgroundColor: colors.surface, borderColor: colors.border },
                         selectMode && selectedIds.has(tx.id) && { borderColor: colors.primary, backgroundColor: colors.primary + '12' },
                       ]}
                       onPress={() => {
@@ -613,7 +627,7 @@ export default function TransactionsScreen() {
         <Pressable
           style={[styles.fab, { backgroundColor: colors.accent }]}
           onPress={() => router.push('/add-transaction')}>
-          <Ionicons name="add" size={28} color={colors.black} />
+          <Ionicons name="add" size={28} color={colors.onAccent} />
         </Pressable>
       )}
     </View>
@@ -658,6 +672,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: FontFamily.regular,
+    ...Platform.select({
+      android: { includeFontPadding: false },
+    }),
   },
   filterSummaryWrap: {
     marginHorizontal: 24,
@@ -697,7 +714,6 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   modalContent: {
     borderTopLeftRadius: 20,
@@ -783,7 +799,6 @@ const styles = StyleSheet.create({
   datePickerOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   datePickerContainer: {
     borderTopLeftRadius: 20,

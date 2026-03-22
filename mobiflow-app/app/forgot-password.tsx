@@ -50,9 +50,9 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]} collapsable={false}>
+    <View style={[styles.container, { backgroundColor: colors.background }]} collapsable={false}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <View style={[styles.safe, { paddingTop: insets.top + 16, backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.safe, { paddingTop: insets.top + 16, backgroundColor: colors.background }]}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
@@ -67,7 +67,7 @@ export default function ForgotPasswordScreen() {
               {t('forgotPasswordTagline')}
             </Text>
 
-            <View style={[styles.infoBox, { backgroundColor: colors.background, borderLeftColor: colors.primary }]}>
+            <View style={[styles.infoBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="information-circle-outline" size={22} color={colors.listIcon ?? colors.primary} style={styles.infoIcon} />
               <Text style={[styles.infoText, { color: colors.textPrimary }]}>
                 {t('contactSupportInfo')}
@@ -84,8 +84,8 @@ export default function ForgotPasswordScreen() {
               testID="forgot-password-phone-input"
             />
 
-            {error ? <Text style={[styles.feedback, { color: '#dc2626' }]}>{error}</Text> : null}
-            {message ? <Text style={[styles.feedback, { color: '#059669' }]}>{message}</Text> : null}
+            {error ? <Text style={[styles.feedback, { color: colors.error }]}>{error}</Text> : null}
+            {message ? <Text style={[styles.feedback, { color: colors.success }]}>{message}</Text> : null}
 
             <PrimaryButton
               title={submitting ? t('sendingRequest') : t('sendPasswordHelpRequest')}
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
-    borderLeftWidth: 4,
+    borderWidth: 1,
   },
   infoIcon: {
     marginRight: 12,
@@ -162,10 +162,11 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   feedback: {
-    fontSize: 14,
-    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
     marginBottom: 16,
     textAlign: 'center',
+    lineHeight: 19,
   },
   orLabel: {
     fontSize: 13,

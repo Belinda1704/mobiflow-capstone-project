@@ -31,7 +31,7 @@ export default function FinancialVideoWebScreen() {
   }, [lessonId, userId, videoUrl]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={title} />
       <View style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -42,7 +42,7 @@ export default function FinancialVideoWebScreen() {
 
           {videoUrl ? (
             <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleOpenVideo}>
-              <Text style={[styles.buttonText, { color: colors.black }]}>Open video</Text>
+              <Text style={[styles.buttonText, { color: colors.onAccent }]}>Open video</Text>
             </TouchableOpacity>
           ) : (
             <Text style={[styles.note, { color: colors.textSecondary }]}>No video was provided for this lesson.</Text>

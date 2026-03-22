@@ -34,12 +34,12 @@ export function buildBackupData(
   const txExport = transactions.map((t) => {
     const date = getTransactionDate(t);
     return {
-      label: t.label,
+      label: (t.displayLabel ?? t.label).trim() || t.label,
       amount: Math.abs(t.amount),
       type: t.type,
       category: t.category ?? 'Other',
       paymentMethod: t.paymentMethod,
-      notes: t.notes,
+      notes: t.displayNotes ?? t.notes,
       createdAt: date ? date.toISOString() : undefined,
     };
   });

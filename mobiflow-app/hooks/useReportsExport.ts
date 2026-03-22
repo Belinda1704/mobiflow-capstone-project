@@ -11,7 +11,7 @@ import {
   getStatementDateRange,
   type StatementPeriod,
 } from '../services/reportsExportService';
-import { getBusinessName } from '../services/preferencesService';
+import { getStatementBusinessLabel } from '../services/preferencesService';
 import { getTransactionDate } from '../utils/transactionDate';
 
 type ExportType = 'csv' | 'excel' | 'statement' | null;
@@ -87,7 +87,7 @@ export function useReportsExport(
       if (type === 'statement') {
         try {
           setExporting('statement');
-          const businessName = await getBusinessName();
+          const businessName = await getStatementBusinessLabel();
           await exportStatement(transactions, period, options, {
             statementTitle: t('statementTitle'),
             statementPeriod: t('statementPeriod'),

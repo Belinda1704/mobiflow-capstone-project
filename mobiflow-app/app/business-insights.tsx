@@ -78,7 +78,7 @@ export default function BusinessInsightsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('businessInsights')} />
       <ScrollView
         style={styles.scroll}

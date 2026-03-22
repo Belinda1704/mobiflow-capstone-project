@@ -18,7 +18,7 @@ export function SettingsRow({ icon, label, subtitle, value, onPress, colors: c }
   const colors = c ?? MobiFlowColors;
   const content = (
     <View style={styles.row}>
-      <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.iconWrap, { backgroundColor: colors.surface }]}>
         <Ionicons name={icon} size={22} color={colors.listIcon ?? colors.primary} />
       </View>
       <View style={styles.textWrap}>
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: MobiFlowColors.surfaceElevated,
+    backgroundColor: MobiFlowColors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },

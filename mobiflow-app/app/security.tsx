@@ -10,7 +10,7 @@ export default function SecurityScreen() {
   const { colors } = useThemeColors();
   const { t } = useTranslations();
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('security')} subtitle={t('protectYourApp')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.paragraph, { color: colors.textSecondary }]}>

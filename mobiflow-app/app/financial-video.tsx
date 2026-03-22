@@ -15,14 +15,14 @@ export default function FinancialVideoScreen() {
 
   if (!videoId) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScreenHeader title={title} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={title} />
       <FinancialVideoPlayer videoId={videoId} lessonId={lessonId} />
     </View>

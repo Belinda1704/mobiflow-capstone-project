@@ -29,6 +29,7 @@ import { FontFamily } from '../constants/colors';
 import type { PaymentMethod } from '../types/transaction';
 import { computeTopCustomers } from '../services/customerIdentificationService';
 import { isUnusualAmount } from '../utils/anomalyDetection';
+import { showError } from '../services/errorPresenter';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'cash', label: 'Cash' },
@@ -139,9 +140,13 @@ export default function AddTransactionScreen() {
   async function handleAddCategory() {
     const name = newCategoryName.trim();
     if (!name) return;
-    const added = await addCategory(name);
-    if (added) {
-      setCategory(added.name);
+    const result = await addCategory(name);
+    if (result === 'duplicate') {
+      showError(t('duplicateCategoryTitle'), t('duplicateCategoryMessage'));
+      return;
+    }
+    if (result) {
+      setCategory(result.name);
       setNewCategoryName('');
       setShowAddCategory(false);
       userPickedCategory.current = true;
@@ -153,7 +158,7 @@ export default function AddTransactionScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -255,7 +260,7 @@ export default function AddTransactionScreen() {
                       key={c.phone}
                       style={[
                         styles.senderChip,
-                        { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                        { backgroundColor: colors.surface, borderColor: colors.border },
                         senderPhone === c.phone && { borderColor: colors.accent, backgroundColor: colors.accent + '26' },
                       ]}
                       onPress={() => setSenderPhone(senderPhone === c.phone ? '' : c.phone)}>
@@ -301,7 +306,7 @@ export default function AddTransactionScreen() {
 
       {/* Category Dropdown - compact panel below trigger */}
       <Modal visible={showCategoryModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowCategoryModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowCategoryModal(false)}>
           {dropdownLayout && (
             <View
               style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]}
@@ -348,7 +353,7 @@ export default function AddTransactionScreen() {
 
       {/* Payment Method Dropdown - compact panel below trigger */}
       <Modal visible={showPaymentModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowPaymentModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowPaymentModal(false)}>
           {dropdownLayout && (
             <View
               style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]}
@@ -386,7 +391,12 @@ export default function AddTransactionScreen() {
       {/* Add Category Input Modal */}
       {showAddCategory && (
         <Modal visible={showAddCategory} transparent animationType="fade">
-          <Pressable style={styles.modalOverlay} onPress={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
+          <Pressable
+            style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
+            onPress={() => {
+              setShowAddCategory(false);
+              setNewCategoryName('');
+            }}>
             <View style={[styles.addCategoryModal, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
               <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('newCategory')}</Text>
               <TextInput
@@ -406,7 +416,7 @@ export default function AddTransactionScreen() {
                 <TouchableOpacity
                   style={[styles.addCategorySaveBtn, { backgroundColor: colors.accent }]}
                   onPress={handleAddCategory}>
-                  <Text style={[styles.addCategorySaveText, { color: colors.black }]}>{t('add')}</Text>
+                  <Text style={[styles.addCategorySaveText, { color: colors.onAccent }]}>{t('add')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -576,7 +586,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
   },
   compactDropdownWrap: {
     position: 'absolute',

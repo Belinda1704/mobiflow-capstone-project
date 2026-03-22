@@ -215,6 +215,16 @@ function aggregateByDayRange(
   return { buckets, dateKeys };
 }
 
+// Need enough tx count + volume before showing top "Excellent" score (MoMo can be low volume).
+function hasStrongActivityForTopTier(
+  transactionCount: number,
+  totalIncome: number,
+  totalExpense: number
+): boolean {
+  const totalVolume = totalIncome + totalExpense;
+  return transactionCount >= 10 && totalVolume >= 25_000;
+}
+
 // 0–100 business health from income, expenses, savings, factors.
 function computeHealthScore(
   totalIncome: number,
@@ -281,6 +291,10 @@ function computeHealthScore(
   // 70% pattern + 30% rules
   score = score + (ruleScore * 0.3);
   score = Math.min(100, Math.max(0, score));
+
+  if (!hasStrongActivityForTopTier(transactionCount, totalIncome, totalExpense)) {
+    score = Math.min(score, 79);
+  }
 
   let label = 'Fair';
   let message = 'Keep tracking to improve.';
@@ -496,6 +510,8 @@ export function getLastNMonthsRange(n: number): { startYearMonth: string; endYea
   };
 }
 
+// Credit readiness for a month range: monthly totals + one row per day (in/out/net from tx amounts).
+// Statement PDF on Reports is different — it lists each tx, not daily buckets.
 export function computeCreditReadinessForPeriod(
   transactions: Transaction[],
   userName: string,

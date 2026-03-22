@@ -14,11 +14,14 @@ import { doc, setDoc } from 'firebase/firestore';
 
 import { auth, db } from '../config/firebase';
 import { phoneToAuthId } from '../utils/phoneUtils';
+import { authTrace } from '../utils/authTrace';
 
 export async function signIn(phone: string, password: string): Promise<void> {
   const authId = phoneToAuthId(phone);
   if (!authId) throw new Error('Invalid phone number');
+  authTrace('signIn called', { authId });
   await signInWithEmailAndPassword(auth, authId, password);
+  authTrace('signIn success', { uid: auth.currentUser?.uid ?? null });
 }
 
 export async function signUp(phone: string, password: string): Promise<void> {
@@ -36,7 +39,13 @@ export async function signUp(phone: string, password: string): Promise<void> {
 }
 
 export async function signOutUser(): Promise<void> {
+  authTrace('signOutUser called', {
+    uidBefore: auth.currentUser?.uid ?? null,
+  });
   await signOut(auth);
+  authTrace('signOutUser finished', {
+    uidAfter: auth.currentUser?.uid ?? null,
+  });
 }
 
 // Delete account (must be signed in recently).

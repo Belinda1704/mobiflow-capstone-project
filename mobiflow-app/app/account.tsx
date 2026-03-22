@@ -92,7 +92,7 @@ export default function AccountScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('account')} subtitle={t('changePhonePassword')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -117,7 +117,7 @@ export default function AccountScreen() {
 
       {/* Change password modal */}
       <Modal visible={passwordModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.modalBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('changePassword')}</Text>
             <TextInput
@@ -158,7 +158,7 @@ export default function AccountScreen() {
                 style={[styles.modalBtn, { backgroundColor: colors.accent, borderColor: 'transparent' }]}
                 onPress={submitPasswordChange}
                 disabled={loading}>
-                <Text style={[styles.modalBtnText, { color: colors.black }]}>{t('update')}</Text>
+                <Text style={[styles.modalBtnText, { color: colors.onAccent }]}>{t('update')}</Text>
               </TouchableOpacity>
             </View>
             {loading && <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} style={styles.loader} />}
@@ -168,7 +168,7 @@ export default function AccountScreen() {
 
       {/* Change phone modal */}
       <Modal visible={phoneModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.modalBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('changePhoneNumber')}</Text>
             <TextInput
@@ -199,7 +199,7 @@ export default function AccountScreen() {
                 style={[styles.modalBtn, { backgroundColor: colors.accent, borderColor: 'transparent' }]}
                 onPress={submitPhoneChange}
                 disabled={loading}>
-                <Text style={[styles.modalBtnText, { color: colors.black }]}>{t('update')}</Text>
+                <Text style={[styles.modalBtnText, { color: colors.onAccent }]}>{t('update')}</Text>
               </TouchableOpacity>
             </View>
             {loading && <ActivityIndicator size="small" color={colors.listIcon ?? colors.primary} style={styles.loader} />}
@@ -225,7 +225,6 @@ const styles = StyleSheet.create({
   value: { fontSize: 16, fontFamily: FontFamily.semiBold },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,

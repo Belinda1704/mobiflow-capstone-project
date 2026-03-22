@@ -22,7 +22,10 @@ import { useCategories } from '../../hooks/useCategories';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useTransactions } from '../../hooks/useTransactions';
 import { updateTransaction } from '../../services/transactionsService';
-import { saveCategoryCorrection } from '../../services/categorizationService';
+import { saveDisplayLabel } from '../../services/localDisplayLabelsService';
+import { saveDisplayNote } from '../../services/localDisplayNotesService';
+import { saveCategoryCorrection, isGenericTransactionLabel } from '../../services/categorizationService';
+import { cloudLabelForSmsTransaction } from '../../utils/smsTransactionPrivacy';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useThemeColors } from '../../contexts/ThemeContext';
@@ -93,12 +96,12 @@ export default function EditTransactionScreen() {
 
   useEffect(() => {
     if (tx) {
-      setLabel(tx.label);
+      setLabel(tx.displayLabel ?? tx.label);
       setAmount(String(Math.abs(tx.amount)));
       setType(tx.type);
       setCategory(tx.category);
       setPaymentMethod(tx.paymentMethod ?? 'mobile_money');
-      setNotes(tx.notes ?? '');
+      setNotes(tx.displayNotes ?? tx.notes ?? '');
     }
   }, [tx]);
 
@@ -118,16 +121,27 @@ export default function EditTransactionScreen() {
     }
     setLoading(true);
     try {
+      const userFacingLabel = label.trim();
+      const cloudLabel = cloudLabelForSmsTransaction(type);
+      if (userId) {
+        await saveDisplayLabel(userId, params.id, userFacingLabel);
+        await saveDisplayNote(userId, params.id, notes);
+      }
       await updateTransaction(params.id, {
-        label: label.trim(),
+        label: cloudLabel,
         amount: amt,
         type,
         category,
         paymentMethod,
-        notes: notes.trim() || undefined,
+        notes: '',
       });
-      if (userId && category !== tx.category && label.trim()) {
-        await saveCategoryCorrection(userId, label.trim(), category);
+      if (
+        userId &&
+        category !== tx.category &&
+        userFacingLabel &&
+        !isGenericTransactionLabel(userFacingLabel)
+      ) {
+        await saveCategoryCorrection(userId, userFacingLabel, category);
       }
       Alert.alert(t('saved'), t('savedMessage'), [{ text: t('ok'), onPress: () => router.back() }]);
     } catch {
@@ -140,9 +154,13 @@ export default function EditTransactionScreen() {
   async function handleAddCategory() {
     const name = newCategoryName.trim();
     if (!name) return;
-    const added = await addCategory(name);
-    if (added) {
-      setCategory(added.name);
+    const result = await addCategory(name);
+    if (result === 'duplicate') {
+      showError(t('duplicateCategoryTitle'), t('duplicateCategoryMessage'));
+      return;
+    }
+    if (result) {
+      setCategory(result.name);
       setNewCategoryName('');
       setShowAddCategory(false);
     }
@@ -155,10 +173,10 @@ export default function EditTransactionScreen() {
 
   if (!tx) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: colors.surfaceElevated, padding: 24 }]}>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background, padding: 24 }]}>
         <Text style={[styles.notFoundText, { color: colors.textSecondary }]}>{t('transactionNotFound')}</Text>
         <TouchableOpacity style={[styles.goBackBtn, { backgroundColor: colors.accent }]} onPress={() => router.back()} activeOpacity={0.8}>
-          <Text style={[styles.goBackBtnText, { color: colors.black }]}>{t('goBack')}</Text>
+          <Text style={[styles.goBackBtnText, { color: colors.onAccent }]}>{t('goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -169,7 +187,7 @@ export default function EditTransactionScreen() {
   const senderPhone = getDisplayPhoneFromLabel(label);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('editTransaction')} />
       <ScrollView
         style={styles.scroll}
@@ -260,7 +278,7 @@ export default function EditTransactionScreen() {
             <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('newCategory')}</Text>
             <View style={styles.addCategoryRow}>
               <TextInput
-                style={[styles.addCategoryInput, { backgroundColor: colors.surfaceElevated, color: colors.textPrimary }]}
+                style={[styles.addCategoryInput, { backgroundColor: colors.surface, color: colors.textPrimary }]}
                 placeholder={t('categoryName')}
                 placeholderTextColor={colors.textSecondary}
                 value={newCategoryName}
@@ -268,7 +286,7 @@ export default function EditTransactionScreen() {
                 autoFocus
               />
               <TouchableOpacity style={[styles.addCategoryBtn, { backgroundColor: colors.accent }]} onPress={handleAddCategory}>
-                <Text style={[styles.addCategoryBtnText, { color: colors.black }]}>{t('add')}</Text>
+                <Text style={[styles.addCategoryBtnText, { color: colors.onAccent }]}>{t('add')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
                 <Text style={[styles.cancelText, { color: colors.textSecondary }]}>{t('cancel')}</Text>
@@ -295,7 +313,7 @@ export default function EditTransactionScreen() {
       </ScrollView>
 
       <Modal visible={showCategoryModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowCategoryModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowCategoryModal(false)}>
           {dropdownLayout && (
             <View style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]} onStartShouldSetResponder={() => true}>
               <View style={[styles.compactDropdownPanel, styles.dropdownPanel, styles.dropdownPanelShadow, { backgroundColor: colors.background }]}>
@@ -327,7 +345,7 @@ export default function EditTransactionScreen() {
       </Modal>
 
       <Modal visible={showPaymentModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowPaymentModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowPaymentModal(false)}>
           {dropdownLayout && (
             <View style={[styles.compactDropdownWrap, getCompactDropdownPosition(dropdownLayout)]} onStartShouldSetResponder={() => true}>
               <View style={[styles.compactDropdownPanel, styles.dropdownPanel, styles.dropdownPanelShadow, { backgroundColor: colors.background }]}>
@@ -389,7 +407,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   dropdownText: { fontSize: 16, fontFamily: FontFamily.medium },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.35)' },
+  modalOverlay: { flex: 1 },
   compactDropdownWrap: { position: 'absolute' as const },
   compactDropdownPanel: {
     borderRadius: 12,

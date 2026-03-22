@@ -10,8 +10,9 @@ export function buildTransactionsCsv(transactions: Transaction[]): string {
       const dateStr = date ? date.toISOString().slice(0, 10) : '';
       const type = t.type ?? (t.amount >= 0 ? 'income' : 'expense');
       const amount = Math.abs(t.amount);
-      const notes = (t.notes ?? '').replace(/"/g, '""');
-      return [dateStr, escapeCsv(t.label), type, escapeCsv(t.category ?? ''), String(amount), escapeCsv(notes)];
+      const labelText = t.displayLabel ?? t.label ?? '';
+      const notesText = t.displayNotes ?? t.notes ?? '';
+      return [dateStr, escapeCsv(labelText), type, escapeCsv(t.category ?? ''), String(amount), escapeCsv(notesText)];
     });
   const allRows = [headers, ...rows];
   return allRows.map((row) => row.join(',')).join('\n');

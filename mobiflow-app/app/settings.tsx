@@ -48,7 +48,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('settings')} />
       <ScrollView
         style={styles.content}
@@ -63,7 +63,7 @@ export default function SettingsScreen() {
               if (item.action === 'resetOnboarding') handleResetOnboarding();
               else if (item.route) router.push(item.route as any);
             }}>
-            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.iconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name={item.icon} size={22} color={colors.textPrimary} />
             </View>
             <View style={styles.rowText}>

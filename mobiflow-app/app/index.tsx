@@ -8,12 +8,14 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAuthRedirect } from '../hooks/useAuthRedirect';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTranslations } from '../hooks/useTranslations';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { OnboardingColors, FontFamily } from '../constants/colors';
 import { getLanguage } from '../services/preferencesService';
 import type { LanguageOption } from '../services/preferencesService';
 import { changeAppLanguage } from '../i18n';
+import { authTrace } from '../utils/authTrace';
 
 const ONBOARDING_KEY = 'hasCompletedOnboarding';
 
@@ -26,6 +28,7 @@ export default function OnboardingScreen() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { t } = useTranslations();
+  const { loading: authLoading } = useCurrentUser();
   const [checking, setChecking] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [language, setLanguage] = useState<LanguageOption>('en');
@@ -33,6 +36,7 @@ export default function OnboardingScreen() {
   useEffect(() => {
     const init = async () => {
       const hasCompleted = (await AsyncStorage.getItem(ONBOARDING_KEY)) === 'true';
+      authTrace('index init', { hasCompletedOnboarding: hasCompleted });
       setHasCompletedOnboarding(hasCompleted);
       const lang = await getLanguage();
       setLanguage(lang);
@@ -44,7 +48,7 @@ export default function OnboardingScreen() {
   useAuthRedirect(
     () => router.replace('/(tabs)'),
     () => router.replace('/login'),
-    checking || !hasCompletedOnboarding || pathname !== '/'
+    checking || authLoading || !hasCompletedOnboarding || pathname !== '/'
   );
 
   const handleGetStarted = async () => {
@@ -57,11 +61,16 @@ export default function OnboardingScreen() {
     router.push('/login');
   };
 
-  if (checking) {
-    return null;
+  if (checking || authLoading) {
+    return (
+      <View style={styles.splashWrap}>
+        <StatusBar style="light" hidden={false} />
+        <Image source={require('../assets/images/app-icon.png')} style={styles.splashLogo} />
+      </View>
+    );
   }
 
-  // User opened app before: show splash until we redirect to dashboard.
+  // Returning user: splash until router sends them to tabs.
   if (hasCompletedOnboarding) {
     return (
       <View style={styles.splashWrap}>
@@ -153,9 +162,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   splashLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
+    width: 200,
+    height: 200,
   },
   container: {
     flex: 1,

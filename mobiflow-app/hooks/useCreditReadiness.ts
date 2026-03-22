@@ -1,12 +1,13 @@
-// credit readiness data from transactions and user profile
-import { useMemo } from 'react';
+// Credit readiness: builds report from tx + profile name (loads on mount + focus).
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
-  computeCreditReadiness,
   computeCreditReadinessForPeriod,
   getLastNMonthsRange,
 } from '../services/financialInsightsService';
 import type { Transaction } from '../types/transaction';
 import { getDisplayLabelFromAuthId } from '../utils/userUtils';
+import { getStatementBusinessLabel } from '../services/preferencesService';
 
 export type CreditReadinessPeriod = {
   startYearMonth: string;
@@ -19,7 +20,22 @@ export function useCreditReadiness(
   period: CreditReadinessPeriod | null
 ) {
   const userName = useMemo(() => getDisplayLabelFromAuthId(authId), [authId]);
-  const businessName = 'My Business';
+  const [businessName, setBusinessName] = useState('My Business');
+
+  const reloadBusinessLabel = useCallback(() => {
+    getStatementBusinessLabel().then(setBusinessName);
+  }, []);
+
+  useEffect(() => {
+    reloadBusinessLabel();
+  }, [reloadBusinessLabel]);
+
+  useFocusEffect(
+    useCallback(() => {
+      reloadBusinessLabel();
+    }, [reloadBusinessLabel])
+  );
+
   const effectivePeriod = useMemo(
     () => period ?? getLastNMonthsRange(6),
     [period]
@@ -33,6 +49,6 @@ export function useCreditReadiness(
         effectivePeriod.startYearMonth,
         effectivePeriod.endYearMonth
       ),
-    [transactions, userName, effectivePeriod.startYearMonth, effectivePeriod.endYearMonth]
+    [transactions, userName, businessName, effectivePeriod.startYearMonth, effectivePeriod.endYearMonth]
   );
 }

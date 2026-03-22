@@ -163,7 +163,7 @@ export default function CreditReadinessScreen() {
   const periodForDownload = period ?? getLastNMonthsRange(6);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('creditReadiness')} subtitle={t('creditSummaryForBanks')} />
       <ScrollView
         style={styles.scroll}
@@ -180,7 +180,7 @@ export default function CreditReadinessScreen() {
               ]}
               onPress={() => setPeriodPreset('last6')}
             >
-              <Text style={[styles.periodChipText, { color: periodPreset === 'last6' ? colors.black : colors.textPrimary }]}>
+              <Text style={[styles.periodChipText, { color: periodPreset === 'last6' ? colors.onAccent : colors.textPrimary }]}>
                 {t('last6MonthsOption')}
               </Text>
             </TouchableOpacity>
@@ -191,7 +191,7 @@ export default function CreditReadinessScreen() {
               ]}
               onPress={() => setPeriodPreset('last12')}
             >
-              <Text style={[styles.periodChipText, { color: periodPreset === 'last12' ? colors.black : colors.textPrimary }]}>
+              <Text style={[styles.periodChipText, { color: periodPreset === 'last12' ? colors.onAccent : colors.textPrimary }]}>
                 {t('last12MonthsOption')}
               </Text>
             </TouchableOpacity>
@@ -202,7 +202,7 @@ export default function CreditReadinessScreen() {
               ]}
               onPress={() => setPeriodPreset('custom')}
             >
-              <Text style={[styles.periodChipText, { color: periodPreset === 'custom' ? colors.black : colors.textPrimary }]}>
+              <Text style={[styles.periodChipText, { color: periodPreset === 'custom' ? colors.onAccent : colors.textPrimary }]}>
                 {t('customPeriodOption')}
               </Text>
             </TouchableOpacity>
@@ -231,7 +231,7 @@ export default function CreditReadinessScreen() {
           )}
           {showFromPicker && (
             <Modal transparent animationType="slide">
-              <Pressable style={styles.modalOverlay} onPress={() => setShowFromPicker(false)}>
+              <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowFromPicker(false)}>
                 <View style={[styles.pickerWrap, { backgroundColor: colors.surface }]}>
                   <DateTimePicker
                     value={customStart}
@@ -248,7 +248,7 @@ export default function CreditReadinessScreen() {
           )}
           {showToPicker && (
             <Modal transparent animationType="slide">
-              <Pressable style={styles.modalOverlay} onPress={() => setShowToPicker(false)}>
+              <Pressable style={[styles.modalOverlay, { backgroundColor: colors.overlay }]} onPress={() => setShowToPicker(false)}>
                 <View style={[styles.pickerWrap, { backgroundColor: colors.surface }]}>
                   <DateTimePicker
                     value={customEnd}
@@ -278,21 +278,13 @@ export default function CreditReadinessScreen() {
               </Text>
             </View>
           </View>
-          {assessment.reasonKeys.length > 0 && (
-            <View style={styles.reasonsWrap}>
-              {assessment.reasonKeys.map((key) => (
-                <View key={key} style={styles.reasonRow}>
-                  <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
-                  <Text style={[styles.reasonText, { color: colors.textPrimary }]}>{t(key)}</Text>
-                </View>
-              ))}
-            </View>
-          )}
         </View>
 
+        {/* Business / statement label only — phone auth id is not shown here (privacy + clarity). */}
         <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.userName, { color: colors.textPrimary }]}>{data.userName}</Text>
-          <Text style={[styles.businessName, { color: colors.textSecondary }]}>{data.businessName || t('myBusiness')}</Text>
+          <Text style={[styles.userName, { color: colors.textPrimary }]}>
+            {data.businessName || t('myBusiness')}
+          </Text>
         </View>
 
         {cashFlowRows.length > 0 && (
@@ -320,7 +312,7 @@ export default function CreditReadinessScreen() {
             {totalCashFlowPages > 1 && (
               <View style={[styles.paginationRow, { borderTopColor: colors.border }]}>
                 <TouchableOpacity
-                  style={[styles.paginationBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+                  style={[styles.paginationBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => setCashFlowPage((p) => Math.max(0, p - 1))}
                   disabled={cashFlowPage === 0}
                 >
@@ -330,7 +322,7 @@ export default function CreditReadinessScreen() {
                   {t('pageOf', { current: cashFlowPage + 1, total: totalCashFlowPages })}
                 </Text>
                 <TouchableOpacity
-                  style={[styles.paginationBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+                  style={[styles.paginationBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => setCashFlowPage((p) => Math.min(totalCashFlowPages - 1, p + 1))}
                   disabled={cashFlowPage >= totalCashFlowPages - 1}
                 >
@@ -417,11 +409,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: FontFamily.bold,
   },
-  businessName: {
-    fontSize: 14,
-    fontFamily: FontFamily.regular,
-    marginTop: 4,
-  },
   cardTitle: {
     fontSize: 16,
     fontFamily: FontFamily.semiBold,
@@ -472,7 +459,6 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   pickerWrap: {
     borderTopLeftRadius: 16,
@@ -588,21 +574,6 @@ const styles = StyleSheet.create({
   assessmentVerdictText: {
     fontSize: 15,
     fontFamily: FontFamily.semiBold,
-  },
-  reasonsWrap: {
-    marginTop: 12,
-    gap: 8,
-  },
-  reasonRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 6,
-  },
-  reasonText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: FontFamily.regular,
   },
   paginationRow: {
     flexDirection: 'row',

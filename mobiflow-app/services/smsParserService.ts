@@ -263,7 +263,7 @@ export function parseSmsTransaction(sms: string, options?: ParseSmsOptions): Par
   // Single-letter "names" are usually regex noise; ignore so the parser can try full-body scrape or address
   if (senderName && senderName.trim().length < 2) senderName = undefined;
 
-  // Whenever we don't have a proper name, scrape the whole body (from/to, Sender:, From:, etc.)
+  // No good name yet: try scraping the full message (from/to, Sender:, etc.)
   if (!senderName || senderName.length < 2) {
     const scraped = scrapeNameFromBody(trimmed, type);
     if (scraped && scraped.length >= 2) senderName = scraped;

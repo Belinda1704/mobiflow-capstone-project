@@ -33,7 +33,7 @@ export function BulkActionsModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <Pressable style={[styles.overlay, { backgroundColor: colors.overlay }]} onPress={onClose}>
         <Pressable
           style={[styles.sheet, { backgroundColor: colors.background }]}
           onPress={(e) => e.stopPropagation()}>
@@ -95,7 +95,7 @@ export function BulkChangeCategoryModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <Pressable style={[styles.overlay, { backgroundColor: colors.overlay }]} onPress={onClose}>
         <Pressable
           style={[styles.sheet, { backgroundColor: colors.background }]}
           onPress={(e) => e.stopPropagation()}>
@@ -130,7 +130,6 @@ export function BulkChangeCategoryModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   sheet: {

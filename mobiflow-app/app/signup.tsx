@@ -45,9 +45,9 @@ export default function SignupScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]} collapsable={false}>
+    <View style={[styles.container, { backgroundColor: colors.background }]} collapsable={false}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <View style={[styles.safe, { paddingTop: insets.top + 16, backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.safe, { paddingTop: insets.top + 16, backgroundColor: colors.background }]}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}

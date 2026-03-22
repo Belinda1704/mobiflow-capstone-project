@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 
 import { auth } from '../config/firebase';
+import { authTrace } from '../utils/authTrace';
 
 // Give Firebase time to restore persisted session from AsyncStorage before redirecting to login.
-const AUTH_RESTORE_WAIT_MS = 3000;
+const AUTH_RESTORE_WAIT_MS = 2500;
 
 export function useAuthRedirect(
   onAuthenticated: () => void,
@@ -17,11 +18,17 @@ export function useAuthRedirect(
   useEffect(() => {
     if (skip) return;
 
+    authTrace('useAuthRedirect start', {
+      hasCurrentUser: !!auth.currentUser,
+      uid: auth.currentUser?.uid ?? null,
+    });
+
     let cancelled = false;
 
     const goAuthenticated = () => {
       if (cancelled || redirectedRef.current) return;
       redirectedRef.current = true;
+      authTrace('redirect -> authenticated');
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -32,9 +39,13 @@ export function useAuthRedirect(
     const scheduleUnauthenticated = () => {
       if (cancelled || redirectedRef.current || !onUnauthenticated) return;
       if (timeoutRef.current) return;
+      authTrace('schedule unauthenticated redirect', {
+        waitMs: AUTH_RESTORE_WAIT_MS,
+      });
       timeoutRef.current = setTimeout(() => {
         timeoutRef.current = null;
         if (!cancelled && !redirectedRef.current) {
+          authTrace('redirect -> unauthenticated');
           onUnauthenticated();
         }
       }, AUTH_RESTORE_WAIT_MS);
@@ -42,6 +53,10 @@ export function useAuthRedirect(
 
     const unsub = onAuthStateChanged(auth, (user) => {
       if (cancelled) return;
+      authTrace('useAuthRedirect onAuthStateChanged', {
+        hasUser: !!user,
+        uid: user?.uid ?? null,
+      });
       if (user) {
         goAuthenticated();
       } else {
@@ -54,12 +69,13 @@ export function useAuthRedirect(
     if (auth.currentUser) {
       goAuthenticated();
     } else {
-      // Start the timer in case we stay unauthenticated (no persisted session).
+      // Timer: if still no user after wait, go to login (no saved session).
       scheduleUnauthenticated();
     }
 
     return () => {
       cancelled = true;
+      authTrace('useAuthRedirect cleanup');
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;

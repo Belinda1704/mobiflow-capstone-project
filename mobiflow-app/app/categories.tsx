@@ -1,13 +1,11 @@
 // Categories: add/delete custom categories, list all.
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useCategories } from '../hooks/useCategories';
-import { showConfirm } from '../services/errorPresenter';
+import { showConfirm, showError } from '../services/errorPresenter';
 import { useThemeColors } from '../contexts/ThemeContext';
 import { useTranslations } from '../hooks/useTranslations';
 import { FontFamily } from '../constants/colors';
@@ -17,19 +15,14 @@ export default function ManageCategoriesScreen() {
   const { colors } = useThemeColors();
   const { t } = useTranslations();
   const { userId } = useCurrentUser();
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const { customCategories, addCategory, updateCategory, removeCategory } = useCategories(userId || null, refreshTrigger);
+  const { customCategories, addCategory, updateCategory, removeCategory } = useCategories(userId || null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-
-  // Refresh categories when screen is focused (so categories added elsewhere appear)
-  useFocusEffect(
-    useCallback(() => {
-      setRefreshTrigger((prev) => prev + 1);
-    }, [])
-  );
+  const [adding, setAdding] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   // Auth redirect
   if (!userId) {
@@ -42,31 +35,58 @@ export default function ManageCategoriesScreen() {
   }
 
   async function saveEdit() {
-    if (!editingId || !editName.trim()) return;
-    await updateCategory(editingId, editName.trim());
-    setEditingId(null);
-    setEditName('');
+    if (!editingId || !editName.trim() || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      await updateCategory(editingId, editName.trim());
+      setEditingId(null);
+      setEditName('');
+    } catch {
+      showError(t('error'), t('duplicateCategoryMessage'));
+    } finally {
+      setSavingEdit(false);
+    }
   }
 
   async function handleAdd() {
     const name = newName.trim();
-    if (!name) return;
-    await addCategory(name);
-    setNewName('');
-    setShowAdd(false);
+    if (!name || adding) return;
+    setAdding(true);
+    try {
+      const result = await addCategory(name);
+      if (result === 'duplicate') {
+        showError(t('duplicateCategoryTitle'), t('duplicateCategoryMessage'));
+        return;
+      }
+      setNewName('');
+      setShowAdd(false);
+    } catch {
+      showError(t('error'), t('couldNotSaveCategory'));
+    } finally {
+      setAdding(false);
+    }
   }
 
   function confirmDelete(id: string, name: string) {
     showConfirm(
       t('deleteCategory'),
       t('deleteCategoryConfirm', { name }),
-      () => removeCategory(id),
+      async () => {
+        setDeletingId(id);
+        try {
+          await removeCategory(id);
+        } catch {
+          showError(t('error'), t('couldNotDeleteCategory'));
+        } finally {
+          setDeletingId(null);
+        }
+      },
       { confirmText: t('delete'), destructive: true }
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('manageCategories')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('defaultCategoriesSME')}</Text>
@@ -86,8 +106,16 @@ export default function ManageCategoriesScreen() {
                     placeholder={t('categoryName')}
                     placeholderTextColor={colors.textSecondary}
                   />
-                  <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent }]} onPress={saveEdit}>
-                    <Text style={[styles.saveBtnText, { color: colors.white }]}>{t('save')}</Text>
+                  <TouchableOpacity
+                    style={[styles.saveBtn, { backgroundColor: colors.accent, opacity: savingEdit ? 0.7 : 1 }]}
+                    onPress={saveEdit}
+                    disabled={savingEdit}
+                  >
+                    {savingEdit ? (
+                      <ActivityIndicator color={colors.white} size="small" />
+                    ) : (
+                      <Text style={[styles.saveBtnText, { color: colors.white }]}>{t('save')}</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity
@@ -104,7 +132,11 @@ export default function ManageCategoriesScreen() {
                 <TouchableOpacity style={styles.iconBtn} onPress={() => startEdit(c.id, c.name)}>
                   <Ionicons name="pencil-outline" size={20} color={colors.listIcon ?? colors.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => confirmDelete(c.id, c.name)}>
+                <TouchableOpacity
+                  style={[styles.iconBtn, { opacity: deletingId === c.id ? 0.4 : 1 }]}
+                  onPress={() => confirmDelete(c.id, c.name)}
+                  disabled={deletingId === c.id}
+                >
                   <Ionicons name="trash-outline" size={20} color={colors.listIcon ?? colors.primary} />
                 </TouchableOpacity>
               </>
@@ -123,8 +155,16 @@ export default function ManageCategoriesScreen() {
                 onChangeText={setNewName}
                 autoFocus
               />
-              <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={handleAdd}>
-                <Text style={[styles.addBtnText, { color: colors.white }]}>{t('add')}</Text>
+              <TouchableOpacity
+                style={[styles.addBtn, { backgroundColor: colors.accent, opacity: adding ? 0.75 : 1 }]}
+                onPress={handleAdd}
+                disabled={adding}
+              >
+                {adding ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <Text style={[styles.addBtnText, { color: colors.white }]}>{t('add')}</Text>
+                )}
               </TouchableOpacity>
             </View>
             <TouchableOpacity

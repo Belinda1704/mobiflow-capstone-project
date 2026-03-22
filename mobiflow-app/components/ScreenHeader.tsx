@@ -1,6 +1,6 @@
 // Header with back button, title, optional subtitle and right-side slot.
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,9 +19,12 @@ export function ScreenHeader({ title, subtitle, rightContent, backgroundColor }:
   const insets = useSafeAreaInsets();
   const { colors } = useThemeColors();
   const bg = backgroundColor ?? colors.background;
+  // Same as TabHeader: extra top padding if safe area is wrong on Android.
+  const statusBarH = Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0;
+  const topPad = Math.max(insets.top, statusBarH) + 16;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, backgroundColor: bg }]}>
+    <View style={[styles.container, { paddingTop: topPad, backgroundColor: bg }]}>
       <TouchableOpacity
         testID="screen-header-back"
         style={styles.backBtn}

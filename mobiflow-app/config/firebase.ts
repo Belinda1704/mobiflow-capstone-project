@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = Constants.expoConfig?.extra?.firebase as Record<string, string> | undefined;
 if (!firebaseConfig?.apiKey) {
-  throw new Error('Missing Firebase config. Copy .env.example to .env and add your Firebase credentials.');
+  throw new Error('Missing Firebase config. Add .env with your keys (see README / docs/LOCAL_ENV_SETUP.md).');
 }
 
 const app = initializeApp(firebaseConfig);

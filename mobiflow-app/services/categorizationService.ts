@@ -9,6 +9,22 @@ const MAX_CORRECTIONS = 200;
 export type CategorizationRule = { keyword: string; category: string };
 export type CategoryCorrection = { label: string; category: string };
 
+export function isGenericTransactionLabel(label: string): boolean {
+  const normalized = label.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!normalized) return true;
+  const genericPatterns = [
+    'mtn sent',
+    'mtn received',
+    'airtel sent',
+    'airtel received',
+    'mobile money sent',
+    'mobile money received',
+    'money sent',
+    'money received',
+  ];
+  return genericPatterns.includes(normalized);
+}
+
 // Default keyword rules (MTN, Airtel, rent, transport). Work with no history.
 const DEFAULT_RULES: CategorizationRule[] = [
   // Utilities
@@ -36,10 +52,6 @@ const DEFAULT_RULES: CategorizationRule[] = [
   // Rent & Fixed Costs
   { keyword: 'Rent', category: 'Rent' },
   { keyword: 'rent', category: 'Rent' },
-  // Income-style messages
-  { keyword: 'received', category: 'Sales' },
-  { keyword: 'Payment', category: 'Sales' },
-  { keyword: 'Customer', category: 'Sales' },
 ];
 
 async function getSettingsRef(userId: string) {
@@ -79,7 +91,18 @@ export async function getCategoryCorrections(userId: string): Promise<CategoryCo
     const snap = await getDoc(ref);
     const data = snap.data();
     const list = (data?.categorizationCorrections ?? []) as CategoryCorrection[];
-    return Array.isArray(list) ? list : [];
+    if (!Array.isArray(list)) return [];
+
+    const cleaned = list.filter(
+      (item) => item?.label?.trim() && !isGenericTransactionLabel(item.label)
+    );
+
+    // Self-heal old generic corrections so future suggestions stay clean.
+    if (cleaned.length !== list.length) {
+      await setDoc(ref, { categorizationCorrections: cleaned.slice(0, MAX_CORRECTIONS) }, { merge: true });
+    }
+
+    return cleaned;
   } catch (error: any) {
     // Offline: no corrections
     if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
@@ -90,7 +113,7 @@ export async function getCategoryCorrections(userId: string): Promise<CategoryCo
   }
 }
 
-/** Save category for this label’s so we suggest it next time. */
+/** Save category for this label so the app can suggest it next time. */
 export async function saveCategoryCorrection(
   userId: string,
   label: string,
@@ -98,7 +121,7 @@ export async function saveCategoryCorrection(
 ): Promise<void> {
   const trimmedLabel = label.trim().toLowerCase();
   const trimmedCat = category.trim();
-  if (!trimmedLabel || !trimmedCat) return;
+  if (!trimmedLabel || !trimmedCat || isGenericTransactionLabel(trimmedLabel)) return;
   const ref = await getSettingsRef(userId);
   const snap = await getDoc(ref);
   const existing = ((snap.data()?.categorizationCorrections ?? []) as CategoryCorrection[]).filter(
@@ -120,7 +143,9 @@ export function suggestCategory(
   if (!normalized) return null;
 
   // 1. Saved correction for this label
-  const correction = corrections.find((c) => c.label === normalized);
+  const correction = isGenericTransactionLabel(normalized)
+    ? null
+    : corrections.find((c) => c.label === normalized);
   if (correction) return correction.category;
 
   // 2. Keyword rule
@@ -132,7 +157,7 @@ export function suggestCategory(
   const sameType = transactions.filter((t) => t.type === type);
   const labelCounts: Record<string, number> = {};
   for (const t of sameType) {
-    const tLabel = (t.label ?? '').trim().toLowerCase();
+    const tLabel = ((t.displayLabel ?? t.label) ?? '').trim().toLowerCase();
     if (!tLabel) continue;
     const tCat = t.category?.trim() || 'Other';
     if (tLabel === normalized || tLabel.includes(normalized) || normalized.includes(tLabel)) {

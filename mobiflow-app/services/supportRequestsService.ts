@@ -10,6 +10,22 @@ function toLocalPhoneDisplay(normalizedPhone: string): string {
   return normalizedPhone;
 }
 
+function getSupportRequestErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'Could not send your request. Please try again.';
+  }
+
+  const raw = error.message?.trim() ?? '';
+  const lower = raw.toLowerCase();
+  if (!raw) {
+    return 'Could not send your request. Please try again.';
+  }
+  if (lower.includes('missing or insufficient permissions') || lower.includes('permission-denied')) {
+    return 'Support request is not available right now. Please contact support by email.';
+  }
+  return raw;
+}
+
 export async function createPasswordResetSupportRequest(phone: string): Promise<void> {
   const validationError = validateRwandaPhone(phone);
   if (validationError) {
@@ -17,12 +33,16 @@ export async function createPasswordResetSupportRequest(phone: string): Promise<
   }
 
   const normalizedPhone = normalizeRwandaPhone(phone);
-  await addDoc(collection(db, 'supportRequests'), {
-    type: 'password_reset',
-    status: 'open',
-    source: 'mobile-app',
-    phone: toLocalPhoneDisplay(normalizedPhone),
-    normalizedPhone,
-    createdAt: serverTimestamp(),
-  });
+  try {
+    await addDoc(collection(db, 'supportRequests'), {
+      type: 'password_reset',
+      status: 'open',
+      source: 'mobile-app',
+      phone: toLocalPhoneDisplay(normalizedPhone),
+      normalizedPhone,
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    throw new Error(getSupportRequestErrorMessage(error));
+  }
 }

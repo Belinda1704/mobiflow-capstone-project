@@ -36,6 +36,7 @@ export default function ReportsScreen() {
   const [dateRange, setDateRange] = useState<DateRangeFilter>('month');
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [draftDate, setDraftDate] = useState(new Date());
   const [customReportStart, setCustomReportStart] = useState<Date>(() => startOfMonth(new Date()));
   const [customReportEnd, setCustomReportEnd] = useState<Date>(() => endOfMonth(new Date()));
   const [serverReport, setServerReport] = useState<ReportSummaryResponse | null>(null);
@@ -125,82 +126,90 @@ export default function ReportsScreen() {
   };
 
   const onDateChange = (_: any, date?: Date) => {
-    if (Platform.OS === 'android') {
-      setDatePickerVisible(false);
-      if (date) {
-        setSelectedDate(date);
-        applyCalendarDate(date);
-      }
-    } else {
-      if (date) setSelectedDate(date);
-    }
+    if (date) setDraftDate(date);
   };
 
   const onCalendarDone = () => {
     setDatePickerVisible(false);
-    applyCalendarDate(selectedDate);
+    setSelectedDate(draftDate);
+    applyCalendarDate(draftDate);
+  };
+
+  const onCalendarCancel = () => {
+    setDatePickerVisible(false);
   };
 
   // Render straight away; data from cache
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TabHeader
         title={t('reports')}
         subtitle={t('reportsSubtitle')}
         rightContent={
-          <TouchableOpacity style={styles.calendarBtn} onPress={() => setDatePickerVisible(true)}>
+          <TouchableOpacity
+            style={styles.calendarBtn}
+            onPress={() => {
+              setDraftDate(selectedDate);
+              setDatePickerVisible(true);
+            }}>
             <Ionicons name="calendar-outline" size={22} color={colors.listIcon ?? colors.primary} />
           </TouchableOpacity>
         }
       />
 
       <ScrollView
+        stickyHeaderIndices={[0]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {/* Time Filter Pills – each in its own pill */}
-        <View style={styles.timeFilterPills}>
-        <TouchableOpacity
-          style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'month' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'month' ? colors.accent : colors.border }]}
-          onPress={() => setPendingDateRange('month')}>
-          <Text style={[styles.timeFilterPillText, { color: pendingDateRange === 'month' ? colors.black : colors.textSecondary }]}>
-            {t('filterThisMonth')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === '30days' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === '30days' ? colors.accent : colors.border }]}
-          onPress={() => setPendingDateRange('30days')}>
-          <Text style={[styles.timeFilterPillText, { color: pendingDateRange === '30days' ? colors.black : colors.textSecondary }]}>
-            {t('filterLast30Days')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'week' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'week' ? colors.accent : colors.border }]}
-          onPress={() => setPendingDateRange('week')}>
-          <Text style={[styles.timeFilterPillText, { color: pendingDateRange === 'week' ? colors.black : colors.textSecondary }]}>
-            {t('filterThisWeek')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'all' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'all' ? colors.accent : colors.border }]}
-          onPress={() => setPendingDateRange('all')}>
-          <Text style={[styles.timeFilterPillText, { color: pendingDateRange === 'all' ? colors.black : colors.textSecondary }]}>
-            {t('filterAll')}
-          </Text>
-        </TouchableOpacity>
-        {dateRange === 'custom' && (
-          <TouchableOpacity
-            style={[styles.timeFilterPill, { backgroundColor: colors.accent, borderWidth: 1, borderColor: colors.accent }]}
-            onPress={() => setDatePickerVisible(true)}>
-            <Text style={[styles.timeFilterPillText, { color: colors.black }]}>
-              {getDateRangeLabel('custom')}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+        <View style={[styles.timeFilterStickyWrap, { backgroundColor: colors.background }]}>
+          <View style={styles.timeFilterPills}>
+            <TouchableOpacity
+              style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'month' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'month' ? colors.accent : colors.border }]}
+              onPress={() => setPendingDateRange('month')}>
+              <Text style={[styles.timeFilterPillText, { color: pendingDateRange === 'month' ? colors.onAccent : colors.textSecondary }]}>
+                {t('filterThisMonth')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === '30days' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === '30days' ? colors.accent : colors.border }]}
+              onPress={() => setPendingDateRange('30days')}>
+              <Text style={[styles.timeFilterPillText, { color: pendingDateRange === '30days' ? colors.onAccent : colors.textSecondary }]}>
+                {t('filterLast30Days')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'week' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'week' ? colors.accent : colors.border }]}
+              onPress={() => setPendingDateRange('week')}>
+              <Text style={[styles.timeFilterPillText, { color: pendingDateRange === 'week' ? colors.onAccent : colors.textSecondary }]}>
+                {t('filterThisWeek')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.timeFilterPill, { backgroundColor: pendingDateRange === 'all' ? colors.accent : colors.background, borderWidth: 1, borderColor: pendingDateRange === 'all' ? colors.accent : colors.border }]}
+              onPress={() => setPendingDateRange('all')}>
+              <Text style={[styles.timeFilterPillText, { color: pendingDateRange === 'all' ? colors.onAccent : colors.textSecondary }]}>
+                {t('filterAll')}
+              </Text>
+            </TouchableOpacity>
+            {dateRange === 'custom' && (
+              <TouchableOpacity
+                style={[styles.timeFilterPill, { backgroundColor: colors.accent, borderWidth: 1, borderColor: colors.accent }]}
+                onPress={() => {
+                  setDraftDate(selectedDate);
+                  setDatePickerVisible(true);
+                }}>
+                <Text style={[styles.timeFilterPillText, { color: colors.onAccent }]}>
+                  {getDateRangeLabel('custom')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
       {/* Large Summary Cards */}
       <View style={styles.summaryCardsRow}>
-        <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.summaryCardLarge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.summaryCardHeader}>
             <Ionicons name="arrow-down" size={24} color={colors.success} />
             <View style={styles.summaryCardTitleWrap}>
@@ -213,7 +222,7 @@ export default function ReportsScreen() {
             {t('net')}: <Text style={{ color: displayNet >= 0 ? colors.success : colors.error }}>{formatRWF(displayNet)}</Text>
           </Text>
         </View>
-        <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.summaryCardLarge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.summaryCardHeader}>
             <Ionicons name="arrow-up" size={24} color={colors.error} />
             <View style={styles.summaryCardTitleWrap}>
@@ -227,7 +236,7 @@ export default function ReportsScreen() {
           </Text>
         </View>
       </View>
-      <View style={[styles.chartCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={[styles.chartCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.chartHeader}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('incomeVsExpense7Days')}</Text>
           <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{t('incomeVsExpense7DaysDescription')}</Text>
@@ -264,7 +273,7 @@ export default function ReportsScreen() {
                     strokeWidth: 2,
                   },
                 ],
-                legend: ['Income', 'Expense'],
+                legend: [],
               }}
               width={Dimensions.get('window').width - 88}
               height={200}
@@ -279,14 +288,14 @@ export default function ReportsScreen() {
           )}
         </View>
       </View>
-      <View style={[styles.chartCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={[styles.chartCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.chartHeader}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('expensesByCategory')}</Text>
           <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{t('expensesByCategoryDescription')}</Text>
         </View>
         <View style={styles.categoriesList}>
           {reports.categories.map((c) => (
-            <View key={c.name} style={[styles.categoryCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View key={c.name} style={[styles.categoryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={[styles.categoryIconWrap, { backgroundColor: c.chartColor + '26' }]}>
                 <Ionicons name={c.icon} size={20} color={c.chartColor} />
               </View>
@@ -302,7 +311,7 @@ export default function ReportsScreen() {
         </View>
       </View>
       <TouchableOpacity
-        style={[styles.topCustomersRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+        style={[styles.topCustomersRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
         activeOpacity={0.7}
         onPress={() => router.push('/top-customers')}>
         <View style={styles.topCustomersLeft}>
@@ -317,10 +326,10 @@ export default function ReportsScreen() {
           style={[styles.exportDropdown, { backgroundColor: colors.accent }]}
           onPress={() => setExportMenuVisible(!exportMenuVisible)}
           disabled={!!exporting}>
-          <Text style={[styles.exportDropdownText, { color: colors.black }]}>
+          <Text style={[styles.exportDropdownText, { color: colors.onAccent }]}>
             {exporting ? t('exporting') : t('downloadReport') || 'Download Report'}
           </Text>
-          <Ionicons name={exportMenuVisible ? 'chevron-up' : 'chevron-down'} size={20} color={colors.black} />
+          <Ionicons name={exportMenuVisible ? 'chevron-up' : 'chevron-down'} size={20} color={colors.onAccent} />
         </TouchableOpacity>
       </View>
 
@@ -392,7 +401,7 @@ export default function ReportsScreen() {
 
       <Modal visible={statementPeriodModalVisible} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
           activeOpacity={1}
           onPress={() => setStatementPeriodModalVisible(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.surface }]} onPress={(e) => e.stopPropagation()}>
@@ -444,7 +453,7 @@ export default function ReportsScreen() {
       {/* Custom Period Selection Modal */}
       <Modal visible={customPeriodModalVisible} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
           activeOpacity={1}
           onPress={() => setCustomPeriodModalVisible(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.surface }]} onPress={(e) => e.stopPropagation()}>
@@ -454,7 +463,7 @@ export default function ReportsScreen() {
               <View style={[styles.customPeriodRow, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.customPeriodLabel, { color: colors.textSecondary }]}>{t('startMonth') || 'Start Month'}</Text>
                 <TouchableOpacity
-                  style={[styles.monthPickerBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[styles.monthPickerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => setStartMonthPickerVisible(true)}>
                   <Text style={[styles.monthPickerText, { color: colors.textPrimary }]}>
                     {startMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
@@ -465,7 +474,7 @@ export default function ReportsScreen() {
               <View style={[styles.customPeriodRow, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.customPeriodLabel, { color: colors.textSecondary }]}>{t('endMonth') || 'End Month'}</Text>
                 <TouchableOpacity
-                  style={[styles.monthPickerBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[styles.monthPickerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => setEndMonthPickerVisible(true)}>
                   <Text style={[styles.monthPickerText, { color: colors.textPrimary }]}>
                     {endMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
@@ -483,7 +492,7 @@ export default function ReportsScreen() {
               <TouchableOpacity
                 style={[styles.customPeriodConfirmBtn, { backgroundColor: colors.accent }]}
                 onPress={handleCustomPeriodConfirm}>
-                <Text style={[styles.customPeriodConfirmText, { color: colors.black }]}>{t('generateStatement') || 'Generate Statement'}</Text>
+                <Text style={[styles.customPeriodConfirmText, { color: colors.onAccent }]}>{t('generateStatement') || 'Generate Statement'}</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -494,7 +503,10 @@ export default function ReportsScreen() {
       {startMonthPickerVisible && (
         Platform.OS === 'ios' ? (
           <Modal transparent visible animationType="slide">
-            <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={() => setStartMonthPickerVisible(false)}>
+            <TouchableOpacity
+              style={[styles.datePickerOverlay, { backgroundColor: colors.overlay }]}
+              activeOpacity={1}
+              onPress={() => setStartMonthPickerVisible(false)}>
               <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]}>
                 <View style={styles.datePickerHeader}>
                   <TouchableOpacity onPress={() => setStartMonthPickerVisible(false)}>
@@ -539,7 +551,10 @@ export default function ReportsScreen() {
       {endMonthPickerVisible && (
         Platform.OS === 'ios' ? (
           <Modal transparent visible animationType="slide">
-            <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={() => setEndMonthPickerVisible(false)}>
+            <TouchableOpacity
+              style={[styles.datePickerOverlay, { backgroundColor: colors.overlay }]}
+              activeOpacity={1}
+              onPress={() => setEndMonthPickerVisible(false)}>
               <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]}>
                 <View style={styles.datePickerHeader}>
                   <TouchableOpacity onPress={() => setEndMonthPickerVisible(false)}>
@@ -583,37 +598,32 @@ export default function ReportsScreen() {
       )}
 
       {datePickerVisible && (
-        Platform.OS === 'ios' ? (
-          <Modal transparent visible animationType="slide">
-            <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={onCalendarDone}>
-              <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
-                <View style={styles.datePickerHeader}>
-                  <TouchableOpacity onPress={onCalendarDone}>
-                    <Text style={[styles.datePickerDone, { color: colors.accent }]}>Done</Text>
-                  </TouchableOpacity>
-                </View>
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display="spinner"
-                  onChange={onDateChange}
-                  maximumDate={new Date()}
-                  themeVariant={isDark ? 'dark' : 'light'}
-                />
+        <Modal transparent visible animationType="slide" onRequestClose={onCalendarCancel}>
+          <TouchableOpacity
+            style={[styles.datePickerOverlay, { backgroundColor: colors.overlay }]}
+            activeOpacity={1}
+            onPress={onCalendarCancel}>
+            <View style={[styles.datePickerContainer, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+              <View style={[styles.datePickerHeader, { borderBottomColor: colors.border }]}>
+                <TouchableOpacity onPress={onCalendarCancel}>
+                  <Text style={[styles.datePickerDone, { color: colors.textSecondary }]}>{t('cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onCalendarDone}>
+                  <Text style={[styles.datePickerDone, { color: colors.accent }]}>OK</Text>
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
-          </Modal>
-        ) : (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={onDateChange}
-            maximumDate={new Date()}
-            themeVariant={isDark ? 'dark' : 'light'}
-          />
-        )
-        )}
+              <DateTimePicker
+                value={draftDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                onChange={onDateChange}
+                maximumDate={new Date()}
+                themeVariant={isDark ? 'dark' : 'light'}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
       </ScrollView>
     </View>
   );
@@ -622,6 +632,10 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  timeFilterStickyWrap: {
+    paddingTop: 6,
+    zIndex: 5,
   },
   timeFilterPills: {
     flexDirection: 'row',
@@ -911,7 +925,6 @@ const styles = StyleSheet.create({
   },
   datePickerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   datePickerContainer: {
@@ -920,7 +933,7 @@ const styles = StyleSheet.create({
   },
   datePickerHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
   },
@@ -930,7 +943,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   modalContent: {

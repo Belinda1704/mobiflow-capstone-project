@@ -48,7 +48,7 @@ const VIDEOS: VideoItem[] = [
   },
 ];
 
-// Get YouTube video id from a youtu.be or youtube.com URL so we can embed the player
+// Parse youtu.be / youtube.com URL to get the video id for the WebView
 function getVideoId(url: string): string {
   if (url.includes('youtu.be/')) {
     return url.split('youtu.be/')[1]?.split('?')[0] ?? '';
@@ -90,7 +90,7 @@ export default function FinancialLiteracyScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('financialLiteracy')} subtitle={t('financialLiteracySubtitle')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('financialLiteracyIntro')}</Text>
@@ -128,13 +128,13 @@ export default function FinancialLiteracyScreen() {
                   {thumb ? (
                     <>
                       <Image source={{ uri: thumb }} style={styles.thumbnail} contentFit="cover" />
-                      <View style={styles.playOverlay}>
-                        <Ionicons name="play" size={36} color="rgba(255,255,255,0.95)" />
+                      <View style={[styles.playOverlay, { backgroundColor: colors.overlay }]}>
+                        <Ionicons name="play" size={36} color="#FFFFFF" />
                       </View>
                     </>
                   ) : (
                     <View
-                      style={[styles.thumbnailPlaceholder, { backgroundColor: colors.surfaceElevated }]}
+                      style={[styles.thumbnailPlaceholder, { backgroundColor: colors.surface }]}
                     />
                   )}
                 </View>
@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
   },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },

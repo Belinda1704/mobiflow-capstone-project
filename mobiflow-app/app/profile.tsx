@@ -105,12 +105,12 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('profile')} />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={[styles.profileCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <View style={styles.avatarWrap}>
-          <View style={[styles.avatar, { backgroundColor: isDark ? colors.surfaceElevated : colors.accent }]}>
+          <View style={[styles.avatar, { backgroundColor: isDark ? colors.surface : colors.accent }]}>
             {photoURL ? (
               <Image source={{ uri: photoURL }} style={styles.avatarImage} />
             ) : (
@@ -118,7 +118,7 @@ export default function ProfileScreen() {
             )}
           </View>
           <TouchableOpacity
-            style={[styles.avatarEditBtn, { backgroundColor: isDark ? colors.surfaceElevated : colors.accent, borderColor: isDark ? colors.border : colors.accent }]}
+            style={[styles.avatarEditBtn, { backgroundColor: isDark ? colors.surface : colors.accent, borderColor: isDark ? colors.border : colors.accent }]}
             onPress={handleChangePhoto}
             disabled={updatingPhoto}
             activeOpacity={0.8}>
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             onPress={() => item.route ? router.push(item.route as any) : undefined}>
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+              <View style={[styles.menuIconWrap, { backgroundColor: colors.surface }]}>
                 <Ionicons name={item.icon} size={20} color={colors.listIcon ?? colors.primary} />
               </View>
               <Text style={[styles.menuText, { color: colors.textPrimary }]}>{t(item.labelKey)}</Text>
@@ -153,7 +153,7 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.accountActions}>
         <TouchableOpacity style={[styles.signOut, { backgroundColor: colors.accent }]} onPress={handleSignOut} disabled={loading}>
-          <Text style={[styles.signOutText, { color: colors.black }]}>{loading ? t('signingOut') : t('signOut')}</Text>
+          <Text style={[styles.signOutText, { color: colors.onAccent }]}>{loading ? t('signingOut') : t('signOut')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.deleteAccount} onPress={handleDeleteAccount}>
           <Text style={[styles.deleteAccountText, { color: colors.error }]}>{t('deleteAccount')}</Text>

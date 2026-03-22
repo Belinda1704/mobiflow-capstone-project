@@ -133,11 +133,11 @@ export default function HomeScreen() {
     datasets: [{ data: chartSummary.chartDataExpense }],
   };
 
-  // Data still loading from Firestore – avoid showing 0s, use placeholders until we have data.
+  // Still loading first fetch: show dashes instead of zeros.
   const isInitialLoading = loading && transactions.length === 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TabHeader title={t('dashboard')} subtitle={t(getTimeBasedGreetingKey())} />
 
       <Text style={[styles.dateText, { color: colors.textSecondary }]}>
@@ -164,7 +164,7 @@ export default function HomeScreen() {
             key={period}
             style={[styles.periodPill, { backgroundColor: dashboardPeriod === period ? colors.accent : colors.background, borderWidth: 1, borderColor: dashboardPeriod === period ? colors.accent : colors.border }]}
             onPress={() => setDashboardPeriod(period)}>
-            <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.black : colors.textSecondary }]}>
+            <Text style={[styles.periodPillText, { color: dashboardPeriod === period ? colors.onAccent : colors.textSecondary }]}>
               {getPeriodLabel(period, t)}
             </Text>
           </TouchableOpacity>
@@ -172,7 +172,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.balanceCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.balanceHeader}>
           <View style={styles.balanceTitleWrap}>
             <Text style={[styles.balanceLabel, { color: colors.textPrimary }]}>{t('currentBalance')}</Text>
@@ -192,7 +192,7 @@ export default function HomeScreen() {
         </View>
         {/* Summary Cards - neutral background, colored icons/amounts */}
         <View style={styles.summaryCardsRow}>
-          <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.summaryCardLarge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.summaryCardHeader}>
               <View style={styles.summaryCardHeaderRow}>
                 <Ionicons name="arrow-down" size={24} color={colors.success} />
@@ -207,7 +207,7 @@ export default function HomeScreen() {
               {t('net')}: <Text style={{ color: summary.net >= 0 ? colors.success : colors.error }}>{formatRWF(summary.net)}</Text>
             </Text>
           </View>
-          <View style={[styles.summaryCardLarge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.summaryCardLarge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.summaryCardHeader}>
               <View style={styles.summaryCardHeaderRow}>
                 <Ionicons name="arrow-up" size={24} color={colors.error} />
@@ -229,7 +229,7 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
-        <View style={[styles.chartCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.chartCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.chartHeader}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t('cashFlow7Days')}</Text>
           <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{t('cashFlow7DaysDescription')}</Text>
@@ -268,7 +268,7 @@ export default function HomeScreen() {
         </View>
         </View>
         <TouchableOpacity
-          style={[styles.savingsCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+          style={[styles.savingsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => router.push('/savings-budget-goals')}
           activeOpacity={0.7}>
           <View style={styles.savingsHeader}>
@@ -291,7 +291,7 @@ export default function HomeScreen() {
                       </Text>
                       <Text style={[styles.goalPercent, { color: colors.textSecondary }]}>{Math.round(goal.percent)}%</Text>
                     </View>
-                    <View style={[styles.goalProgressBar, { backgroundColor: colors.surfaceElevated }]}>
+                    <View style={[styles.goalProgressBar, { backgroundColor: colors.surface }]}>
                       <View
                         style={[
                           styles.goalProgressFill,
@@ -316,7 +316,7 @@ export default function HomeScreen() {
             </>
           )}
         </TouchableOpacity>
-        <View style={[styles.recentCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[styles.recentCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.recentHeader}>
           <View style={styles.recentTitleWrap}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary, marginBottom: 0 }]}>{t('recentTransactions')}</Text>

@@ -22,13 +22,13 @@ export function InlineLessonPlayer({ videoId, onCompleted }: InlineLessonPlayerP
 
   return (
     <View style={styles.inlinePlayerWrap}>
-      <View style={[styles.card, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Open lesson video</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           On web, this lesson opens directly in YouTube.
         </Text>
         <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleOpenVideo}>
-          <Text style={[styles.buttonText, { color: colors.black }]}>Open video</Text>
+          <Text style={[styles.buttonText, { color: colors.onAccent }]}>Open video</Text>
         </TouchableOpacity>
       </View>
     </View>

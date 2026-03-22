@@ -10,6 +10,8 @@ export type Transaction = {
    * without saving those details to the external database.
    */
   displayLabel?: string;
+  /** Device-only notes (Firestore `notes` stays empty for privacy). */
+  displayNotes?: string;
   amount: number;
   type: 'income' | 'expense';
   category: string;

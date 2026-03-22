@@ -62,7 +62,14 @@ export async function exportTransactionsExcel(
     const dateStr = date ? date.toISOString().slice(0, 10) : '';
     const type = t.type ?? (t.amount >= 0 ? 'income' : 'expense');
     const amount = Math.abs(t.amount);
-    return [dateStr, t.label ?? '', type, t.category ?? '', amount, t.notes ?? ''];
+    return [
+      dateStr,
+      t.displayLabel ?? t.label ?? '',
+      type,
+      t.category ?? '',
+      amount,
+      t.displayNotes ?? t.notes ?? '',
+    ];
   });
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const wb = XLSX.utils.book_new();

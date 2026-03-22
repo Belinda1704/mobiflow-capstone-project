@@ -1,6 +1,6 @@
 // Tab screen header – title, optional right content and subtitle.
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontFamily } from '../constants/colors';
 import { useThemeColors } from '../contexts/ThemeContext';
@@ -14,9 +14,12 @@ type TabHeaderProps = {
 export function TabHeader({ title, subtitle, rightContent }: TabHeaderProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useThemeColors();
+  // Fix: safe area top sometimes 0 on Android — add StatusBar height so header doesn’t cover clock.
+  const statusBarH = Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0;
+  const topPad = Math.max(insets.top, statusBarH) + 16;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, minHeight: 80, backgroundColor: colors.background }]}>
+    <View style={[styles.container, { paddingTop: topPad, minHeight: 80, backgroundColor: colors.background }]}>
       <View style={styles.topRow}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         <View style={styles.right}>

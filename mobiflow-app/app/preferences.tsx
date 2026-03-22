@@ -30,7 +30,7 @@ export default function PreferencesScreen() {
   const [showLang, setShowLang] = useState(false);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('preferences')} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <SettingsRow
@@ -52,7 +52,10 @@ export default function PreferencesScreen() {
       </ScrollView>
 
       <Modal visible={showTheme} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTheme(false)}>
+        <TouchableOpacity
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
+          activeOpacity={1}
+          onPress={() => setShowTheme(false)}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('theme')}</Text>
             {(['light', 'dark', 'system'] as ThemeOption[]).map((opt) => (
@@ -66,7 +69,10 @@ export default function PreferencesScreen() {
       </Modal>
 
       <Modal visible={showLang} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowLang(false)}>
+        <TouchableOpacity
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
+          activeOpacity={1}
+          onPress={() => setShowLang(false)}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('language')}</Text>
             {(['en', 'rw'] as LanguageOption[]).map((l) => (
@@ -138,7 +144,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {

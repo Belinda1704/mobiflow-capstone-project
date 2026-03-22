@@ -19,7 +19,7 @@ import { FontFamily } from '../constants/colors';
 import { PrimaryButton } from '../components/PrimaryButton';
 
 function NotificationIcon({ type, colors, isDark }: { type: NotificationHistoryType; colors: ReturnType<typeof useThemeColors>['colors']; isDark: boolean }) {
-  const iconBg = isDark ? colors.surfaceElevated : colors.primary;
+  const iconBg = isDark ? colors.surface : colors.primary;
   const iconColor = isDark ? colors.textPrimary : colors.white;
   if (type === 'lowBalance') {
     return (
@@ -122,7 +122,7 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('notifications')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('notificationSettings').toUpperCase()}</Text>

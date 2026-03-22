@@ -21,16 +21,16 @@ export default function HowToUseScreen() {
   const { t } = useTranslations();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('howToUseMobiFlow')} subtitle={t('howToUseSubtitle')} />
       <ScrollView style={styles.content} contentContainerStyle={styles.padding} showsVerticalScrollIndicator={false}>
         <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('howToUseIntro')}</Text>
         {STEPS.map((step, i) => (
           <View key={i} style={[styles.stepCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={[styles.stepNum, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.stepNum, { backgroundColor: colors.surface }]}>
               <Text style={[styles.stepNumText, { color: colors.listIcon ?? colors.primary }]}>{i + 1}</Text>
             </View>
-            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={[styles.iconWrap, { backgroundColor: colors.surface }]}>
               <Ionicons name={step.icon} size={22} color={colors.listIcon ?? colors.primary} />
             </View>
             <View style={styles.stepBody}>

@@ -34,7 +34,7 @@ export function FinancialVideoPlayer({ videoId, lessonId }: FinancialVideoPlayer
           Video playback is opened directly from YouTube in the web version.
         </Text>
         <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleOpenVideo}>
-          <Text style={[styles.buttonText, { color: colors.black }]}>Open video</Text>
+          <Text style={[styles.buttonText, { color: colors.onAccent }]}>Open video</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -55,7 +55,7 @@ export function buildStatementHtml(
       (t) => `
       <tr>
         <td>${formatStatementDate(getTransactionDate(t) ?? new Date(0))}</td>
-        <td>${escapeHtml(t.label || '—')}</td>
+        <td>${escapeHtml((t.displayLabel ?? t.label) || '—')}</td>
         <td>${escapeHtml(t.category?.trim() || 'Other')}</td>
         <td style="color:${t.amount >= 0 ? '#22C55E' : '#EF4444'};white-space:nowrap">${formatRWFWithSign(t.amount)}</td>
       </tr>`
