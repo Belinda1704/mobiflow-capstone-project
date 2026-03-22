@@ -114,10 +114,10 @@ export default function SmsCaptureScreen() {
 
   if (!supported) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScreenHeader title={t('smsCapture')} subtitle={t('smsCaptureSubtitle')} />
         <ScrollView style={styles.content} contentContainerStyle={styles.padding}>
-          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
+          <Text style={[styles.introText, { color: colors.textSecondary }]}>
             {t('smsCaptureAndroidOnly')}
           </Text>
         </ScrollView>
@@ -126,7 +126,7 @@ export default function SmsCaptureScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={t('smsCapture')} subtitle={t('smsCaptureSubtitle')} />
       <ScrollView
         style={styles.content}
@@ -224,7 +224,7 @@ export default function SmsCaptureScreen() {
               disabled={scanningPast || !userId || !hasPermissions}
               activeOpacity={0.8}
             >
-              <Text style={[styles.scanButtonText, { color: colors.primary }]}>
+              <Text style={[styles.scanButtonText, { color: colors.onAccent }]}>
                 {scanningPast && scanProgress
                   ? `${t('scanning') || 'Scanning'} ${scanProgress?.processed ?? 0}/${scanProgress?.total ?? 0}…`
                   : t('scanPastButton') || 'Scan past messages'}
