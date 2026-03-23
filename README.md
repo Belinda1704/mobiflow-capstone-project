@@ -50,8 +50,9 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 
 | Resource | Link |
 |----------|------|
-| **Demo video** | [Watch on Google Drive](https://drive.google.com/file/d/1sZGbDIiEVUt1p8g_G_9IXd0SdNLsDVrg/view?usp=sharing) |
-| **Download APK** | [Releases – MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases) |
+| **Demo video** | [Watch on Google Drive](https://drive.google.com/file/d/1BQpE4Ke74jVqWRqH8x_5RXTO_AKzXG_A/view?usp=sharing) |
+| **Download APK** | [Releases – MobiFlow APK](https://github.com/Belinda1704/mobiflow-capstone-project/releases/download/v1.0.0/MobiFlow-v1.0.1.apk) |
+| **Admin dashboard (live)** | [https://mobiflow-capstone-project.onrender.com](https://mobiflow-capstone-project.onrender.com) |
 | **Project report** | [Analysis, discussion & recommendations](https://docs.google.com/document/d/1mnZ5QHzBgCN8ddCLAgUAqSX9sm2uIqub3y1Dvo9JCws/edit?usp=sharing) |
 | **Figma design** | [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1) |
 
@@ -71,7 +72,7 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 1. **Clone and enter the mobile app**
    ```bash
    git clone https://github.com/Belinda1704/mobiflow-capstone-project.git
-   cd mobiflow-capstone-project/mobiflow-app
+   cd mobiflow-app
    ```
 
 2. **Install dependencies**
@@ -183,7 +184,14 @@ Releases and version history are maintained on GitHub:
 
 - **Mobile app (APK):** Build locally (e.g. with the project’s Android build script and short-path setup). Output: signed or debug APK; distribute via [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) or direct install.
 - **Firebase (Firestore, Storage, Functions):** `firebase deploy` (or `firebase deploy --only firestore:rules`, `--only storage`, `--only functions`). **Cloud backup** needs Storage rules deployed (`storage.rules`); without them uploads fail with permission errors.
-- **Admin dashboard:** Deployed on [Render](https://render.com). Build with `cd admin-dashboard && npm run build`; the `dist/` output is deployed as a static site on Render.
+- **Admin dashboard:** Deployed on [Render](https://render.com) — **live URL:** [https://mobiflow-capstone-project.onrender.com](https://mobiflow-capstone-project.onrender.com). Build with `cd admin-dashboard && npm run build`; the `dist/` output is deployed as a static site on Render.
+
+### Live admin dashboard (examiner access)
+
+- **What the link proves:** Anyone can open the URL and confirm the app loads (login screen, branding, HTTPS). That already shows successful deployment and a working static build.
+- **Why sign-in is restricted:** Admin access uses **Firebase Auth** and server-side **admin checks**. There is **no public self-registration** for the admin dashboard by design (security).
+- **How examiners usually assess without an account:** They rely on your **demo video**, **written report**, **screenshots**, and **code review**. The live link supports “we deployed it”; the video/report show the full UI and flows.
+- **If an examiner needs to log in:** Provide **demo credentials** only through your institution’s approved channel (email to supervisor, sealed appendix, or viva) — **do not** commit passwords or service accounts in GitHub.
 
 ## Contributing
 
@@ -195,9 +203,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Design (Figma)
 
-UI and flows were designed in Figma.
-
-**Figma file:** [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1)
+UI and flows were designed in Figma. **Figma link:** [Quick Start](#quick-start) table → **Figma design**.
 
 ![MobiFlow Figma Design](mobiflow-app/assets/images/mobiflow-figma-design.png)
 
