@@ -1,6 +1,6 @@
 /**
- * Copies the project’s patched files into node_modules so the build gets readPastSMS etc. without patch-package issues on Windows.
- * Runs after npm install (postinstall).
+ * After npm install: copy patched SMS files into node_modules (readPastSMS, etc.).
+ * Also fixes the SMS library minSdk in its build.gradle so it matches app.config.js.
  */
 const fs = require('fs');
 const path = require('path');
@@ -24,11 +24,23 @@ if (fs.existsSync(smsPkgDir)) {
     }
   }
   console.log('apply-sms-overrides: applied SMS package overrides (readPastSMS + readPastSentSMS)');
+
+  // The SMS package ships minSdkVersion 34; the app uses 29. Change the library file so the manifest merge works.
+  const smsGradlePath = path.join(smsPkgDir, 'android', 'build.gradle');
+  if (fs.existsSync(smsGradlePath)) {
+    let gradle = fs.readFileSync(smsGradlePath, 'utf8');
+    const before = gradle;
+    gradle = gradle.replace(/\bminSdkVersion\s+34\b/g, 'minSdkVersion 29');
+    if (gradle !== before) {
+      fs.writeFileSync(smsGradlePath, gradle);
+      console.log('apply-sms-overrides: set @maniac-tech/react-native-expo-read-sms minSdkVersion to 29 (match app)');
+    }
+  }
 } else {
   console.log('apply-sms-overrides: SMS package not installed, skipping');
 }
 
-// Fix jest-expo so tests don't crash on RN 0.81+ (UIManager guard). We edit the file in place.
+// Fix jest-expo so tests don't crash on RN 0.81+ (UIManager guard); patch the file in place.
 const jestExpoSetupPath = path.join(root, 'node_modules', 'jest-expo', 'src', 'preset', 'setup.js');
 if (fs.existsSync(jestExpoSetupPath)) {
   let content = fs.readFileSync(jestExpoSetupPath, 'utf8');

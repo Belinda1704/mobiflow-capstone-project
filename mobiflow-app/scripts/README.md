@@ -11,7 +11,7 @@ All runnable scripts live here. Run from **mobiflow-app** root (e.g. `.\scripts\
 - `patch-sms-library.ps1` – Patch SMS library for Android (getApplicationInfo fix)
 
 **Node (postinstall / dev):**
-- `apply-sms-overrides.js` – Postinstall: apply SMS package overrides
+- `apply-sms-overrides.js` – Runs after `npm install`: copies SMS patches and sets the SMS library **minSdk** to match `app.config.js` (needed for release builds)
 - `reset-project.js` – `npm run reset-project`
 - `fix-patch-lf.js` – Fix patch file line endings
 - `write-sms-patch.js` / `debug-patch-parse.js` – SMS patch tooling

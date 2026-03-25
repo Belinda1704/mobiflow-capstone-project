@@ -13,19 +13,19 @@ Write-Host "JAVA_HOME = $env:JAVA_HOME" -ForegroundColor Cyan
 Write-Host "ANDROID_HOME = $env:ANDROID_HOME" -ForegroundColor Cyan
 & "$env:JAVA_HOME\bin\java.exe" -version
 
-# Force minSdk 34 for SMS library (Gradle overrides manifest, so we must patch Gradle)
+# Force minSdk 29 in Gradle (matches app.config.js; SMS library needs patching too via apply-sms-overrides.js)
 foreach ($gradleApp in @("android\app\build.gradle.kts", "android\app\build.gradle")) {
     if (Test-Path $gradleApp) {
         $content = Get-Content $gradleApp -Raw
         $orig = $content
-        $content = $content -replace 'minSdk\s*=\s*24\b', 'minSdk = 34'
-        $content = $content -replace 'minSdkVersion\(\s*24\s*\)', 'minSdkVersion(34)'
-        $content = $content -replace 'minSdkVersion\s+24\b', 'minSdkVersion 34'
-        $content = $content -replace 'minSdkVersion\s+rootProject\.ext\.minSdkVersion', 'minSdkVersion 34'
-        $content = $content -replace 'minSdk\s+rootProject\.ext\.minSdkVersion', 'minSdk = 34'
+        $content = $content -replace 'minSdk\s*=\s*24\b', 'minSdk = 29'
+        $content = $content -replace 'minSdkVersion\(\s*24\s*\)', 'minSdkVersion(29)'
+        $content = $content -replace 'minSdkVersion\s+24\b', 'minSdkVersion 29'
+        $content = $content -replace 'minSdkVersion\s+rootProject\.ext\.minSdkVersion', 'minSdkVersion 29'
+        $content = $content -replace 'minSdk\s+rootProject\.ext\.minSdkVersion', 'minSdk = 29'
         if ($content -ne $orig) {
             Set-Content $gradleApp -Value $content -NoNewline
-            Write-Host "`nSet Android minSdk to 34 in $gradleApp (SMS library requirement)." -ForegroundColor Gray
+            Write-Host "`nSet Android minSdk to 29 in $gradleApp." -ForegroundColor Gray
         }
         break
     }
@@ -34,12 +34,12 @@ foreach ($gradleRoot in @("android\build.gradle.kts", "android\build.gradle")) {
     if (Test-Path $gradleRoot) {
         $content = Get-Content $gradleRoot -Raw
         $orig = $content
-        $content = $content -replace 'ext\.minSdkVersion\s*=\s*24\b', 'ext.minSdkVersion = 34'
-        $content = $content -replace 'minSdkVersion\s*=\s*24\b', 'minSdkVersion = 34'
-        $content = $content -replace 'minSdk\s*=\s*24\b', 'minSdk = 34'
+        $content = $content -replace 'ext\.minSdkVersion\s*=\s*24\b', 'ext.minSdkVersion = 29'
+        $content = $content -replace 'minSdkVersion\s*=\s*24\b', 'minSdkVersion = 29'
+        $content = $content -replace 'minSdk\s*=\s*24\b', 'minSdk = 29'
         if ($content -ne $orig) {
             Set-Content $gradleRoot -Value $content -NoNewline
-            Write-Host "Set Android minSdk to 34 in $gradleRoot." -ForegroundColor Gray
+            Write-Host "Set Android minSdk to 29 in $gradleRoot." -ForegroundColor Gray
         }
         break
     }
@@ -48,9 +48,9 @@ $gp = "android\gradle.properties"
 if (Test-Path $gp) {
     $c = Get-Content $gp -Raw
     if ($c -match 'minSdkVersion\s*=\s*24\b') {
-        $c = $c -replace 'minSdkVersion\s*=\s*24\b', 'minSdkVersion=34'
+        $c = $c -replace 'minSdkVersion\s*=\s*24\b', 'minSdkVersion=29'
         Set-Content $gp -Value $c -NoNewline
-        Write-Host "Set Android minSdk to 34 in gradle.properties." -ForegroundColor Gray
+        Write-Host "Set Android minSdk to 29 in gradle.properties." -ForegroundColor Gray
     }
 }
 # Manifest patch (Gradle overrides it, but keep for consistency)
@@ -58,12 +58,12 @@ $manifestPath = "android\app\src\main\AndroidManifest.xml"
 if (Test-Path $manifestPath) {
     $xml = Get-Content $manifestPath -Raw
     if ($xml -match 'uses-sdk') {
-        $xml = $xml -replace 'android:minSdkVersion="\d+"', 'android:minSdkVersion="34"'
+        $xml = $xml -replace 'android:minSdkVersion="\d+"', 'android:minSdkVersion="29"'
     } else {
-        $xml = $xml -replace '(<manifest[^>]*>)', "`$1`n  <uses-sdk android:minSdkVersion=`"34`" />"
+        $xml = $xml -replace '(<manifest[^>]*>)', "`$1`n  <uses-sdk android:minSdkVersion=`"29`" />"
     }
     Set-Content $manifestPath -Value $xml -NoNewline
-    Write-Host "Set Android minSdk to 34 in AndroidManifest.xml." -ForegroundColor Gray
+    Write-Host "Set Android minSdk to 29 in AndroidManifest.xml." -ForegroundColor Gray
 }
 
 Remove-Item -Recurse -Force "node_modules\.cache" -ErrorAction SilentlyContinue

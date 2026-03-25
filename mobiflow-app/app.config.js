@@ -14,7 +14,7 @@ module.exports = {
       ...appJson.expo.android,
       package: 'com.mobiflow.app',
       label: 'MobiFlow',
-      minSdkVersion: 34,
+      minSdkVersion: 29,
     },
     splash: {
       image: './assets/images/splash-icon.png',

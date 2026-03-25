@@ -17,6 +17,7 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 - [Testing](#testing)
 - [Versioning & Changelog](#versioning--changelog)
 - [Deployment](#deployment)
+- [Building the release APK (Windows)](#building-the-release-apk-windows)
 - [Contributing](#contributing)
 - [License](#license)
 - [Design (Figma)](#design-figma)
@@ -57,7 +58,7 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 | **Figma design** | [MobiFlow UI Design](https://www.figma.com/design/xP5KDN2i1uEpY50LbUzHQT/MobiFlow-UI-Design?node-id=0-1) |
 
 **Android APK – install:** Download from [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) (Assets) → open on device → allow “unknown apps” if prompted.  
-**Requirements:** Android 14 (API 34)+, 2 GB RAM. The app is **Android only** (no iOS build). SMS capture requires the APK (not Expo Go).
+**Requirements:** **Android 10 or newer** (**API 29+**), 2 GB RAM recommended. The app is **Android only** (no iOS build). SMS capture requires a **standalone APK** (not Expo Go). Test SMS on a real device; behavior can vary by phone and OS version.
 
 ## Prerequisites
 
@@ -72,13 +73,14 @@ MobiFlow helps small shop owners, salon owners, and other informal businesses tr
 1. **Clone and enter the mobile app**
    ```bash
    git clone https://github.com/Belinda1704/mobiflow-capstone-project.git
-   cd mobiflow-app
+   cd mobiflow-capstone-project/mobiflow-app
    ```
 
 2. **Install dependencies**
    ```bash
    npm install
    ```
+   `npm install` runs **postinstall** (`scripts/apply-sms-overrides.js`), which copies SMS patches and fixes the SMS library **minSdk** to match the app. Run `npm install` before building Android if you just cloned.
 
 3. **Configure environment**  
    Create `mobiflow-app/.env` with your Firebase web app credentials (see [Environment Variables](#environment-variables)).
@@ -182,15 +184,32 @@ Releases and version history are maintained on GitHub:
 
 ## Deployment
 
-- **Mobile app (APK):** Build locally (e.g. with the project’s Android build script and short-path setup). Output: signed or debug APK; distribute via [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) or direct install.
+- **Mobile app (APK):** Build locally (see [Building the release APK (Windows)](#building-the-release-apk-windows) below). Distribute via [Releases](https://github.com/Belinda1704/mobiflow-capstone-project/releases) or direct install.
 - **Firebase (Firestore, Storage, Functions):** `firebase deploy` (or `firebase deploy --only firestore:rules`, `--only storage`, `--only functions`). **Cloud backup** needs Storage rules deployed (`storage.rules`); without them uploads fail with permission errors.
 - **Admin dashboard:** Deployed on [Render](https://render.com) — **live URL:** [https://mobiflow-capstone-project.onrender.com](https://mobiflow-capstone-project.onrender.com). Build with `cd admin-dashboard && npm run build`; the `dist/` output is deployed as a static site on Render.
+
+### Building the release APK (Windows)
+
+Long folder paths can break native Android builds on Windows. There is a **short-path** workflow:
+
+1. **JDK 17** installed (the build script expects a standard path; see `mobiflow-app/scripts/BUILD_RELEASE_APK.ps1` for `JAVA_HOME`).
+2. **Android SDK** with `platform-tools` (ADB). Typical location: `%LOCALAPPDATA%\Android\Sdk`.
+3. From the machine where you develop, run **`mobiflow-app/scripts/SETUP_SHORT_PATH.ps1`** to copy the app to e.g. `C:\mobiflow\mobiflow-app` (reduces CMake/path issues).
+4. In the short-path folder (`C:\mobiflow\mobiflow-app`), run **`.\BUILD_RELEASE_APK.ps1`**. If you stay in the main repo clone, use **`.\scripts\BUILD_RELEASE_APK.ps1`** from `mobiflow-app`. Use **`-Clean`** if the build is corrupted. Output:
+   - `android\app\build\outputs\apk\release\app-release.apk`
+5. **Install on a device (USB debugging on):**
+   ```powershell
+   & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r ".\android\app\build\outputs\apk\release\app-release.apk"
+   ```
+   If `adb devices` shows no phone, enable **Developer options** → **USB debugging**, use a data-capable USB cable, and accept the **Allow USB debugging** prompt on the phone.
+
+**Note:** The dependency `@maniac-tech/react-native-expo-read-sms` ships with a high **minSdk** in its Gradle file; the postinstall script aligns it with **`app.config.js`** (Android 10+). Always run **`npm install`** so that patch applies after cloning or changing dependencies.
 
 ### Live admin dashboard (examiner access)
 
 - **What the link proves:** Anyone can open the URL and confirm the app loads (login screen, branding, HTTPS). That already shows successful deployment and a working static build.
 - **Why sign-in is restricted:** Admin access uses **Firebase Auth** and server-side **admin checks**. There is **no public self-registration** for the admin dashboard by design (security).
-- **How examiners usually assess without an account:** They rely on your **demo video**, **written report**, **screenshots**, and **code review**. The live link supports “we deployed it”; the video/report show the full UI and flows.
+- **How examiners usually assess without an account:** They rely on your **demo video**, **written report**, **screenshots**, and **code review**. The live link shows the site is deployed; the video/report show the full UI and flows.
 - **If an examiner needs to log in:** Provide **demo credentials** only through your institution’s approved channel (email to supervisor, sealed appendix, or viva) — **do not** commit passwords or service accounts in GitHub.
 
 ## Contributing
